@@ -7,11 +7,14 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,6 +34,9 @@ public class AuditAspect {
     private static final Logger log = LoggerFactory.getLogger(AuditAspect.class);
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    @Autowired(required = false)
+    private JdbcTemplate jdbcTemplate;
 
     @Around("@annotation(auditLog)")
     public Object around(ProceedingJoinPoint pjp, AuditLog auditLog) throws Throwable {
@@ -104,9 +110,41 @@ public class AuditAspect {
     }
 
     private void persist(AuditEntry entry) {
-        // 真实实装注入 AuditLogMapper 写 sys_audit_log
+        // V1.3.9 P0：写入 sys_audit_log 表（JdbcTemplate 由 spring-boot-starter-jdbc 提供）
+        if (jdbcTemplate != null) {
+            try {
+                jdbcTemplate.update(
+                    "INSERT INTO sys_audit_log (user_id, module, action, before_json, after_json, ip, ts) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    entry.userId,
+                    entry.module,
+                    entry.action,
+                    entry.before,
+                    entry.after,
+                    getClientIp(),
+                    LocalDateTime.now()
+                );
+            } catch (Exception ex) {
+                log.error("[AUDIT] failed to write sys_audit_log, fallback to log", ex);
+            }
+        } else {
             log.info("[AUDIT] module={} action={} userId={} before={} after={}",
                 entry.module, entry.action, entry.userId, entry.before, entry.after);
+        }
+    }
+
+    private String getClientIp() {
+        try {
+            org.springframework.web.context.request.ServletRequestAttributes attr =
+                (org.springframework.web.context.request.ServletRequestAttributes)
+                    org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes();
+            if (attr != null) {
+                String xf = attr.getRequest().getHeader("X-Forwarded-For");
+                if (xf != null && !xf.isEmpty()) return xf.split(",")[0].trim();
+                return attr.getRequest().getRemoteAddr();
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     private void writeErrorFallback(AuditLog auditLog, Exception ex) {

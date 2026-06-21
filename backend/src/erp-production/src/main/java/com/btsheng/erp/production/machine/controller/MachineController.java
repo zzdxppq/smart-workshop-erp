@@ -16,6 +16,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 /** E5-S5 · 设备机台台账与负荷 API */
@@ -41,6 +42,12 @@ public class MachineController {
     @Operation(summary = "设备机台列表")
     public Result<Map<String, Object>> list(MachineQueryRequest query) {
         return machineService.listMachines(query);
+    }
+
+    @GetMapping("/types")
+    @Operation(summary = "设备类型下拉列表（V1.3.9 P0 · 工艺库关联）")
+    public Result<List<String>> listTypes() {
+        return machineService.listTypes();
     }
 
     @GetMapping("/{id}/detail")

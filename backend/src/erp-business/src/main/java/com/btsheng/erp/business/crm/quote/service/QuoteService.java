@@ -104,9 +104,29 @@ public class QuoteService {
             }
         }
 
+        // 4.2 兜底 dept_id（V1.3.9 P0：crm_quote.dept_id 无默认值）
+        if (quote.getDeptId() == null) {
+            quote.setDeptId(0L);
+        }
+
+        // 4.3 兜底 delivery_date（V1.3.9 P0：QuoteForm.vue 未设交货日期字段，表为 NOT NULL）
+        if (quote.getDeliveryDate() == null) {
+            quote.setDeliveryDate(LocalDate.now().plusDays(30)); // 默认 30 天后交货
+        }
+
         quoteMapper.insert(quote);
         for (CrmQuoteItem item : items) {
             item.setQuoteId(quote.getId());
+            // V1.3.9 P0：兜底 NOT NULL 字段
+            if (item.getMaterial() == null || item.getMaterial().isBlank()) {
+                item.setMaterial("-");
+            }
+            if (item.getDrawingNo() == null || item.getDrawingNo().isBlank()) {
+                item.setDrawingNo("-");
+            }
+            if (item.getSort() == null) {
+                item.setSort(0);
+            }
             BigDecimal price = item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO;
             int qty = item.getQuantity() != null ? item.getQuantity() : 0;
             item.setUnitPrice(price);

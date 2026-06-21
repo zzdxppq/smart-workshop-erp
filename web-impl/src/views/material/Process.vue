@@ -89,8 +89,10 @@
         <el-form-item label="工序名称" required>
           <el-input v-model="createForm.stepName" placeholder="如 CNC 粗加工" />
         </el-form-item>
-        <el-form-item label="机器类型">
-          <el-input v-model="createForm.machineType" placeholder="CNC_LATHE" />
+        <el-form-item label="设备类型" required>
+          <el-select v-model="createForm.machineType" placeholder="请选择设备类型" style="width: 100%">
+            <el-option v-for="t in machineTypes" :key="t" :label="t" :value="t" />
+          </el-select>
         </el-form-item>
         <el-form-item label="工时(h)">
           <el-input-number v-model="createForm.estimatedHours" :min="0.1" :step="0.5" style="width: 100%" />
@@ -135,9 +137,20 @@ const createForm = ref({
   processName: '',
   processType: 'STANDARD',
   stepName: 'CNC 粗加工',
-  machineType: 'CNC',
+  machineType: '',
   estimatedHours: 1.5,
 })
+const machineTypes = ref<string[]>([])
+
+async function loadMachineTypes() {
+  try {
+    const r = await api.get('/machines/types')
+    const data = unwrapResult(r) as string[]
+    if (Array.isArray(data)) {
+      machineTypes.value = data
+    }
+  } catch { /* 不影响主流程 */ }
+}
 
 const { items, loading, pageNum, pageSize, total, reload } = usePagedList<ProcessRowView>(async (params) => {
   const r = await api.get('/processes', {
@@ -272,7 +285,7 @@ async function viewRoute(row: ProcessRowView & { id?: number }) {
   }
 }
 
-onMounted(onSearch)
+onMounted(() => { onSearch(); loadMachineTypes() })
 </script>
 
 <style scoped>

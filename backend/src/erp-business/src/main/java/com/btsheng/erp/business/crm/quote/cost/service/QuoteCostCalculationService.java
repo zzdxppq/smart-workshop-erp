@@ -1,7 +1,9 @@
 package com.btsheng.erp.business.crm.quote.cost.service;
 
 import com.btsheng.erp.business.crm.quote.cost.entity.CrmQuoteCostItem;
+import com.btsheng.erp.business.crm.quote.cost.entity.ProcessCostMapping;
 import com.btsheng.erp.business.crm.quote.cost.mapper.CrmQuoteCostItemMapper;
+import com.btsheng.erp.business.crm.quote.cost.mapper.ProcessCostMappingMapper;
 import com.btsheng.erp.business.crm.quote.entity.CrmQuoteItem;
 import com.btsheng.erp.business.crm.quote.service.QuoteProcessService;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -18,20 +20,26 @@ import java.util.stream.Collectors;
 
 /**
  * V2.1 · 套用报价成本项目录计算报价明细
+ * V1.3.9 · 增加工序名称关键词→成本项自动匹配
  */
 @Service
 public class QuoteCostCalculationService {
 
     private final CrmQuoteCostItemMapper costItemMapper;
+    private final ProcessCostMappingMapper mappingMapper;
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
-    public QuoteCostCalculationService(CrmQuoteCostItemMapper costItemMapper) {
+    public QuoteCostCalculationService(CrmQuoteCostItemMapper costItemMapper,
+                                       ProcessCostMappingMapper mappingMapper) {
         this.costItemMapper = costItemMapper;
+        this.mappingMapper = mappingMapper;
     }
 
     public Map<String, Object> calculate(CrmQuoteItem item) throws Exception {
         List<CrmQuoteCostItem> costItems = costItemMapper.selectAllActive();
+        List<ProcessCostMapping> mappings = mappingMapper.selectAllActive();
+
         Map<String, CrmQuoteCostItem> byCode = costItems.stream()
                 .collect(Collectors.toMap(CrmQuoteCostItem::getItemCode, c -> c, (a, b) -> a));
         Map<String, CrmQuoteCostItem> byProcess = costItems.stream()
@@ -48,7 +56,11 @@ public class QuoteCostCalculationService {
                     item.getProcessSummary(),
                     new TypeReference<List<QuoteProcessService.ProcessDetail>>() {});
             for (QuoteProcessService.ProcessDetail p : processes) {
+                // 优先精确匹配（processCode → itemCode），失败后走关键词模糊匹配
                 CrmQuoteCostItem ci = byProcess.get(p.getProcessCode());
+                if (ci == null) {
+                    ci = matchCostItemByKeyword(p.getProcessName(), byCode, mappings);
+                }
                 if (ci == null || ci.getUnitPrice() == null) continue;
                 int minutes = p.getUnitTimeMinutes() != null ? p.getUnitTimeMinutes() : 0;
                 BigDecimal hours = new BigDecimal(minutes).divide(new BigDecimal(60), 4, RoundingMode.HALF_UP);
@@ -114,5 +126,22 @@ public class QuoteCostCalculationService {
         if (base == null) return BigDecimal.ZERO;
         BigDecimal m = margin != null ? margin : BigDecimal.ZERO;
         return base.multiply(BigDecimal.ONE.add(m)).setScale(4, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * V1.3.9 · 工序名称关键词模糊匹配成本项
+     * 按 sort_order 从小到大遍历，找到第一个关键词命中的成本项返回
+     */
+    private CrmQuoteCostItem matchCostItemByKeyword(String processName,
+                                                    Map<String, CrmQuoteCostItem> byCode,
+                                                    List<ProcessCostMapping> mappings) {
+        if (processName == null || processName.isBlank()) return null;
+        for (ProcessCostMapping m : mappings) {
+            if (m.getKeyword() != null && processName.contains(m.getKeyword())) {
+                CrmQuoteCostItem ci = byCode.get(m.getCostItemCode());
+                if (ci != null) return ci;
+            }
+        }
+        return null;
     }
 }

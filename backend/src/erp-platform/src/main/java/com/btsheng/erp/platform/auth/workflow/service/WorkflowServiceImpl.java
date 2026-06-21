@@ -243,6 +243,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     private WorkflowVO toVO(Workflow wf, List<WorkflowNode> nodes) {
         WorkflowVO vo = new WorkflowVO();
         vo.setId(wf.getId());
+        vo.setName(wf.getName());
         vo.setWorkflowCode(wf.getWorkflowCode());
         vo.setConditionsJson(wf.getConditionsJson());
         vo.setStatus(wf.getStatus());

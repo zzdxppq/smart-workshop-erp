@@ -30,6 +30,10 @@ public class Workflow extends PlatformAuditDO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @Schema(description = "工作流名称")
+    @TableField("name")
+    private String name;
+
     @Schema(description = "工作流编码（UNIQUE，全大写 + 下划线）", example = "QUOTE_FLOW")
     @TableField("workflow_code")
     private String workflowCode;

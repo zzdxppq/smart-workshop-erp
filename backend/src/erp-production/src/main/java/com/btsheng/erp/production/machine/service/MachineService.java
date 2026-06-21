@@ -127,6 +127,21 @@ public class MachineService {
         return Result.ok(result);
     }
 
+    /**
+     * V1.3.9 P0 · 返回设备类型下拉列表（去重，排序）
+     * 用于工艺库新建工艺时设备类型下拉
+     */
+    public Result<List<String>> listTypes() {
+        List<ProdMachine> all = machineMapper.selectActive();
+        Map<String, String> unique = new java.util.LinkedHashMap<>();
+        for (ProdMachine m : all) {
+            if (m.getMachineType() != null && !m.getMachineType().isBlank()) {
+                unique.putIfAbsent(m.getMachineType(), m.getMachineType());
+            }
+        }
+        return Result.ok(new java.util.ArrayList<>(unique.values()));
+    }
+
     public Result<Map<String, Object>> getMachineDetail(Long id) {
         ProdMachine m = machineMapper.selectById(id);
         if (m == null || m.getIsActive() == null || m.getIsActive() == 0) {

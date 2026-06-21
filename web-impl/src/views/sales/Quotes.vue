@@ -18,7 +18,6 @@
             <el-option label="已提交" value="SUBMITTED" />
             <el-option label="已批准" value="APPROVED" />
             <el-option label="已驳回" value="REJECTED" />
-            <el-option label="已转单" value="CONVERTED" />
           </template>
         </el-select>
       </el-form-item>

@@ -16,6 +16,9 @@ public class WorkflowVO {
     @Schema(description = "工作流 ID")
     private Long id;
 
+    @Schema(description = "工作流名称")
+    private String name;
+
     @Schema(description = "工作流编码")
     private String workflowCode;
 

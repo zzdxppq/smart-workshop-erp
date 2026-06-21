@@ -90,10 +90,6 @@ const activeMenu = computed(() => {
   if (exact) return exact.path
   const prefix = flatMenus.value.find((m) => route.path.startsWith(`${m.path}/`))
   if (prefix) return prefix.path
-  if (route.path.startsWith('/warehouse/')) {
-    const wh = flatMenus.value.find((m) => m.path.startsWith('/warehouse/'))
-    if (wh) return wh.path
-  }
   return route.path
 })
 </script>
