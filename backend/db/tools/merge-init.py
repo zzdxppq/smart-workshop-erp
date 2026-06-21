@@ -57,6 +57,10 @@ post_v21 = {
     "V101__finance_order_receipt_menu.sql",
     "V102__ensure_crm_purchase_order_before_alter.sql",
     "V103__ensure_crm_hr_payroll.sql",
+    "V104__quality_ipqc_source_merge_outsource.sql",
+    "V105__production_menu_restructuring.sql",
+    "V106__warehouse_menu_consolidation.sql",
+    "V107__audit_log_menu.sql",
 }
 
 PLATFORM_TABLES = (

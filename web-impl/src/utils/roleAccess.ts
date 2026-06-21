@@ -117,7 +117,6 @@ export const SUBMENU_ROLES: Record<string, string[] | null> = {
   '/quality/cmm': ROLE_GROUPS.QUALITY,
   '/quality/defect': ROLE_GROUPS.QUALITY,
   '/quality/pickup': ROLE_GROUPS.QUALITY,
-  '/quality/outsource-inspection': ROLE_GROUPS.QUALITY,
 
   // 采购
   '/sourcing/rfq': ROLE_GROUPS.BUYER,

@@ -127,7 +127,7 @@ const activeMenu = computed(() => {
 .sub-menu-nav {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0 12px;
+  padding: 8px 8px 12px;
 }
 
 .menu-group + .menu-group {
@@ -137,7 +137,7 @@ const activeMenu = computed(() => {
 }
 
 .menu-group-label {
-  padding: 4px 16px 6px;
+  padding: 4px 12px 6px;
   font-size: 11px;
   font-weight: 600;
   color: var(--erp-text-muted);
@@ -147,10 +147,10 @@ const activeMenu = computed(() => {
 
 .sub-menu-link {
   display: block;
-  padding: 0 16px;
+  padding: 0 12px;
   height: 38px;
   line-height: 38px;
-  margin: 2px 8px;
+  margin: 2px 0;
   border-radius: var(--erp-radius-md);
   font-size: 13px;
   color: var(--erp-text-secondary);
@@ -169,7 +169,7 @@ const activeMenu = computed(() => {
   color: var(--erp-color-primary);
   font-weight: 600;
   background: var(--erp-color-primary-light);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
+  box-shadow: inset 3px 0 0 var(--erp-color-primary);
 }
 
 .menu-content {

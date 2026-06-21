@@ -400,6 +400,51 @@ public class BomService {
         return Result.ok(data);
     }
 
+    /**
+     * 按图纸 ID 查询 BOM 预览（只读，返回第一层 items）
+     * V1.3.9 补全：报价/订单页图号行下 BOM 预览
+     */
+    public Result<Map<String, Object>> getBomPreviewByDrawingId(Long drawingId) {
+        if (drawingId == null) return Result.fail(40001, "DRAWING_ID_REQUIRED");
+        CrmBom bom = bomMapper.selectByDrawingIdAndVersion(drawingId, "v1");
+        if (bom == null) {
+            // 尝试找最新版本
+            List<CrmBom> hits = bomMapper.selectList(
+                new QueryWrapper<CrmBom>().eq("drawing_id", drawingId)
+                    .orderByDesc("id").last("LIMIT 1"));
+            if (hits.isEmpty()) {
+                Map<String, Object> empty = new HashMap<>();
+                empty.put("drawingId", drawingId);
+                empty.put("hasBom", false);
+                empty.put("items", List.of());
+                return Result.ok(empty);
+            }
+            bom = hits.get(0);
+        }
+        List<CrmBomItem> items = itemMapper.selectByBomId(bom.getId());
+        List<Map<String, Object>> itemRows = items.stream()
+            .filter(i -> i.getItemLevel() == 0)
+            .map(i -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("materialCode", i.getMaterialCode());
+                m.put("materialName", i.getMaterialName());
+                m.put("spec", i.getSpec());
+                m.put("qty", i.getQty());
+                m.put("unit", i.getUnit());
+                m.put("segment", i.getSegment());
+                return m;
+            })
+            .toList();
+        Map<String, Object> result = new HashMap<>();
+        result.put("drawingId", drawingId);
+        result.put("hasBom", true);
+        result.put("bomNo", bom.getBomNo());
+        result.put("bomVersion", bom.getBomVersion());
+        result.put("totalCost", bom.getTotalCost());
+        result.put("items", itemRows);
+        return Result.ok(result);
+    }
+
     private String stringVal(Object v, String fallback) {
         if (v == null || v.toString().isBlank()) return fallback;
         return v.toString();

@@ -94,13 +94,31 @@
             <el-button link type="danger" @click="removeLine($index)">删</el-button>
           </template>
         </el-table-column>
+        <el-table-column type="expand" width="70" label="工艺/BOM">
+          <template #default="{ row }">
+            <div class="row-preview" v-if="row.processRoute || row.bomPreview?.hasBom">
+              <div class="preview-toggle">
+                <span class="preview-label">工艺路线：</span>
+                <span class="preview-val">{{ formatProcessPreview(row.processRoute) || '—' }}</span>
+              </div>
+              <div v-if="row.bomPreview?.hasBom" class="preview-toggle">
+                <span class="preview-label">BOM 物料：</span>
+                <span class="preview-val">
+                  <span v-for="(b, idx) in row.bomPreview.items" :key="idx" class="bom-item">
+                    {{ b.materialCode }} × {{ b.qty }}{{ b.unit || '件' }}
+                    <span v-if="idx < row.bomPreview.items.length - 1">；</span>
+                  </span>
+                </span>
+              </div>
+              <div v-else class="preview-toggle">
+                <span class="preview-val muted">暂无 BOM（工程转化阶段定义）</span>
+              </div>
+            </div>
+            <div v-else class="row-preview muted">选择已有图号后可查看工艺/BOM预览</div>
+          </template>
+        </el-table-column>
       </el-table>
       <div class="total-row">合计：<strong>¥{{ totalAmount }}</strong></div>
-    </el-card>
-
-    <el-card v-if="processPreview.length" header="工艺预览（只读）" style="margin-top: 12px">
-      <div v-for="(p, i) in processPreview" :key="i" class="process-line">{{ p }}</div>
-      <p class="hint">订单确认后，工程师将在工程转化阶段细化工艺参数和 BOM</p>
     </el-card>
 
     <el-card v-if="materialPreview.length" header="提交后将自动生成料号" style="margin-top: 12px">
@@ -133,16 +151,17 @@ import {
   type OrderFormItem,
   type OrderFormOrder,
   disablePastDate,
-  formatProcessRoutePreview,
 } from '@/utils/orderPayload'
 import { useOrderStore } from '@/stores/order'
 import { useAuthStore } from '@/stores/auth'
+import { useBaseStore } from '@/stores/_base'
 import { hasAnyRole, ADMIN_ROLES } from '@/utils/roleAccess'
 
 const route = useRoute()
 const router = useRouter()
 const orderStore = useOrderStore()
 const auth = useAuthStore()
+const baseStore = useBaseStore()
 const loading = ref(false)
 const submitting = ref(false)
 const materialNoMap = ref<Record<string, string>>({})
@@ -169,12 +188,6 @@ const deliveryDateModel = computed({
 
 const totalAmount = computed(() =>
   form.value.items.reduce((s, i) => s + lineAmount(i), 0),
-)
-
-const processPreview = computed(() =>
-  form.value.items
-    .filter((i) => i.processRoute && (i.customerDrawingNo || i.drawingNo))
-    .map((i) => `${i.customerDrawingNo || i.drawingNo}：${i.processRoute}`),
 )
 
 const materialPreview = computed(() =>
@@ -218,7 +231,7 @@ function removeLine(idx: number) {
   if (!form.value.items.length) form.value.items.push(emptyLine())
 }
 
-function onDrawingSelect(
+async function onDrawingSelect(
   d: Drawing & { customerDrawingNo?: string; materialGrade?: string; specSize?: string; unitWeight?: number },
   rowIndex: number,
 ) {
@@ -230,8 +243,26 @@ function onDrawingSelect(
   row.material = d.materialGrade ?? (d as { materialCode?: string }).materialCode ?? row.material
   row.spec = d.specSize ?? row.spec
   row.unitWeight = d.unitWeight != null ? Number(d.unitWeight) : row.unitWeight
-  row.processRoute = formatProcessRoutePreview(d.processRoute)
+  row.processRoute = formatProcessPreview(d.processRoute)
+  // 按需加载 BOM 预览
+  if (d.id) {
+    try {
+      const r = await baseStore.api.get(`/boms/preview/by-drawing/${d.id}`)
+      const data = unwrapResult<any>(r)
+      row.bomPreview = data?.hasBom ? data : { hasBom: false, items: [] }
+    } catch {
+      row.bomPreview = { hasBom: false, items: [] }
+    }
+  } else {
+    row.bomPreview = { hasBom: false, items: [] }
+  }
   refreshMaterialPreview()
+}
+
+function formatProcessPreview(raw?: string | null): string {
+  if (!raw) return ''
+  if (raw.includes('→')) return raw
+  return raw.replace(/[,，]/g, ' → ')
 }
 
 async function refreshMaterialPreview() {
@@ -356,4 +387,25 @@ onMounted(async () => {
 .hint { font-size: 12px; color: var(--erp-text-muted); margin: 8px 0 0; }
 .mat-reuse { color: var(--el-color-success); }
 .mat-new { color: var(--el-color-warning); }
+.row-preview {
+  padding: 8px 12px;
+  background: var(--erp-bg-subtle, #f9fafb);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.preview-toggle {
+  display: flex;
+  gap: 8px;
+  line-height: 1.8;
+}
+.preview-label {
+  flex-shrink: 0;
+  color: var(--erp-text-muted, #6b7280);
+  min-width: 72px;
+}
+.preview-val {
+  color: var(--erp-text-primary, #374151);
+}
+.bom-item + .bom-item::before { content: '；'; }
+.muted { color: var(--erp-text-muted, #9ca3af); font-style: italic; }
 </style>

@@ -92,6 +92,12 @@ public class BomController {
         return bomService.listBoms(query);
     }
 
+    @Operation(summary = "BOM 预览（按图纸 ID · 报价/订单行内折叠展示）")
+    @GetMapping("/preview/by-drawing/{drawingId}")
+    public Result<Map<String, Object>> getBomPreviewByDrawing(@PathVariable Long drawingId) {
+        return bomService.getBomPreviewByDrawingId(drawingId);
+    }
+
     @Operation(summary = "BOM 树保存（Web BomTree 组件）")
     @PostMapping("/save-tree")
     public Result<Map<String, Object>> saveTree(@RequestBody BomSaveTreeRequest req) {

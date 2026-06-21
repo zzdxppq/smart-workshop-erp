@@ -41,6 +41,7 @@ public class CrmDrawing implements Serializable {
     @TableField("dept_id") private Long deptId;
     @TableField("is_fa") private Integer isFa = 0;                  // FA 件 → > 20万 二次密码
             @TableField("is_new") private Integer isNew = 0;
+    @TableField("quote_approval_status") private String quoteApprovalStatus; // V1.3.9：PENDING（待审批）/ APPROVED（已审批，可建单）
     @TableField("comment") private String comment;
     @TableField("created_at") private LocalDateTime createdAt;
     @TableField("updated_at") private LocalDateTime updatedAt;

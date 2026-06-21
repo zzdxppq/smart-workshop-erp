@@ -6,6 +6,8 @@ import com.btsheng.erp.business.crm.quote.entity.CrmQuoteItem;
 import com.btsheng.erp.business.crm.quote.mapper.CrmQuoteHistoryMapper;
 import com.btsheng.erp.business.crm.quote.mapper.CrmQuoteItemMapper;
 import com.btsheng.erp.business.crm.quote.mapper.CrmQuoteMapper;
+import com.btsheng.erp.business.crm.sales.entity.CrmCustomer;
+import com.btsheng.erp.business.crm.sales.mapper.CrmCustomerMapper;
 import com.btsheng.erp.core.model.Result;
 import com.btsheng.erp.core.web.AuditLog;
 import com.btsheng.erp.core.dict.entity.Dict;
@@ -35,16 +37,19 @@ public class QuoteService {
     private final CrmQuoteItemMapper itemMapper;
     private final CrmQuoteHistoryMapper historyMapper;
     private final DictClient dictClient;
+    private final CrmCustomerMapper customerMapper;
             private final ObjectMapper mapper = new ObjectMapper();
     private final AtomicLong seqCounter = new AtomicLong(1);
 
     @Autowired
     public QuoteService(CrmQuoteMapper quoteMapper, CrmQuoteItemMapper itemMapper,
-                       CrmQuoteHistoryMapper historyMapper, DictClient dictClient) {
+                       CrmQuoteHistoryMapper historyMapper, DictClient dictClient,
+                       CrmCustomerMapper customerMapper) {
         this.quoteMapper = quoteMapper;
         this.itemMapper = itemMapper;
         this.historyMapper = historyMapper;
         this.dictClient = dictClient;
+        this.customerMapper = customerMapper;
     }
 
     @Transactional
@@ -90,6 +95,14 @@ public class QuoteService {
         String quoteNo = String.format("BJ%s%04d", date, seq);
         quote.setQuoteNo(quoteNo);
         quote.setStatus("DRAFT");
+
+        // 4.1 回填客户名称（V1.3.9 P0：crm_customer.name → customer_name）
+        if (quote.getCustomerId() != null && (quote.getCustomerName() == null || quote.getCustomerName().isBlank())) {
+            CrmCustomer customer = customerMapper.selectById(quote.getCustomerId());
+            if (customer != null) {
+                quote.setCustomerName(customer.getName());
+            }
+        }
 
         quoteMapper.insert(quote);
         for (CrmQuoteItem item : items) {

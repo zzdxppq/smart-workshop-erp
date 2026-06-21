@@ -15,6 +15,15 @@ export type QuoteFormItem = Omit<QuoteItem, 'isFa' | 'isNew'> & {
   productName?: string
   unitWeight?: number
   processRoute?: string
+  bomPreview?: BomPreview
+}
+
+export interface BomPreview {
+  hasBom: boolean
+  bomNo?: string
+  bomVersion?: string
+  totalCost?: number
+  items: { materialCode: string; materialName?: string; spec?: string; qty: number; unit?: string; segment?: string }[]
 }
 
 function flag(v: unknown): 0 | 1 {

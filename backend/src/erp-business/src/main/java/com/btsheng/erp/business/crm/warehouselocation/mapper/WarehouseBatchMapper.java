@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface WarehouseBatchMapper extends BaseMapper<CrmBatch> {
@@ -35,4 +36,18 @@ public interface WarehouseBatchMapper extends BaseMapper<CrmBatch> {
 
     @Select(BATCH_SELECT + " WHERE po.supplier_id = #{supplierId} ORDER BY b.arrived_at DESC")
     List<CrmBatch> selectBySupplier(@Param("supplierId") Long supplierId);
+
+    @Select("""
+            SELECT po.po_no AS sourceNo, po.po_no AS materialCode,
+                   po.id AS id, po.id AS materialId,
+                   1 AS expectedQty, po.status AS status,
+                   po.created_at AS createdAt,
+                   '采购' AS sourceType
+            FROM crm_purchase_order po
+            WHERE po.approval_status = 'APPROVED'
+              AND po.status <> 'CANCELLED'
+            ORDER BY po.created_at DESC
+            LIMIT #{limit}
+            """)
+    List<Map<String, Object>> selectInboundPending(@Param("limit") int limit);
 }

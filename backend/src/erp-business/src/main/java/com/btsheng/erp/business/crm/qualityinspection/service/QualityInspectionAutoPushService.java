@@ -78,6 +78,7 @@ public class QualityInspectionAutoPushService {
         insp.setResult(QualityInspectionService.STATUS_DRAFT);
         insp.setRemark(req.getRemark());
         insp.setSourceRef(req.getSourceRef());
+        insp.setInspectSource(resolveInspectSource(req));
         insp.setCreatedBy(operatorUserId == null ? 1L : operatorUserId);
         insp.setCreatedAt(LocalDateTime.now());
         insp.setUpdatedAt(LocalDateTime.now());
@@ -95,5 +96,16 @@ public class QualityInspectionAutoPushService {
         inspectionMapper.updateById(insp);
 
         return Result.ok(insp);
+    }
+
+    private static String resolveInspectSource(PendingInspectionRequest req) {
+        if (req.getInspectSource() != null && !req.getInspectSource().isBlank()) {
+            return req.getInspectSource().trim().toUpperCase();
+        }
+        String ref = req.getSourceRef();
+        if (ref != null && ref.toUpperCase().startsWith("OUTSOURCE:")) {
+            return QualityInspectionService.SOURCE_OUTSOURCE;
+        }
+        return QualityInspectionService.SOURCE_INTERNAL;
     }
 }

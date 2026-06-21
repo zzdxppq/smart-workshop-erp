@@ -301,9 +301,18 @@ public class WarehouseLocationService {
     }
 
     /**
-     * P1 修补 3：多仓库权限隔离（按用户 ID 过滤可见仓库�?     */
+     * P1 修补 3：多仓库权限隔离（按用户 ID 过滤可见仓库
+     */
     public Result<List<CrmWarehouse>> listAccessibleWarehouses(Long userId) {
-        // 简化：所有激活仓库都可见；生产对�?1.1 RBAC
-            return Result.ok(warehouseMapper.selectAll());
+        // 简化：所有激活仓库都可见；生产对应 1.1 RBAC
+        return Result.ok(warehouseMapper.selectAll());
+    }
+
+    /**
+     * 待入库列表：采购 PO 已审批 + 委外 WW- 已发货
+     * V1.3.9 补全缺失端点
+     */
+    public List<Map<String, Object>> listInboundPending(int limit) {
+        return batchMapper.selectInboundPending(limit);
     }
 }

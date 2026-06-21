@@ -17,6 +17,13 @@ export type OrderFormItem = Omit<OrderItem, 'isFa' | 'isNew'> & {
   unitWeight?: number
   processRoute?: string
   materialNo?: string
+  bomPreview?: {
+    hasBom: boolean
+    bomNo?: string
+    bomVersion?: string
+    totalCost?: number
+    items: { materialCode: string; materialName?: string; spec?: string; qty: number; unit?: string; segment?: string }[]
+  }
 }
 
 function flag(v: unknown): 0 | 1 {

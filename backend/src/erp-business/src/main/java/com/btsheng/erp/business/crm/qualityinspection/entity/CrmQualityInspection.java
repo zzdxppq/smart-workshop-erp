@@ -45,6 +45,7 @@ public class CrmQualityInspection implements Serializable {
     @TableField("defect_disposition_qty") private Integer defectDispositionQty;
     @TableField("drawing_no")       private String drawingNo;
     @TableField("source_ref")       private String sourceRef;
+    @TableField("inspect_source")   private String inspectSource = "INTERNAL";
     @TableField("inspector_user_id") private Long inspectorUserId;
     @TableField("inspected_at")      private LocalDateTime inspectedAt;
     @TableField("max_severity")      private String maxSeverity;

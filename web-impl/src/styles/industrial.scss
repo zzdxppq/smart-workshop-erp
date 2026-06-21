@@ -211,7 +211,11 @@
 
   .el-breadcrumb__inner,
   .el-breadcrumb__separator {
-    color: var(--erp-text-secondary);
+    color: var(--erp-text-primary);
+  }
+
+  .el-breadcrumb__inner.is-link:hover {
+    color: var(--erp-color-primary);
   }
 
   .el-dialog {

@@ -101,7 +101,7 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `me
 INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`) VALUES
 (411, 4, 'eng.order-conversion',  '订单工程转化', '/engineering/order-conversion',  'MENU', 1),
 (412, 4, 'eng.quote-confirmation','报价工艺定义', '/engineering/quote-confirmation','MENU', 2),
-(413, 4, 'eng.data',              '图纸与料号',     '/engineering/data',              'MENU', 3),
+(413, 4, 'eng.data',              '工程数据',       '/engineering/data',              'MENU', 3),
 (414, 4, 'eng.my-tasks',          '待办任务中心',   '/engineering/my-tasks',          'MENU', 4);
 
 -- 品质子菜单（5 个：qc.workbench + qc.fa/cmm/defect/pickup）

@@ -33,7 +33,8 @@ public interface CrmDrawingMapper extends BaseMapper<CrmDrawing> {
     @Select("SELECT id, drawing_no AS drawingNo, customer_drawing_no AS customerDrawingNo, version, title, " +
             "material_grade AS materialGrade, spec_size AS specSize, unit_weight AS unitWeight, " +
             "material_code AS materialCode, " +
-            "status, is_fa AS isFa, is_new AS isNew, owner_user_id AS ownerUserId, dept_id AS deptId, " +
+            "status, is_fa AS isFa, is_new AS isNew, quote_approval_status AS quoteApprovalStatus, " +
+            "owner_user_id AS ownerUserId, dept_id AS deptId, " +
             "created_at AS createdAt FROM crm_drawing " +
             "WHERE (#{keyword} IS NULL OR drawing_no LIKE CONCAT('%', #{keyword}, '%') " +
             "   OR customer_drawing_no LIKE CONCAT('%', #{keyword}, '%') " +

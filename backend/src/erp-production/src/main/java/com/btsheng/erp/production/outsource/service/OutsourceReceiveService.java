@@ -2,6 +2,7 @@ package com.btsheng.erp.production.outsource.service;
 
 import com.btsheng.erp.core.model.Result;
 import com.btsheng.erp.core.web.AuditLog;
+import com.btsheng.erp.production.integration.client.BusinessQualityInspectionClient;
 import com.btsheng.erp.production.outsource.dto.OutsourceArriveRequest;
 import com.btsheng.erp.production.outsource.entity.CrmOutsourceOrder;
 import com.btsheng.erp.production.outsource.entity.CrmOutsourceStateHistory;
@@ -13,11 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * V1.3.5 · E12-S2 · 仓管扫 WW- 委外到货（SHIPPING/在途 → INSPECTED 待检）
+ * V104 · 委外工序返回自动生成 IPQC 待检（来源=委外）；整单委外生成 IQC
  */
 @Service
 public class OutsourceReceiveService {
@@ -31,12 +35,15 @@ public class OutsourceReceiveService {
 
     private final CrmOutsourceOrderMapper orderMapper;
     private final CrmOutsourceStateHistoryMapper stateHistoryMapper;
+    private final BusinessQualityInspectionClient qualityInspectionClient;
 
     @Autowired
     public OutsourceReceiveService(CrmOutsourceOrderMapper orderMapper,
-                                   CrmOutsourceStateHistoryMapper stateHistoryMapper) {
+                                   CrmOutsourceStateHistoryMapper stateHistoryMapper,
+                                   @Autowired(required = false) BusinessQualityInspectionClient qualityInspectionClient) {
         this.orderMapper = orderMapper;
         this.stateHistoryMapper = stateHistoryMapper;
+        this.qualityInspectionClient = qualityInspectionClient;
     }
 
     /** 归一化 WW-20260612-0001 → WW20260612-0001 */
@@ -102,7 +109,36 @@ public class OutsourceReceiveService {
         h.setOccurredAt(LocalDateTime.now());
         stateHistoryMapper.insert(h);
 
+        pushQualityPending(order, req.getActualQty(), userId);
+
         return Result.ok(order);
+    }
+
+    private void pushQualityPending(CrmOutsourceOrder order, int qty, Long userId) {
+        if (qualityInspectionClient == null || order == null) {
+            return;
+        }
+        try {
+            boolean processOutsource = order.getStepNo() != null && order.getStepNo() > 0;
+            Map<String, Object> body = new HashMap<>();
+            body.put("inspectSource", "OUTSOURCE");
+            body.put("sourceRef", "OUTSOURCE:" + order.getOutsourceNo());
+            body.put("materialCode", order.getMaterialCode());
+            body.put("workOrderNo", order.getWorkorderNo());
+            body.put("qty", qty);
+            if (processOutsource) {
+                body.put("inspectType", "IPQC");
+                body.put("processName", order.getProcessName() != null ? order.getProcessName()
+                        : "工序" + order.getStepNo());
+                body.put("remark", "委外工序返回自动生成过程检 · " + order.getOutsourceNo());
+            } else {
+                body.put("inspectType", "IQC");
+                body.put("remark", "整单委外返回自动生成来料检 · " + order.getOutsourceNo());
+            }
+            qualityInspectionClient.createPending(body);
+        } catch (Exception ignored) {
+            // 跨服务推送失败不阻塞到货
+        }
     }
 
     public Result<CrmOutsourceOrder> receiveByNo(String outsourceNo, OutsourceArriveRequest req, Long userId) {

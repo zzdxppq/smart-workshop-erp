@@ -1,10 +1,9 @@
 <template>
-  <ErpPageShell title="品质检验" description="IQC 来料 · IPQC 过程 · OQC 成品 · 委外检 — 合格率一眼可见。">
+  <ErpPageShell title="品质检验" description="IQC 来料 · IPQC 过程 · OQC 成品 — 合格率一眼可见。">
     <el-tabs v-model="currentTab" @tab-change="onTabChange">
       <el-tab-pane label="IQC 来料检" name="IQC" />
       <el-tab-pane label="IPQC 过程检" name="IPQC" />
       <el-tab-pane label="OQC 成品检" name="OQC" />
-      <el-tab-pane label="委外检" name="OUTSOURCE" />
     </el-tabs>
 
     <el-form :inline="true" class="erp-filter-bar">
@@ -23,18 +22,31 @@
           <el-option label="不合格" value="FAILED" />
         </el-select>
       </el-form-item>
+      <el-form-item v-if="currentTab === 'IPQC'" label="来源">
+        <el-select v-model="sourceFilter" placeholder="全部" clearable style="width: 120px" @change="reload">
+          <el-option label="全部" value="" />
+          <el-option label="厂内" value="INTERNAL" />
+          <el-option label="委外" value="OUTSOURCE" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button class="erp-btn-secondary" :loading="loading" @click="reload">查询</el-button>
         <el-button type="primary" class="erp-btn-primary" @click="goCreate">新建检验单</el-button>
         <el-button class="erp-btn-ghost" @click="goConcession">让步审批</el-button>
-        <el-button class="erp-btn-ghost" @click="goOutsource">委外检视图</el-button>
       </el-form-item>
     </el-form>
 
     <el-table v-loading="loading" class="erp-table" :data="inspections" stripe>
       <el-table-column prop="inspectionNo" label="检验单号" min-width="140" />
-      <el-table-column prop="type" label="类型" width="90" />
+      <el-table-column v-if="currentTab === 'IPQC'" prop="workOrderNo" label="工单号" min-width="130" />
+      <el-table-column v-if="currentTab === 'IPQC'" prop="processName" label="工序" min-width="100" />
       <el-table-column prop="materialCode" label="料号" min-width="120" />
+      <el-table-column v-if="currentTab === 'IPQC'" label="来源" width="88" align="center">
+        <template #default="{ row }">
+          <el-tag :type="sourceTagType(row)" size="small">{{ sourceLabel(row) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column v-else prop="type" label="类型" width="90" />
       <el-table-column prop="inspectionStatus" label="检验状态" width="110">
         <template #default="{ row }">
           <el-tag :type="statusTagType(row)">{{ inspectionStatusLabel(row) }}</el-tag>
@@ -98,6 +110,10 @@ interface InspectionRow {
   inspectionNo?: string
   type?: string
   materialCode?: string
+  workOrderNo?: string
+  processName?: string
+  inspectSource?: string
+  sourceLabel?: string
   inspectionStatus?: string
   status?: string
   result?: string
@@ -112,9 +128,10 @@ interface InspectionRow {
 const router = useRouter()
 const qualityStore = useQualityStore()
 const inspections = ref<InspectionRow[]>([])
-const currentTab = ref<'IQC' | 'IPQC' | 'OQC' | 'OUTSOURCE'>('IQC')
+const currentTab = ref<'IQC' | 'IPQC' | 'OQC'>('IQC')
 const keyword = ref('')
 const statusFilter = ref('')
+const sourceFilter = ref('')
 const pageNum = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -127,6 +144,7 @@ async function reload() {
       type: currentTab.value,
       keyword: keyword.value || undefined,
       status: statusFilter.value || undefined,
+      source: currentTab.value === 'IPQC' && sourceFilter.value ? sourceFilter.value : undefined,
       pageNum: pageNum.value,
       pageSize: pageSize.value,
     })
@@ -143,15 +161,14 @@ async function reload() {
 
 function onTabChange() {
   pageNum.value = 1
+  if (currentTab.value !== 'IPQC') {
+    sourceFilter.value = ''
+  }
   reload()
 }
 
 function goCreate() {
   router.push('/quality/inspection-create')
-}
-
-function goOutsource() {
-  router.push('/quality/outsource-inspection')
 }
 
 function goDetail(row: InspectionRow) {
@@ -177,6 +194,16 @@ function isPendingApproval(row: InspectionRow): boolean {
 
 function goConcession() {
   router.push('/quality/concession-approval')
+}
+
+function sourceLabel(row: InspectionRow): string {
+  if (row.sourceLabel) return row.sourceLabel
+  return row.inspectSource === 'OUTSOURCE' ? '委外' : '厂内'
+}
+
+function sourceTagType(row: InspectionRow): 'success' | 'warning' {
+  const src = row.inspectSource ?? (row.sourceLabel === '委外' ? 'OUTSOURCE' : 'INTERNAL')
+  return src === 'OUTSOURCE' ? 'warning' : 'success'
 }
 
 function inspectionStatusLabel(row: InspectionRow): string {

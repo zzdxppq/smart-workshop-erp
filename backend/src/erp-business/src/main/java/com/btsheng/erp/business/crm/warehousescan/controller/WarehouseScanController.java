@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -98,5 +99,18 @@ public class WarehouseScanController {
     @Operation(summary = "扫码追溯")
     public Result<List<CrmWarehouseScan>> getScanHistory(@PathVariable String barcodeNo) {
         return scanService.getScanHistory(barcodeNo);
+    }
+
+    @GetMapping("/outbound")
+    @Operation(summary = "出库记录列表（V1.3.9 补全）")
+    public Result<Map<String, Object>> listOutbound(
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "1") int page) {
+        int offset = Math.max(page - 1, 0) * size;
+        List<Map<String, Object>> rows = scanService.listOutboundScans(size, offset);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", rows);
+        result.put("total", rows.size());
+        return Result.ok(result);
     }
 }

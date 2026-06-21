@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -141,5 +142,15 @@ public class WarehouseLocationController {
             @RequestBody StocktakeCreateRequest req,
             @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
         return stocktakeService.createStocktake(req, userId);
+    }
+
+    @Operation(summary = "待入库列表（V1.3.9 补全）")
+    @GetMapping("/inbound/pending")
+    public Result<Map<String, Object>> listInboundPending(
+            @RequestParam(defaultValue = "20") int size) {
+        List<Map<String, Object>> items = locationService.listInboundPending(size);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", items);
+        return Result.ok(result);
     }
 }

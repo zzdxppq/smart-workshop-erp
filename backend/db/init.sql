@@ -986,7 +986,8 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `me
 (203, 2, 'sales.quotes',       '报价单',   '/sales/quotes',              'MENU', 3),
 (204, 2, 'sales.quote-approval','报价审批','/sales/quotes/approval',     'MENU', 4),
 (205, 2, 'sales.orders',       '销售订单', '/sales/orders',              'MENU', 5),
-(206, 2, 'sales.contracts',    '合同回款', '/sales/contracts',           'MENU', 6);
+(206, 2, 'sales.contracts',    '合同回款', '/sales/contracts',           'MENU', 6),
+(207, 2, 'sales.quote-templates', '报价范本', '/sales/quote-templates',    'MENU', 7);
 
 -- ---------- 生产 ----------
 INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`) VALUES
@@ -4868,7 +4869,8 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `me
 (203, 2, 'sales.quotes',       '报价单',   '/sales/quotes',              'MENU', 3),
 (204, 2, 'sales.quote-approval','报价审批','/sales/quotes/approval',     'MENU', 4),
 (205, 2, 'sales.orders',       '销售订单', '/sales/orders',              'MENU', 5),
-(206, 2, 'sales.contracts',    '合同回款', '/sales/contracts',           'MENU', 6);
+(206, 2, 'sales.contracts',    '合同回款', '/sales/contracts',           'MENU', 6),
+(207, 2, 'sales.quote-templates', '报价范本', '/sales/quote-templates',    'MENU', 7);
 
 -- ---------- 生产 ----------
 INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`) VALUES
@@ -7564,6 +7566,26 @@ UPDATE `sys_menu` SET `menu_name` = '总经理驾驶舱' WHERE `menu_code` = 'da
 -- 兼容旧 seed：mod.material 若仍存在则隐藏或合并排序
 UPDATE `sys_menu` SET `sort` = 35, `menu_name` = '工程' WHERE `menu_code` = 'mod.material' AND `menu_type` = 'MODULE';
 
+
+-- include: V108__drawing_quote_approval_status.sql
+-- V108 · 客户图号审批状态：PENDING（待审批）/ APPROVED（已审批，可建单）
+USE `cnc_business`;
+
+SET @col = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'crm_drawing'
+    AND COLUMN_NAME = 'quote_approval_status'
+);
+SET @sql = IF(
+  @col = 0,
+  'ALTER TABLE `crm_drawing` ADD COLUMN `quote_approval_status` VARCHAR(16) DEFAULT NULL COMMENT ''PENDING（待审批）/ APPROVED（已审批，可建单）'' AFTER `is_new`',
+  'SELECT ''skip crm_drawing.quote_approval_status'' AS note'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 -- include: V60a__cnc_production_schema.sql (footer ensure)
 -- ============================================================
 -- V60a · cnc_production 物理库 · 生产域表结构（LIKE cnc_business）
@@ -7713,7 +7735,7 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `me
 INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`) VALUES
 (411, 4, 'eng.order-conversion',  '订单工程转化', '/engineering/order-conversion',  'MENU', 1),
 (412, 4, 'eng.quote-confirmation','报价工艺定义', '/engineering/quote-confirmation','MENU', 2),
-(413, 4, 'eng.data',              '图纸与料号',     '/engineering/data',              'MENU', 3),
+(413, 4, 'eng.data',              '工程数据',       '/engineering/data',              'MENU', 3),
 (414, 4, 'eng.my-tasks',          '待办任务中心',   '/engineering/my-tasks',          'MENU', 4);
 
 -- 品质子菜单（5 个：qc.workbench + qc.fa/cmm/defect/pickup）
@@ -8012,6 +8034,103 @@ SET @sql_pay = IF(@col_pay_pos > 0,
      ADD COLUMN full_attendance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''全勤奖'' AFTER bonus,
      ADD COLUMN social_insurance DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''社保扣款'' AFTER deduction');
 PREPARE stmt FROM @sql_pay; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+
+-- include: V104__quality_ipqc_source_merge_outsource.sql
+-- V104 · 委外检合并至 IPQC：来源标识 + 工程菜单更名 + 清理委外检菜单
+USE `cnc_platform`;
+
+UPDATE `sys_menu` SET `menu_name` = '工程数据' WHERE `menu_code` = 'eng.data';
+
+DELETE rp FROM `sys_role_permission` rp
+INNER JOIN `sys_menu` m ON m.id = rp.menu_id
+WHERE m.`menu_code` IN ('qc.outsource', 'quality.outsource-inspection');
+
+DELETE FROM `sys_menu`
+WHERE `menu_code` IN ('qc.outsource', 'quality.outsource-inspection');
+
+USE `cnc_business`;
+
+SET @col_inspect_source = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'crm_quality_inspection'
+    AND COLUMN_NAME = 'inspect_source'
+);
+SET @sql_inspect_source = IF(
+  @col_inspect_source = 0,
+  'ALTER TABLE `crm_quality_inspection`
+     ADD COLUMN `inspect_source` VARCHAR(16) NOT NULL DEFAULT ''INTERNAL''
+       COMMENT ''INTERNAL（厂内）/OUTSOURCE（委外）'' AFTER `source_ref`',
+  'SELECT ''skip crm_quality_inspection.inspect_source'' AS note'
+);
+PREPARE stmt FROM @sql_inspect_source;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_inspect_source = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'crm_quality_inspection'
+    AND INDEX_NAME = 'idx_inspection_inspect_source'
+);
+SET @sql_idx = IF(
+  @idx_inspect_source = 0,
+  'CREATE INDEX `idx_inspection_inspect_source` ON `crm_quality_inspection` (`inspect_type`, `inspect_source`)',
+  'SELECT ''skip idx_inspection_inspect_source'' AS note'
+);
+PREPARE stmt FROM @sql_idx;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+
+-- include: V105__production_menu_restructuring.sql
+-- V105 · 生产菜单结构调整：职责分组，删除冗余父级菜单
+USE `cnc_platform`;
+
+-- 删除旧的冗余父级菜单（已由 router menuGroup 替代）
+-- prod.outsource-mgr：/production/outsource-mgr → /production/outsource（redirect 已设）
+DELETE rp FROM `sys_role_permission` rp
+INNER JOIN `sys_menu` m ON m.id = rp.menu_id
+WHERE m.`menu_code` IN ('prod.outsource-mgr', 'prod.mrp');
+DELETE FROM `sys_menu`
+WHERE `menu_code` IN ('prod.outsource-mgr', 'prod.mrp');
+
+
+-- include: V106__warehouse_menu_consolidation.sql
+-- V106 · 仓储菜单合并：库存查询+批次列表+库存 → 库存管理（Tab）
+USE `cnc_platform`;
+
+-- 删除旧冗余菜单（合并到库存管理）
+DELETE rp FROM `sys_role_permission` rp
+INNER JOIN `sys_menu` m ON m.id = rp.menu_id
+WHERE m.`menu_code` IN ('wh.stock-query', 'wh.batches', 'wh.inventory');
+DELETE FROM `sys_menu`
+WHERE `menu_code` IN ('wh.stock-query', 'wh.batches', 'wh.inventory');
+
+-- 更新库存预警分组（独立分组）
+UPDATE `sys_menu` SET `menu_name` = '库存预警' WHERE `menu_code` = 'wh.alert';
+
+-- 排序调整：库存管理=3，库存预警=4，盘点单=5
+UPDATE `sys_menu` SET `sort` = 3 WHERE `menu_code` = 'wh.inventory-mgr';
+UPDATE `sys_menu` SET `sort` = 4 WHERE `menu_code` = 'wh.alert';
+UPDATE `sys_menu` SET `sort` = 5 WHERE `menu_code` = 'wh.stocktake';
+
+
+-- include: V107__audit_log_menu.sql
+-- V107 · 审计日志菜单：系统管理分组下新增「审计日志」菜单项
+USE `cnc_platform`;
+
+-- 新增审计日志菜单（挂在 adm 用户管理同级）
+INSERT IGNORE INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`)
+VALUES (913, 9, 'adm.audit-logs', '审计日志', '/admin/audit-logs', 'MENU', 1);
+
+-- SYS_ADMIN 角色默认授予审计日志权限（INSERT IGNORE 不影响现网）
+-- sys_role_permission 表结构：(role_id, menu_id, action)，无 permission 列
+INSERT IGNORE INTO `sys_role_permission` (`role_id`, `menu_id`, `action`)
+SELECT 1, m.id, 'view'
+FROM `sys_menu` m
+WHERE m.menu_code = 'adm.audit-logs';
 
 SET FOREIGN_KEY_CHECKS = 1;
 

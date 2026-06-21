@@ -34,4 +34,13 @@ public interface CrmWarehouseScanMapper extends BaseMapper<CrmWarehouseScan> {
                                            @Param("barcodeNo") String barcodeNo,
                                            @Param("limit") int limit,
                                            @Param("offset") int offset);
+
+    @Select("SELECT scan_no AS scanNo, scan_type AS scanType, barcode_no AS barcodeNo, " +
+            "material_code AS materialCode, location_code AS locationCode, qty, workorder_no AS workorderNo, " +
+            "batch_no AS batchNo, sync_status AS syncStatus, scanned_by AS scannedBy, " +
+            "scanned_at AS scannedAt " +
+            "FROM crm_warehouse_scan " +
+            "WHERE scan_type = 'OUTBOUND' " +
+            "ORDER BY scanned_at DESC LIMIT #{limit} OFFSET #{offset}")
+    List<Map<String, Object>> selectOutboundScans(@Param("limit") int limit, @Param("offset") int offset);
 }

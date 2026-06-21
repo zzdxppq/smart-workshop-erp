@@ -13,4 +13,7 @@ public interface CrmQuoteItemMapper extends BaseMapper<CrmQuoteItem> {
 
     @Select("SELECT * FROM crm_quote_item WHERE quote_id = #{quoteId} ORDER BY sort ASC, id ASC")
     List<CrmQuoteItem> selectByQuoteId(@Param("quoteId") Long quoteId);
+
+    @Select("SELECT drawing_id FROM crm_quote_item WHERE quote_id = #{quoteId} AND drawing_id IS NOT NULL")
+    List<Long> selectDrawingIdsByQuoteId(@Param("quoteId") Long quoteId);
 }

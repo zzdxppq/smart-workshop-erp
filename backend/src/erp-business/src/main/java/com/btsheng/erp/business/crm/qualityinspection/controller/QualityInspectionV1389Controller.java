@@ -49,9 +49,10 @@ public class QualityInspectionV1389Controller {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String source,
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "20") int pageSize) {
-        return service.list(type, keyword, status, pageNum, pageSize);
+        return service.list(type, keyword, status, source, pageNum, pageSize);
     }
 
     @PostMapping("/{id}/submit")

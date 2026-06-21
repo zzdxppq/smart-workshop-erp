@@ -231,6 +231,7 @@ public class ProductionScanService {
             body.put("materialCode", wo != null ? wo.getMaterialCode() : null);
             body.put("qty", report.getReportedQty());
             body.put("sourceRef", "REPORT:" + report.getReportNo());
+            body.put("inspectSource", "INTERNAL");
             body.put("remark", "报工完成自动生成过程检 · " + report.getWorkorderNo());
             qualityInspectionClient.createPending(body);
         } catch (Exception ignored) {

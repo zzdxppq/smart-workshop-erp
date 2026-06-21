@@ -147,7 +147,7 @@
             </el-button>
           </el-form-item>
 
-          <p class="login-tips">测试账号：admin / 123456</p>
+          <p class="login-tips">测试管理账号：admin / admin123</p>
         </el-form>
 
         <p class="login-footer">河南晓评信息科技有限公司 技术支持</p>

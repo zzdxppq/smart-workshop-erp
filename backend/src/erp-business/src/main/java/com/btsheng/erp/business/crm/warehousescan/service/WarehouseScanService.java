@@ -280,14 +280,22 @@ public class WarehouseScanService {
     }
 
     /**
-     * 库位推荐（P2 修补 3�?     */
+     * 库位推荐（P2 修补 3）
+     */
     public Result<String> recommendLocation(String materialCode) {
-        // 简化：�?warehouse 选容量最大的 A01 �?
-            List<CrmWarehouseLocation> locs = locationMapper.selectByWarehouse("WH-A");
+        // 简化：选容量最大的 A01 区
+        List<CrmWarehouseLocation> locs = locationMapper.selectByWarehouse("WH-A");
         if (locs == null || locs.isEmpty()) {
             return Result.fail(40404, "NO_AVAILABLE_LOCATION");
         }
         return Result.ok(locs.get(0).getLocationCode());
+    }
+
+    /**
+     * 出库记录列表（V1.3.9 补全）
+     */
+    public List<Map<String, Object>> listOutboundScans(int limit, int offset) {
+        return scanMapper.selectOutboundScans(limit, offset);
     }
 
     // ====== 私有辅助 ======

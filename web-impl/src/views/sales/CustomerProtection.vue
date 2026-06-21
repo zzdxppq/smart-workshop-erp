@@ -1,6 +1,19 @@
 <template>
   <div v-loading="loading" class="customer-protection">
     <h2>客户保护管理</h2>
+
+    <el-alert type="info" :closable="false" style="margin-bottom: 16px">
+      <template #title>
+        <strong>功能说明</strong>
+      </template>
+      <ul style="margin: 8px 0 0 0; padding-left: 18px; font-size: 13px; line-height: 1.8">
+        <li>客户保护用于限制哪些业务员可以查看和跟进特定客户，防止撞单和资源冲突。</li>
+        <li>保护后的客户只有指定的保护人（业务员）可以报价和创建订单，其他人员无法操作。</li>
+        <li>保护期限到期后，客户自动释放为公共资源，所有业务员均可跟进。</li>
+        <li>保护人可随时手动解除保护，将客户释放给其他业务员。</li>
+      </ul>
+    </el-alert>
+
     <el-table :data="rows" stripe border>
       <el-table-column prop="customerCode" label="客户编码" />
       <el-table-column prop="name" label="名称" />

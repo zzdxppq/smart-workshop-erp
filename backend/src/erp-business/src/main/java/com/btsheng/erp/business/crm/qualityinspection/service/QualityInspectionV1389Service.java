@@ -82,7 +82,8 @@ public class QualityInspectionV1389Service {
         return Result.ok(buildResponse(q.getId(), finalized.getData()));
     }
 
-    public Result<Map<String, Object>> list(String type, String keyword, String status, int pageNum, int pageSize) {
+    public Result<Map<String, Object>> list(String type, String keyword, String status, String source,
+                                            int pageNum, int pageSize) {
         String inspectType = mapTabType(type);
         Result<List<CrmQualityInspection>> raw = inspectionService.list(inspectType, null, null, null);
         if (raw.getCode() != 0) {
@@ -95,6 +96,7 @@ public class QualityInspectionV1389Service {
                         || (q.getMaterialCode() != null && q.getMaterialCode().contains(keyword))
                         || (q.getWorkOrderNo() != null && q.getWorkOrderNo().contains(keyword)))
                 .filter(q -> matchesStatusFilter(q, status))
+                .filter(q -> matchesSourceFilter(q, source, inspectType))
                 .collect(Collectors.toList());
 
         int size = pageSize > 0 ? pageSize : 20;
@@ -143,6 +145,19 @@ public class QualityInspectionV1389Service {
 
     public Result<List<Map<String, Object>>> getConcessionApprovals(Long id) {
         return inspectionService.getConcessionApprovals(id);
+    }
+
+    private boolean matchesSourceFilter(CrmQualityInspection q, String source, String inspectType) {
+        if (source == null || source.isBlank()) {
+            return true;
+        }
+        if (!QualityInspectionService.TYPE_IPQC.equals(inspectType)) {
+            return true;
+        }
+        String actual = q.getInspectSource() == null || q.getInspectSource().isBlank()
+                ? QualityInspectionService.SOURCE_INTERNAL
+                : q.getInspectSource().trim().toUpperCase();
+        return actual.equalsIgnoreCase(source.trim());
     }
 
     private boolean matchesStatusFilter(CrmQualityInspection q, String status) {
@@ -284,6 +299,8 @@ public class QualityInspectionV1389Service {
         row.put("materialCode", q.getMaterialCode());
         row.put("workOrderNo", q.getWorkOrderNo());
         row.put("processName", q.getProcessName());
+        row.put("inspectSource", resolveListSource(q));
+        row.put("sourceLabel", sourceLabel(q.getInspectSource()));
         row.put("qty", q.getInspectQty());
         row.put("passQty", q.getPassedQty());
         row.put("failQty", q.getFailedQty());
@@ -301,5 +318,19 @@ public class QualityInspectionV1389Service {
             return "PENDING";
         }
         return result;
+    }
+
+    private static String resolveListSource(CrmQualityInspection q) {
+        if (q.getInspectSource() == null || q.getInspectSource().isBlank()) {
+            return QualityInspectionService.SOURCE_INTERNAL;
+        }
+        return q.getInspectSource().trim().toUpperCase();
+    }
+
+    static String sourceLabel(String inspectSource) {
+        if (QualityInspectionService.SOURCE_OUTSOURCE.equalsIgnoreCase(inspectSource)) {
+            return "委外";
+        }
+        return "厂内";
     }
 }

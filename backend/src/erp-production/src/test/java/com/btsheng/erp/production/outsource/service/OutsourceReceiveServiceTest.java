@@ -25,7 +25,7 @@ class OutsourceReceiveServiceTest {
     void setUp() {
         orderMapper = mock(CrmOutsourceOrderMapper.class);
         stateHistoryMapper = mock(CrmOutsourceStateHistoryMapper.class);
-        service = new OutsourceReceiveService(orderMapper, stateHistoryMapper);
+        service = new OutsourceReceiveService(orderMapper, stateHistoryMapper, null);
     }
 
     @Test

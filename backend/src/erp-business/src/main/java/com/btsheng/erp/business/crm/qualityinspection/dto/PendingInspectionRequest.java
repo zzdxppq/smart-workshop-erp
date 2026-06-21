@@ -20,5 +20,7 @@ public class PendingInspectionRequest {
     private Integer qty;
     @Schema(description = "幂等键，如 SCAN:SC20260620-0001")
     private String sourceRef;
+    @Schema(description = "INTERNAL（厂内）/OUTSOURCE（委外），自动推送时必填")
+    private String inspectSource;
     private String remark;
 }

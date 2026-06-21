@@ -61,6 +61,10 @@ public class QualityInspectionService {
     public static final String TYPE_IPQC = "IPQC";
     public static final String TYPE_OQC = "OQC";
 
+    /** IPQC 任务来源：厂内工序报工 / 委外工序返回 */
+    public static final String SOURCE_INTERNAL = "INTERNAL";
+    public static final String SOURCE_OUTSOURCE = "OUTSOURCE";
+
     public static final String SEVERITY_INFO = "INFO";
     public static final String SEVERITY_WARN = "WARN";
     public static final String SEVERITY_ERROR = "ERROR";
@@ -163,6 +167,7 @@ public class QualityInspectionService {
         insp.setDefectRate(BigDecimal.ZERO);
         insp.setResult(STATUS_DRAFT);
         insp.setRemark(req.getRemark());
+        insp.setInspectSource(SOURCE_INTERNAL);
         insp.setCreatedBy(operatorUserId);
         insp.setCreatedAt(LocalDateTime.now());
         insp.setUpdatedAt(LocalDateTime.now());
