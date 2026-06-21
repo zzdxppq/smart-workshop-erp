@@ -1,0 +1,21 @@
+# Bootstrap 阶段（spring-cloud-starter-bootstrap）早于 application.yml 加载。
+# Nacos Config 客户端此时只读 Environment；NACOS_SERVER 不会自动映射到
+# spring.cloud.nacos.config.server-addr，必须在此或 env 中显式配置。
+spring:
+  application:
+    name: erp-platform
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:dev}
+        file-extension: yaml
+        import-check:
+          enabled: false
+      discovery:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:dev}

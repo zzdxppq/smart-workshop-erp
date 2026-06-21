@@ -1,0 +1,88 @@
+# ============================================================
+# Web-Impl typecheck:ci · Sprint 12 CONDITIONAL GO 委派#2
+# ============================================================
+# 工作站：QA 商鞅（沙箱外 Windows 10 / Git Bash）
+# 项目：smart-workshop-erp / V1.3.8 Sprint 12
+# 范围：12.1/12.2/12.3/12.4 codegen 4 service + 18 model
+#       + 148 既有 operations（V1.3.8 Sprint 10 已 ship baseline）
+# 期望：gen 153 文件 + typecheck 双 0 + build 0 · dist 标题 V1.3.8
+# 截止：2026-06-16 18:00
+# 责任：QA 商鞅
+# 关联：sprint12-integration-test-report.md §3.1 委派 2
+# 前置：PM 决策#1（web-impl git remote 接入）已生效
+#       PM 决策#3（7 状态机 enum drift 对齐）已生效
+# ============================================================
+
+# [A] 环境准备 + 同步（PM 决策#1 落地验证）
+cd E:/claude/smart-workshop-erp/web-impl
+git pull origin main                       # 期望：Already up to date
+git status                                 # 期望：clean working tree
+git remote -v                              # 期望：origin 配通
+node -v                                    # 期望：v20.x LTS
+npm -v                                     # 期望：10.x
+
+# [B] 依赖安装
+npm ci                                     # 期望：added xxx packages · 0 vulnerabilities
+npx playwright install --with-deps chromium # 期望：chromium 1.4xx installed
+
+# [C] codegen（步骤 1）
+npm run gen:api 2>&1 | tee gen-api.log
+# 期望：gen 153 文件（4 service + 18 model + 131 既有）
+grep -E "Wrote.*\.ts" gen-api.log | wc -l  # 期望：153
+
+# [D] typecheck（步骤 2）
+npm run typecheck 2>&1 | tee typecheck.log
+echo "exit code: $?"                        # 期望：0
+
+# 期望：0 错误 · 0 输出（理想）
+grep -E "error TS[0-9]+" typecheck.log | wc -l   # 期望：0
+grep -cE "Found [0-9]+ errors" typecheck.log     # 期望：0 / No errors
+
+# [E] typecheck:ci（步骤 3 · 含 git diff --exit-code gate）
+npm run typecheck:ci 2>&1 | tee typecheck-ci.log
+echo "exit code: $?"                        # 期望：0
+
+# 期望：vue-tsc --noEmit 退出 0 + git diff --exit-code src/api/generated 0
+grep -E "vue-tsc|git diff" typecheck-ci.log
+# 期望：
+# > vue-tsc --noEmit
+# > git diff --exit-code src/api/generated
+# （无任何 diff 输出）
+
+# [F] 拷贝证据归档
+cp gen-api.log        ../docs/qa/evidence/sprint12-test-execution-2026-06-16/web-impl-gen-api.log
+cp typecheck.log      ../docs/qa/evidence/sprint12-test-execution-2026-06-16/web-impl-typecheck-result.log
+cp typecheck-ci.log   ../docs/qa/evidence/sprint12-test-execution-2026-06-16/web-impl-typecheck-ci-result.log
+
+# ============================================================
+# V 类型 5 失败路径（typecheck:ci / web-impl）
+# ============================================================
+# V 类型 | 步骤 | 症状                              | 根因                       | SLA   | 修复路径
+# -------|------|-----------------------------------|----------------------------|-------|--------------------------------
+# V1     | 1    | codegen 退出非 0                  | openapi.yaml 漂移/重复键   | 24h   | 通知 PM + dev · 修 openapi.yaml
+# V2     | 2    | typecheck 4 错误（PM 决策#3 残留）| enum drift 不全            | 12h   | 修 currentOrder/stateSteps/composable
+# V3     | 2    | typecheck 其他错误（any 残留）    | 5 文件 any 替换遗漏        | 12-24h| dev 修 .vue any · strict null
+# V4     | 3    | typecheck:ci diff 失败            | generated/ 未 commit       | 6h    | 通知 dev commit codegen 产物
+# V5     | 4    | build 失败（vite/RollupError）    | vite 配置/资源引用/peer    | 12-24h| dev 修 vite · DevOps npm legacy-peer-deps
+#
+# 升级：V1-V5 仍 FAIL → SM 萧何 → 评估推迟 V1.3.8 FAT
+# ============================================================
+
+# [G] 失败错误登记（FAIL 时填写）
+# -----------------------------------------------------------------
+# V 类型  错误码      文件:行           错误摘要             通知对象    修复状态   时间
+# -----------------------------------------------------------------
+# V_     TS_____     __:__            ________________    ________   ________  _______
+# -----------------------------------------------------------------
+
+# [H] 验收清单
+# [ ] npm run gen:api · 生成 153 文件
+# [ ] npm run typecheck · 退出 0
+# [ ] npm run typecheck · 0 错误
+# [ ] npm run typecheck:ci · 退出 0
+# [ ] git diff src/api/generated · 0 变更
+# [ ] 归档 typecheck-ci.log
+
+# [I] 跑完签字
+# QA 商鞅：________________  时间：2026-06-16 __:__
+# 复核 SM 萧何：________________  时间：2026-06-16 __:__

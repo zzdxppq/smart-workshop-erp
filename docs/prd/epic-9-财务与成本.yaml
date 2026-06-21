@@ -1,0 +1,77 @@
+epic_id: 9
+title: "财务与成本"
+description: |
+  WHY：财务最痛的是"业务数据和财务数据对不上"。
+       V1.1 让销售订单自动转应收、采购订单自动转应付、工单自动算成本。
+
+stories:
+  - id: "9.1"
+    title: "应收应付"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 2
+    acceptance_criteria_summary: |
+      - AC-9.1.1: ?
+      - AC-9.1.2: ?
+    provides_apis:
+      - "GET  /api/v1/finance/receivables"
+      - "GET  /api/v1/finance/payables"
+      - "GET  /api/v1/finance/aging"
+
+  - id: "9.2"
+    title: "成本核算"
+    estimated_complexity: high
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 1
+    acceptance_criteria_summary: |
+      - AC-9.2.1: ?
+    provides_apis:
+      - "GET  /api/v1/workorders/{id}/cost"
+      - "POST /api/v1/cost/calculate"
+      - "GET  /api/v1/cost/{workorderId}"
+
+  - id: "9.3"
+    title: "回款控制"
+    estimated_complexity: low
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 2
+    acceptance_criteria_summary: |
+      - AC-9.3.1: ?
+      - AC-9.3.2: ?
+    provides_apis:
+      - "POST /api/v1/payments"
+      - "POST /api/v1/payments/{id}/submit"
+      - "GET  /api/v1/payments/pending"
+
+  - id: "9.4"
+    title: "利润分析"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 2
+    acceptance_criteria_summary: |
+      - AC-9.4.1: ?
+      - AC-9.4.2: ?
+    provides_apis:
+      - "GET /api/v1/profit/orders?month="
+      - "GET /api/v1/profit/customers?month="
+      - "GET /api/v1/profit/products?month="
+      - "GET /api/v1/profit/alerts?level="
+      - "PUT /api/v1/profit/thresholds"
+
+  - id: "9.5"
+    title: "料号成本聚合视图（V1.3.4 新增）"
+    estimated_complexity: high
+    priority: P0
+    repository_type: backend
+    acceptance_criteria_count: 2
+    acceptance_criteria_summary: |
+      - AC-9.5.1: ?
+      - AC-9.5.2: ?
+    provides_apis:
+      - "GET /api/v1/cost/by-material?materialNo=&from=&to=&customerId="
+      - "POST /api/v1/cost/by-material/refresh"
+      - "GET /api/v1/cost/by-material/export?...&format=excel|pdf"

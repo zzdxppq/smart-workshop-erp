@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- V1.3.8 Sprint 8 Story 8.5 · 物料码扫码 Fragment layout -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="物料码扫码"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="可扫二维码，也可手动输入 WL- 物料码"
+            android:textSize="12sp"
+            android:paddingBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnScanCamera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="打开摄像头扫码" />
+
+        <EditText
+            android:id="@+id/etBarcode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="或手动输入 WL-DEMO-STEEL-001" />
+
+        <Button
+            android:id="@+id/btnParse"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="解析物料码" />
+
+        <LinearLayout
+            android:id="@+id/layoutResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#F5F5F5"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:visibility="gone">
+
+            <TextView android:id="@+id/tvBarcode" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView android:id="@+id/tvMaterialId" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView android:id="@+id/tvMaterialNo" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView android:id="@+id/tvBatchId" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView android:id="@+id/tvBatchNo" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView android:id="@+id/tvArrivedAt" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView android:id="@+id/tvQualityStatus" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="库位编码（入库必填）"
+            android:visibility="gone" />
+
+        <EditText
+            android:id="@+id/etWorkorder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="工单号（出库必填）"
+            android:visibility="gone" />
+
+        <EditText
+            android:id="@+id/etQty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="数量"
+            android:inputType="number"
+            android:text="1"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnSubmit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="提交"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvOpResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="12dp"
+            android:textColor="#2E7D32"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:textColor="#D32F2F"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,92 @@
+epic_id: 6
+title: "委外加工深化"
+description: |
+  WHY：CNC 加工厂 30%-50% 工序是委外（氧化/电镀/喷涂/热处理/三次元）。
+           对账是最大的痛点：3 个月微信记录翻一遍。V1.1 让对账
+           像网购退货一样简单。
+
+stories:
+  - id: "6.1"
+    title: "月度对账 + 厂商签字拍照上传（V1.3.6 整章改版）"
+    estimated_complexity: high
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/outsource/reconcile"
+      - "GET  /api/v1/outsource/reconcile?month=&vendorId="
+      - "GET  /api/v1/outsource/reconcile/{id}"
+      - "POST /api/v1/outsource/reconcile/{id}/send-email"
+      - "POST /api/v1/outsource/reconcile/{id}/upload-signature"
+
+  - id: "6.2"
+    title: "工序/整单委外灵活切换"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/workorders/{id}/process/{seq}/outsource"
+      - "POST /api/v1/workorders/{id}/outsource-all"
+      - "GET /api/v1/workorders/{id}"
+
+  - id: "6.3"
+    title: "自动调取委外历史价"
+    estimated_complexity: low
+    priority: P1
+    repository_type: backend
+    provides_apis:
+      - "GET /api/v1/outsource/history-price?vendorId=&processName="
+
+  - id: "6.4"
+    title: "委外质检"
+    estimated_complexity: low
+    priority: P1
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/outsource/{id}/inspect"
+      - "GET /api/v1/outsource/{id}"
+
+  - id: "6.5"
+    title: "委外订单 7 状态机（V1.3.4 新增）"
+    estimated_complexity: high
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "GET  /api/v1/outsource/{id}/state-machine"
+      - "POST /api/v1/outsource/{id}/transit"
+      - "GET  /api/v1/outsource/state-matrix"
+      - "POST /api/v1/outsource/{id}/quality-result"
+      - "POST /api/v1/outsource/{id}/inbound"
+
+  - id: "6.6"
+    title: "返修闭环 + 次数预警（V1.3.4 新增）"
+    estimated_complexity: medium
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/outsource/{id}/rework"
+      - "GET  /api/v1/outsource/{id}/rework-history"
+      - "GET  /api/v1/outsource/rework-alerts"
+      - "POST /api/v1/outsource/rework-alerts/{id}/ack"
+      - "PUT  /api/v1/outsource/rework-alert-config"
+
+  - id: "6.7"
+    title: "委外历史交期预估（V1.3.4 新增）"
+    estimated_complexity: low
+    priority: P1
+    repository_type: backend
+    provides_apis:
+      - "GET /api/v1/outsource/estimated-delivery?vendorId=&processName=&orderDate="
+      - "GET /api/v1/vendors/{id}/delivery-stats?processName=&window=12m"
+      - "PUT /api/v1/vendors/{id}/delivery-sample"
+      - "GET /api/v1/outsource?vendorId=&processName=&limit=3"
+
+  - id: "6.8"
+    title: "厂商资料完善（V1.3.6 新增 / V1.3.7 改版：电话改选填 + 通知偏好固定 163 邮箱）"
+    estimated_complexity: low
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/vendors"
+      - "GET  /api/v1/vendors"
+      - "GET  /api/v1/vendors/{id}"
+      - "PUT  /api/v1/vendors/{id}"

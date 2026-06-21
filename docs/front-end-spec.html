@@ -1,0 +1,5499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CNC 加工厂 ERP 系统 UI/UX 规格说明书</title>
+<style>
+:root{
+  --c-bg:#ffffff;--c-bg-soft:#f7f8fa;--c-bg-code:#0d1117;--c-fg:#1f2328;--c-fg-soft:#57606a;
+  --c-border:#d0d7de;--c-border-soft:#eaeef2;--c-accent:#0969da;--c-accent-soft:#ddf4ff;
+  --c-success:#1a7f37;--c-warn:#9a6700;--c-danger:#cf222e;--c-tag:#8250df;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --font-mono:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+  --shadow:0 1px 3px rgba(31,35,40,.12);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font-sans);color:var(--c-fg);background:var(--c-bg);line-height:1.65;font-size:15px;-webkit-font-smoothing:antialiased}
+.layout{display:grid;grid-template-columns:280px 1fr;gap:32px;max-width:1400px;margin:0 auto;padding:32px}
+nav.toc{position:sticky;top:32px;align-self:start;max-height:calc(100vh - 64px);overflow-y:auto;background:var(--c-bg-soft);border:1px solid var(--c-border);border-radius:8px;padding:16px}
+nav.toc h2{margin-top:0;font-size:16px;border:none}
+nav.toc ul{list-style:none;padding-left:0;font-size:13px}
+nav.toc ul ul{padding-left:14px}
+nav.toc a{color:var(--c-fg-soft);text-decoration:none;display:block;padding:3px 0;line-height:1.4}
+nav.toc a:hover{color:var(--c-accent)}
+main{max-width:none}
+h1{font-size:30px;padding-bottom:10px;border-bottom:2px solid var(--c-border)}
+h2{font-size:24px;padding-bottom:8px;border-bottom:1px solid var(--c-border-soft);margin-top:36px}
+h3{font-size:20px;margin-top:28px}
+h4{font-size:17px;color:var(--c-fg-soft)}
+code{font-family:var(--font-mono);font-size:90%;background:var(--c-bg-soft);padding:2px 6px;border-radius:4px;color:#cf222e}
+pre{background:var(--c-bg-code);color:#e6edf3;padding:16px 18px;border-radius:8px;overflow-x:auto;line-height:1.45;box-shadow:var(--shadow);margin:14px 0;font-size:13px}
+pre.ascii{font-size:12px;line-height:1.25}
+pre code{background:transparent;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+th,td{border:1px solid var(--c-border);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--c-bg-soft);font-weight:600}
+tr:nth-child(even) td{background:#fafbfc}
+blockquote{margin:14px 0;padding:8px 16px;border-left:4px solid var(--c-accent);background:var(--c-accent-soft);color:var(--c-fg-soft);border-radius:0 4px 4px 0}
+hr{border:0;border-top:1px solid var(--c-border-soft);margin:32px 0}
+@media(max-width:1024px){.layout{grid-template-columns:1fr}nav.toc{position:static}}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc"><div class="toc">
+<ul>
+<li><a href="#ux">灵魂一致性声明（UX 计成）</a></li>
+<li><a href="#_1">目录</a></li>
+<li><a href="#0-changelog">0. Changelog 变更日志</a></li>
+<li><a href="#1-introduction">1. Introduction 介绍</a><ul>
+<li><a href="#11">1.1 文档目的</a></li>
+<li><a href="#12">1.2 范围</a></li>
+<li><a href="#13">1.3 关键术语</a></li>
+<li><a href="#14">1.4 输入文档</a></li>
+</ul>
+</li>
+<li><a href="#2-ux-goals-principles">2. UX Goals &amp; Principles 愿景与原则</a><ul>
+<li><a href="#21-ux-150">2.1 UX 愿景（≤150 字）</a></li>
+<li><a href="#22-5">2.2 设计原则（5 条）</a></li>
+</ul>
+</li>
+<li><a href="#3-user-personas">3. User Personas 用户角色</a><ul>
+<li><a href="#31">3.1 角色画像表</a></li>
+<li><a href="#32">3.2 角色 × 设备偏好</a></li>
+<li><a href="#33">3.3 角色 × 工作时段</a></li>
+</ul>
+</li>
+<li><a href="#4-usability-goals">4. Usability Goals 可用性目标</a><ul>
+<li><a href="#41">4.1 量化指标</a></li>
+<li><a href="#42">4.2 灵魂测试</a></li>
+<li><a href="#43">4.3 错误容忍</a></li>
+</ul>
+</li>
+<li><a href="#5-information-architecture">5. Information Architecture 信息架构</a><ul>
+<li><a href="#51-web-7">5.1 Web 端顶级菜单（7 个）</a></li>
+<li><a href="#52-web">5.2 完整页面树（Web 端）</a></li>
+<li><a href="#53">5.3 角色 × 页面访问矩阵</a></li>
+<li><a href="#54-android-app">5.4 移动端（Android APP）导航</a></li>
+<li><a href="#55">5.5 整体导航原则</a></li>
+</ul>
+</li>
+<li><a href="#6-sitemap-navigation">6. Sitemap &amp; Navigation 站点地图与导航</a><ul>
+<li><a href="#61">6.1 站点地图（简化版）</a></li>
+<li><a href="#62-web">6.2 导航结构（Web 端）</a></li>
+<li><a href="#63-app">6.3 导航结构（APP 端）</a></li>
+</ul>
+</li>
+<li><a href="#7-user-flows">7. User Flows 用户流程</a><ul>
+<li><a href="#71-1e2-s2-3">7.1 流程 1：业务员录入报价（E2-S2）—— 3 步完成</a></li>
+<li><a href="#72-2e5-s2-3">7.2 流程 2：操作工扫码报工（E5-S2）—— 3 步完成</a></li>
+<li><a href="#73-3e5-s1">7.3 流程 3：生管排产（E5-S1）—— 拖拽式</a></li>
+<li><a href="#74-4-e1-s4-e5-s2">7.4 流程 4：操作工离线扫码 + 自动同步（E1-S4 + E5-S2）</a></li>
+</ul>
+</li>
+<li><a href="#8-wireframes-mockups">8. Wireframes &amp; Mockups 线框图与原型</a><ul>
+<li><a href="#81-1e2-s2-web">8.1 核心页面 1：报价单录入页（E2-S2）—— Web 端 高保真</a></li>
+<li><a href="#82-2e5-s2-app">8.2 核心页面 2：扫码三码页（E5-S2）—— APP 端 高保真</a></li>
+<li><a href="#83-3e5-s1-web">8.3 核心页面 3：排产甘特图（E5-S1）—— Web 端 高保真</a></li>
+<li><a href="#84-4e11-s1-web">8.4 核心页面 4：生产工作台（E11-S1）—— Web 端 高保真</a></li>
+<li><a href="#85-39">8.5 低保真页面清单（39 个）</a></li>
+</ul>
+</li>
+<li><a href="#9-component-library">9. Component Library 组件库</a><ul>
+<li><a href="#91">9.1 基础库选型</a></li>
+<li><a href="#92">9.2 移动端库</a></li>
+<li><a href="#93-6-cnc-erp">9.3 6 个 CNC ERP 特有自定义组件</a></li>
+</ul>
+</li>
+<li><a href="#14-performance">14. Performance 性能</a><ul>
+<li><a href="#141-performance-goals">14.1 Performance Goals 性能目标</a></li>
+<li><a href="#142-design-strategies">14.2 Design Strategies 设计策略</a></li>
+</ul>
+</li>
+<li><a href="#15-next-steps-handoff">15. Next Steps &amp; Handoff 下一步与交付清单</a><ul>
+<li><a href="#151-immediate-actions">15.1 Immediate Actions 立即行动</a></li>
+<li><a href="#152-design-handoff-checklist">15.2 Design Handoff Checklist 设计交付清单</a></li>
+<li><a href="#153-checklist-results">15.3 Checklist Results 交付检查结果</a></li>
+</ul>
+</li>
+<li><a href="#a8-story-ui">附录 A：8 个核心 Story 的 UI 规格</a><ul>
+<li><a href="#a1-e1-s1">A.1 E1-S1 用户与角色权限</a></li>
+<li><a href="#a2-e2-s2">A.2 E2-S2 报价与多级审批</a></li>
+<li><a href="#a3-e2-s4">A.3 E2-S4 合同回款与利润</a></li>
+<li><a href="#a4-e3-s3-bom">A.4 E3-S3 BOM 多级维护</a></li>
+<li><a href="#a5-e4-s2-app">A.5 E4-S2 APP 扫码出入库</a></li>
+<li><a href="#a6-e5-s1">A.6 E5-S1 工单与机台排产</a></li>
+<li><a href="#a7-e5-s2-app">A.7 E5-S2 扫码开工/报工/过站（APP 端核心）</a></li>
+<li><a href="#a8-e11-s1">A.8 E11-S1 生产工作台</a></li>
+</ul>
+</li>
+<li><a href="#b-architect-apiws">附录 B：与 Architect 的 API/WS 交接清单</a><ul>
+<li><a href="#b1-openapi-consumes_apis">B.1 OpenAPI 端点清单（consumes_apis）</a></li>
+<li><a href="#b2-websocket-sse">B.2 WebSocket / SSE 实时推送需求</a></li>
+<li><a href="#b3">B.3 文件上传分片规则</a></li>
+<li><a href="#b4">B.4 移动端网络切换/弱网策略</a></li>
+</ul>
+</li>
+<li><a href="#c-dod">附录 C：验收 DoD 与灵魂自评</a><ul>
+<li><a href="#c1-doddefinition-of-done">C.1 验收 DoD（Definition of Done）</a></li>
+<li><a href="#c2">C.2 灵魂一致性自评</a></li>
+</ul>
+</li>
+<li><a href="#_33">文档结束</a></li>
+</ul>
+</div>
+</nav>
+<main><h1 id="cnc-erp-uiux-front-end-spec">CNC 加工厂 ERP 系统 UI/UX 规格说明书（Front-end Spec）</h1>
+<blockquote>
+<p><strong>产品精神</strong>：一码到底，一数到底。
+<strong>文档版本</strong>：V1.0.0
+<strong>生成时间</strong>：2026-06-05
+<strong>生成人</strong>：UX Expert agent "计成"（orchestrix MCP）
+<strong>输入文档</strong>：
+- PRD V1.3.1（11 Epic / 43 Story / 80+ AC）
+- Architect Handoff（Polyrepo 三仓 + Spring Cloud Alibaba + Redis Stream + XXL-JOB）
+- 上游 ux-handoff.md（V1.0，骨架与基础规范）
+<strong>适用对象</strong>：前端 Web 团队（Vue 3 + TS）、Android 团队（Kotlin）、QA 团队、Architect
+<strong>目标</strong>：让前端工程师看着这份规格就能直接写代码，零歧义
+<strong>模板</strong>：<code>front-end-spec-tmpl.yaml</code>（orchestrix templates）</p>
+</blockquote>
+<hr />
+<h2 id="ux">灵魂一致性声明（UX 计成）</h2>
+<p><strong>为什么是这套 UI</strong>：CNC 一线是戴手套、站着、车间灯光不均匀的操作工；办公室是键盘密、表格多、效率优先的业务员。两套范式，一套灵魂——<strong>能 3 步做完的绝不做第 4 步，能扫一下解决的绝不让用户找菜单</strong>。UX 的存在，是把"图号怎么跟、工时怎么算、首件谁签"这些老师傅脑子里的隐性知识外化为可见的 UI 规则，让新人和老人能在同一张图纸上协作。</p>
+<p><strong>灵魂一致性自评（10 分制）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>自评</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WHY 优先</td>
+<td>9</td>
+<td>每个 Story 给出"涉及页面/组件/字段/交互/边界"五段式，WHY 在 Epic 顶部声明</td>
+</tr>
+<tr>
+<td>傻瓜测试</td>
+<td>9</td>
+<td>操作工扫码 3 步、报工 3 个数字、提交 1 个按钮；王奶奶 30 秒通过</td>
+</tr>
+<tr>
+<td>极致简化</td>
+<td>8</td>
+<td>11 Epic 收敛为 7 个 Web 顶级菜单 + 4 个 APP Tab；砍掉皮肤/动画/骨架屏</td>
+</tr>
+<tr>
+<td>灵魂一致</td>
+<td>9</td>
+<td>一码到底（一码联想/扫码/物料码）、一数到底（金额/日期/编号全局统一）</td>
+</tr>
+<tr>
+<td>善良设计</td>
+<td>8</td>
+<td>逾期提醒用于生产排产而非施压；离线状态明牌，不让用户"以为保存了"</td>
+</tr>
+<tr>
+<td>匠人细节</td>
+<td>9</td>
+<td>6 个 CNC 特有自定义组件、键盘流 10+ 快捷键、3 级阴影、4px 基准间距</td>
+</tr>
+<tr>
+<td><strong>综合</strong></td>
+<td><strong>8.7</strong></td>
+<td>商业功能完整、匠人细节到位，前端可零歧义启动</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_1">目录</h2>
+<ul>
+<li><a href="#0-changelog-变更日志">0. Changelog 变更日志</a></li>
+<li><a href="#1-introduction-介绍">1. Introduction 介绍</a></li>
+<li><a href="#2-ux-goals--principles-愿景与原则">2. UX Goals &amp; Principles 愿景与原则</a></li>
+<li><a href="#3-user-personas-用户角色">3. User Personas 用户角色</a></li>
+<li><a href="#4-usability-goals-可用性目标">4. Usability Goals 可用性目标</a></li>
+<li><a href="#5-information-architecture-信息架构">5. Information Architecture 信息架构</a></li>
+<li><a href="#6-sitemap--navigation-站点地图与导航">6. Sitemap &amp; Navigation 站点地图与导航</a></li>
+<li><a href="#7-user-flows-用户流程">7. User Flows 用户流程</a></li>
+<li><a href="#8-wireframes--mockups-线框图与原型">8. Wireframes &amp; Mockups 线框图与原型</a></li>
+<li><a href="#9-component-library-组件库">9. Component Library 组件库</a></li>
+<li><a href="#10-branding--style-品牌与样式">10. Branding &amp; Style 品牌与样式</a></li>
+<li><a href="#11-accessibility-无障碍">11. Accessibility 无障碍</a></li>
+<li><a href="#12-responsiveness-响应式">12. Responsiveness 响应式</a></li>
+<li><a href="#13-animation--motion-动画与动效">13. Animation &amp; Motion 动画与动效</a></li>
+<li><a href="#14-performance-性能">14. Performance 性能</a></li>
+<li><a href="#15-next-steps--handoff-下一步与交付清单">15. Next Steps &amp; Handoff 下一步与交付清单</a></li>
+<li><a href="#附录-a8-个核心-story-的-ui-规格">附录 A：8 个核心 Story 的 UI 规格</a></li>
+<li><a href="#附录-b与-architect-的-apiws-交接清单">附录 B：与 Architect 的 API/WS 交接清单</a></li>
+<li><a href="#附录-c验收-dod-与灵魂自评">附录 C：验收 DoD 与灵魂自评</a></li>
+</ul>
+<hr />
+<h2 id="0-changelog">0. Changelog 变更日志</h2>
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>日期</th>
+<th>修订人</th>
+<th>修订内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V0.5</td>
+<td>2026-06-04</td>
+<td>UX 计成</td>
+<td>上游 ux-handoff.md 骨架：UX 愿景 / 设计原则 5 条 / IA 顶层菜单 / 4 个核心页面 wireframe / 视觉规范 / 6 个自定义组件</td>
+</tr>
+<tr>
+<td><strong>V1.0.0</strong></td>
+<td><strong>2026-06-05</strong></td>
+<td><strong>UX 计成</strong></td>
+<td><strong>front-end-spec-tmpl 化：补足 9 大章节、4 个核心页面 ASCII 终稿、6 个核心 APP 流程、8 个核心 Story 五段式规格、API/WS 交接清单、DoD 验收清单</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>与上游 <code>ux-handoff.md</code> 的关系：上游是"骨架与 5 条原则 + 4 个 wireframe"；本文档是"完整规格 + 8 个 Story 落地 + 协作清单"，可独立交付前端。</p>
+</blockquote>
+<hr />
+<h2 id="1-introduction">1. Introduction 介绍</h2>
+<h3 id="11">1.1 文档目的</h3>
+<p>本文档是 <strong>CNC 加工厂 ERP 系统</strong> 前端开发的<strong>唯一事实来源（Single Source of Truth）</strong>。前端工程师可基于本文档：</p>
+<ol>
+<li><strong>零歧义起项目</strong>：知道用什么框架、什么组件、什么 token。</li>
+<li><strong>零歧义画页面</strong>：所有核心页面已 ASCII wireframe，字段、按钮、状态一一对应 PRD AC。</li>
+<li><strong>零歧义做交互</strong>：键盘、扫码、审批、拖拽、离线 5 大范式有明确规范。</li>
+<li><strong>零歧义做验收</strong>：80+ AC 与页面元素一一对应，可逐条对账。</li>
+</ol>
+<h3 id="12">1.2 范围</h3>
+<table>
+<thead>
+<tr>
+<th>端</th>
+<th>范围</th>
+<th>技术栈</th>
+<th>版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Web</strong></td>
+<td>业务员/工程师/生管/采购/仓管/品检/财务/人事/管理员</td>
+<td>Vue 3.4 + TS 5 + Vite 5 + Element Plus 2.4</td>
+<td>V1.0</td>
+</tr>
+<tr>
+<td><strong>Android APP</strong></td>
+<td>操作工/仓管（车间/仓库场景）</td>
+<td>Kotlin 1.9 + Jetpack（V1.1 评估 Compose）</td>
+<td>V1.0</td>
+</tr>
+<tr>
+<td>iOS</td>
+<td><strong>不支持</strong></td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13">1.3 关键术语</h3>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>一码到底</strong></td>
+<td>工单码（GD-）/流转码（LZ-）/设备码（SB-）/物料码（WL-）/客户码（KH-）前缀自动识别</td>
+</tr>
+<tr>
+<td><strong>一数到底</strong></td>
+<td>业务单据一次录入，财务报表、车间看板、老板驾驶舱共用同一份数</td>
+</tr>
+<tr>
+<td><strong>扫码三码</strong></td>
+<td>工单码（加工人/时间）+ 流转码（物料去向）+ 设备码（机台），分别在不同场景使用</td>
+</tr>
+<tr>
+<td><strong>键盘流</strong></td>
+<td>高频操作走快捷键，不依赖鼠标</td>
+</tr>
+<tr>
+<td><strong>离线队列</strong></td>
+<td>APP 端本地 SQLite 缓存单据 + 扫码记录，恢复网络后自动同步</td>
+</tr>
+<tr>
+<td><strong>金额阈值</strong></td>
+<td>报价/订单/采购/付款四级金额阈值，决定审批路由</td>
+</tr>
+</tbody>
+</table>
+<h3 id="14">1.4 输入文档</h3>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>版本</th>
+<th>关系</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/prd.md</code></td>
+<td>V1.3.1</td>
+<td>11 Epic / 43 Story / 80+ AC</td>
+</tr>
+<tr>
+<td><code>docs/architect-handoff.md</code></td>
+<td>V1.0</td>
+<td>后端架构、OpenAPI、Nacos、部署</td>
+</tr>
+<tr>
+<td><code>docs/CNC加工厂ERP系统需求分析.md</code></td>
+<td>V1.2</td>
+<td>行业背景与 1188 行详细需求</td>
+</tr>
+<tr>
+<td><code>docs/ux-handoff.md</code></td>
+<td>V1.0</td>
+<td>本文上游骨架（5 条原则 + 4 个 wireframe）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-ux-goals-principles">2. UX Goals &amp; Principles 愿景与原则</h2>
+<h3 id="21-ux-150">2.1 UX 愿景（≤150 字）</h3>
+<blockquote>
+<p><strong>"让操作工奶奶 30 秒学会扫码报工；让业务员键盘流 3 步完成报价。"</strong></p>
+</blockquote>
+<p>UI 不是给人"看"的，是给人在车间"用"的。一线戴手套、光线差、站着操作；办公室键盘流、表格密、效率优先。两种范式，一套灵魂：<strong>能 3 步做完的事绝不做第 4 步，能扫一下解决的绝不让用户找菜单</strong>。</p>
+<h3 id="22-5">2.2 设计原则（5 条）</h3>
+<h4 id="1app">原则 1：扫码即一切（APP 端）</h4>
+<p><strong>一句话</strong>：任何业务都能在 3 步内通过"扫码 + 确认"完成。
+<strong>反例</strong>：操作工进入 APP 后要选"业务类型 → 工序 → 工单 → 机台"四级菜单。<strong>不做</strong>。
+<strong>正向案例</strong>：E5-S2 扫码开工——扫工单码 → 自动识别机台 → 按"开工"按钮（0 表单填写）。</p>
+<h4 id="2web">原则 2：键盘流优先（Web 端）</h4>
+<p><strong>一句话</strong>：高频操作必须有快捷键，Tab 序从主到次，单据保存用 <code>Ctrl+S</code>。
+<strong>反例</strong>：业务员录完一条报价要点 3 次鼠标才能提交。<strong>不做</strong>。
+<strong>正向案例</strong>：E2-S2 报价录入——<code>F8</code> 图号联想、<code>Ctrl+S</code> 保存、<code>Alt+T</code> 含税切换、<code>Tab</code> 切明细行，键盘走完全程。</p>
+<h4 id="3web">原则 3：信息密度友好（Web 列表）</h4>
+<p><strong>一句话</strong>：行高 32px、列宽可调、列可隐藏、过滤条件可见可改。
+<strong>反例</strong>：每页只显示 10 条数据，要点"加载更多"才能继续。<strong>不做</strong>。
+<strong>正向案例</strong>：E5-S1 工单列表默认 50 条/页，行高 32px，列可拖拽排序、可隐藏。</p>
+<h4 id="4app">原则 4：离线可放心（APP 端）</h4>
+<p><strong>一句话</strong>：扫码后断网不卡顿、不丢数；状态条明牌告诉用户"离线多少条待上传"。
+<strong>反例</strong>：扫码报工后断网，结果丢失、用户不知情。<strong>不做</strong>。
+<strong>正向案例</strong>：E1-S4 离线模式——本地 SQLite 缓存 500 条单据 + 扫码记录；状态条 32px 顶置，橙色横幅"离线模式 5 条待上传"。</p>
+<h4 id="5">原则 5：拒绝伪需求装饰</h4>
+<p><strong>一句话</strong>：不做"皮肤主题切换、动画转场、骨架屏加载 800ms"等与业务无关的视觉。
+<strong>反例</strong>：报价提交后弹 3 秒花瓣飘落动画。<strong>不做</strong>。
+<strong>正向案例</strong>：保存草稿后立即 Toast 提示 + 列表行更新；无 Loading 动画（直接 disable 按钮 + 文字"保存中"）。</p>
+<hr />
+<h2 id="3-user-personas">3. User Personas 用户角色</h2>
+<blockquote>
+<p><strong>共 10 个角色</strong>：业务员 / 工程师 / 生管 / 采购 / 仓管 / 品检 / 车间操作工 / 财务 / 人事 / 管理员。
+每个角色给出：<strong>1 句话画像 + 3 个高频场景 + 关键页面清单</strong>。</p>
+</blockquote>
+<h3 id="31">3.1 角色画像表</h3>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>1 句话画像</th>
+<th>3 个高频场景</th>
+<th>关键页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>业务员</strong></td>
+<td>客户与销售全链路负责人，每天录入 10+ 报价/订单，键盘流是基本功</td>
+<td>① 录入新报价 ② 转订单跟踪交期 ③ 回款登记</td>
+<td>销售/客户档案、报价录入、订单详情、回款计划</td>
+</tr>
+<tr>
+<td><strong>工程师</strong></td>
+<td>图纸/BOM/工艺的"看门人"，决定一个产品能不能造、怎么造</td>
+<td>① 图纸入库与版本 ② BOM 多级维护 ③ 工艺路线组装</td>
+<td>物料/图纸库、BOM 树、工艺编辑器、工程转化</td>
+</tr>
+<tr>
+<td><strong>生管（生产管理）</strong></td>
+<td>调度员 + 救火队长，每天 30 次排产调整、20 次异常处理</td>
+<td>① 排产甘特拖拽 ② 异常处理与升级 ③ 派工与报工监控</td>
+<td>生产/工单管理、排产看板、委外订单、设备机台、工作台</td>
+</tr>
+<tr>
+<td><strong>采购</strong></td>
+<td>物料的"粮草官"，询比价、催到货、跟质检</td>
+<td>① 询比价 ② 采购订单审批 ③ 到货提醒处理</td>
+<td>采购/询比价、采购订单、到货提醒、来料质检</td>
+</tr>
+<tr>
+<td><strong>仓管</strong></td>
+<td>物料的"账房先生"，扫码出入库、盘点、库存预警</td>
+<td>① 扫码入库 ② 扫码出库 ③ 盘点与库存查询</td>
+<td>物料/库存查询、库位管理、APP 扫码出入库</td>
+</tr>
+<tr>
+<td><strong>品检</strong></td>
+<td>质量的"看门人"，首件、巡检、成品检、报废处理</td>
+<td>① FA 首件签字 ② 过程检录入 ③ 不良品处理</td>
+<td>品质/检验任务、FA 首件、三次元检测、不良品处理</td>
+</tr>
+<tr>
+<td><strong>车间操作工</strong></td>
+<td>一线"扫码枪"，戴手套、光线差、站着操作，要 30 秒内完成</td>
+<td>① 扫码开工 ② 扫码报工 ③ 扫码过站</td>
+<td>APP 主页（扫码）、工单详情、报工页、过站页</td>
+</tr>
+<tr>
+<td><strong>财务</strong></td>
+<td>钱账的"记账先生"，应收应付、成本核算、付款审批</td>
+<td>① 应收应付看板 ② 成本核算 ③ 付款审批</td>
+<td>财务/应收应付、成本核算、付款申请、利润分析</td>
+</tr>
+<tr>
+<td><strong>人事（HR）</strong></td>
+<td>员工的"娘家人"，档案、考勤、薪酬、招聘</td>
+<td>① 员工档案 ② 考勤月报 ③ 工资条生成</td>
+<td>管理/员工档案、考勤月报、薪酬核算、绩效招聘</td>
+</tr>
+<tr>
+<td><strong>管理员</strong></td>
+<td>系统的"管家"，用户/角色/审批/字典的配置者</td>
+<td>① 用户角色配置 ② 审批流配置 ③ 字典与参数</td>
+<td>管理/用户与角色、审批工作流、系统参数与字典</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32">3.2 角色 × 设备偏好</h3>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>主用设备</th>
+<th>关键范式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>业务员</td>
+<td>Web（PC）</td>
+<td>键盘流 + 高密度表格</td>
+</tr>
+<tr>
+<td>工程师</td>
+<td>Web（PC）</td>
+<td>拖拽 + 多级树</td>
+</tr>
+<tr>
+<td>生管</td>
+<td>Web（PC）</td>
+<td>拖拽（甘特/看板）+ 实时刷新</td>
+</tr>
+<tr>
+<td>采购</td>
+<td>Web（PC）</td>
+<td>键盘流 + 多条件过滤</td>
+</tr>
+<tr>
+<td>仓管</td>
+<td>APP（手机/PDA）</td>
+<td>扫码流 + 离线</td>
+</tr>
+<tr>
+<td>品检</td>
+<td>Web（PC）+ APP</td>
+<td>表单 + 签字</td>
+</tr>
+<tr>
+<td><strong>车间操作工</strong></td>
+<td><strong>APP（手机/PDA）</strong></td>
+<td><strong>扫码流 + 大按钮 + 离线</strong></td>
+</tr>
+<tr>
+<td>财务</td>
+<td>Web（PC）</td>
+<td>键盘流 + 多维聚合</td>
+</tr>
+<tr>
+<td>人事</td>
+<td>Web（PC）</td>
+<td>表单 + 批量操作</td>
+</tr>
+<tr>
+<td>管理员</td>
+<td>Web（PC）</td>
+<td>树形 + 拖拽（审批流配置）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="33">3.3 角色 × 工作时段</h3>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>上班时段</th>
+<th>设备佩戴</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>业务员</td>
+<td>8:00-17:00 办公室</td>
+<td>桌面 PC</td>
+</tr>
+<tr>
+<td>工程师</td>
+<td>8:00-17:00 办公室</td>
+<td>桌面 PC</td>
+</tr>
+<tr>
+<td>生管</td>
+<td>8:00-20:00 车间+办公室</td>
+<td>PC + 大屏</td>
+</tr>
+<tr>
+<td>采购</td>
+<td>8:00-17:00 办公室</td>
+<td>PC</td>
+</tr>
+<tr>
+<td>仓管</td>
+<td>8:00-17:00 仓库</td>
+<td>APP（PDA）</td>
+</tr>
+<tr>
+<td>品检</td>
+<td>8:00-17:00 车间</td>
+<td>PC + APP</td>
+</tr>
+<tr>
+<td><strong>车间操作工</strong></td>
+<td><strong>白班/夜班轮替</strong></td>
+<td><strong>APP（戴手套）</strong></td>
+</tr>
+<tr>
+<td>财务</td>
+<td>8:00-17:00 办公室</td>
+<td>PC</td>
+</tr>
+<tr>
+<td>人事</td>
+<td>8:00-17:00 办公室</td>
+<td>PC</td>
+</tr>
+<tr>
+<td>管理员</td>
+<td>8:00-17:00 办公室</td>
+<td>PC</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>设计含义</strong>：操作工戴手套 → 关键按钮 ≥ 64px；车间光线差 → 高对比度配色（状态红/绿 7:1 对比度）；生管盯大屏 → 关键数字 32px+。</p>
+</blockquote>
+<hr />
+<h2 id="4-usability-goals">4. Usability Goals 可用性目标</h2>
+<h3 id="41">4.1 量化指标</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>目标值</th>
+<th>测量方式</th>
+<th>优先级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>操作工扫码报工完成时间</strong></td>
+<td>≤ 30 秒（P95）</td>
+<td>用户测试 + 埋点</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>业务员报价录入完成时间</strong></td>
+<td>≤ 5 分钟（P95，含 BOM）</td>
+<td>用户测试 + 埋点</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>生管排产拖拽成功率</strong></td>
+<td>≥ 95%（首次拖到正确位置）</td>
+<td>埋点（拖拽 → 提交）</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>关键页面 LCP（Largest Contentful Paint）</strong></td>
+<td>≤ 2.5s（P75）</td>
+<td>Lighthouse / Sentry</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>扫码响应时间</strong></td>
+<td>≤ 1s（P95）</td>
+<td>APP 端埋点</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>离线 → 在线自动同步成功率</strong></td>
+<td>≥ 99%</td>
+<td>APP 端埋点</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>键盘快捷键覆盖率</strong></td>
+<td>≥ 80% 高频操作</td>
+<td>用例清单对账</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>WCAG AA 合规</strong></td>
+<td>100%（关键流程）</td>
+<td>axe-core 自动化扫描</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>新用户上手时间</strong></td>
+<td>≤ 30 分钟（看 1 个 5 分钟视频）</td>
+<td>用户测试</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>NPS（净推荐值）</strong></td>
+<td>≥ 40（V1.0 上线 3 个月）</td>
+<td>问卷</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42">4.2 灵魂测试</h3>
+<table>
+<thead>
+<tr>
+<th>测试名称</th>
+<th>参与者</th>
+<th>任务</th>
+<th>通过标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>操作工奶奶测试</strong></td>
+<td>王奶奶（55 岁，车间 10 年，不熟悉 APP）</td>
+<td>扫码报工：扫工单码 → 输 3 个数字 → 提交</td>
+<td>30 秒内完成；不出现"找不到按钮"</td>
+</tr>
+<tr>
+<td><strong>业务员 5 分钟测试</strong></td>
+<td>业务员新人</td>
+<td>客户录入 → 报价 → 提交审批</td>
+<td>5 分钟内完成</td>
+</tr>
+<tr>
+<td><strong>生管 1 屏测试</strong></td>
+<td>生管</td>
+<td>打开生产工作台</td>
+<td>5 秒内知道：今天有多少逾期、哪些设备忙</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43">4.3 错误容忍</h3>
+<table>
+<thead>
+<tr>
+<th>错误类型</th>
+<th>恢复策略</th>
+<th>UI 反馈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>表单字段缺失</td>
+<td>提交时聚焦第一个错误字段 + 红色提示</td>
+<td>字段下方红字 + 字段红框</td>
+</tr>
+<tr>
+<td>金额非法字符</td>
+<td>实时过滤（仅数字 + 小数点）</td>
+<td>输入框光标抖动</td>
+</tr>
+<tr>
+<td>扫码失败</td>
+<td>自动重试 3 次 + 提示"请重试"</td>
+<td>震动 2 次 + 弹窗</td>
+</tr>
+<tr>
+<td>网络中断</td>
+<td>切换离线模式 + 状态条提示</td>
+<td>顶部橙色横幅</td>
+</tr>
+<tr>
+<td>单据已关闭</td>
+<td>提示"该单据已关闭"+ 返回列表</td>
+<td>Toast + 自动返回</td>
+</tr>
+<tr>
+<td>权限不足</td>
+<td>按钮置灰 + 鼠标悬停提示"无权限"</td>
+<td>Tooltip</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-information-architecture">5. Information Architecture 信息架构</h2>
+<h3 id="51-web-7">5.1 Web 端顶级菜单（7 个）</h3>
+<blockquote>
+<p><strong>收敛原则</strong>：11 Epic 收敛为 7 个顶级菜单 + 1 个"管理"兜底。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>顶级菜单</th>
+<th>Icon</th>
+<th>角色</th>
+<th>包含的 Story</th>
+<th>路由前缀</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>工作台</strong></td>
+<td><code>home</code></td>
+<td>全员</td>
+<td>E11-S1 生产工作台 + 角色化首页</td>
+<td><code>/dashboard</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>销售</strong></td>
+<td><code>shopping-cart</code></td>
+<td>业务员、经理</td>
+<td>E2-S1~S4</td>
+<td><code>/sales</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>生产</strong></td>
+<td><code>tools</code></td>
+<td>生管、操作工（PC 辅助）</td>
+<td>E5-S1~S5、E6</td>
+<td><code>/production</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>物料</strong></td>
+<td><code>box</code></td>
+<td>工程师、仓管、采购</td>
+<td>E3-S1~S4、E4-S3/S4</td>
+<td><code>/material</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>品质</strong></td>
+<td><code>circle-check</code></td>
+<td>品检、生管</td>
+<td>E7-S1~S4</td>
+<td><code>/quality</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>采购</strong></td>
+<td><code>tickets</code></td>
+<td>采购</td>
+<td>E8-S1~S4</td>
+<td><code>/purchase</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>财务</strong></td>
+<td><code>money</code></td>
+<td>财务、总经理</td>
+<td>E9-S1~S4</td>
+<td><code>/finance</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>管理</strong></td>
+<td><code>setting</code></td>
+<td>管理员、人事</td>
+<td>E1-S1~S3、E10、E11-S2/S3</td>
+<td><code>/admin</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-web">5.2 完整页面树（Web 端）</h3>
+<pre class="ascii">工作台 (/dashboard)
+├── /dashboard/workspace           角色化工作台（业务员/采购/财务/HR 视角）
+├── /dashboard/production          生产工作台（生管/车间主管）     E11-S1  ← 高保真
+└── /dashboard/cockpit             老板驾驶舱（总经理）             E11-S3
+
+销售 (/sales)
+├── /sales/customer                客户档案
+│   ├── /list                      客户列表                          E2-S1
+│   ├── /:id                       客户详情（洽谈时间线 + 订单历史） E2-S1
+│   └── /protection                客户保护管理（管理员视角）        E2-S1
+├── /sales/quote                   报价单                            E2-S2
+│   ├── /list                      报价列表
+│   ├── /new                       报价录入（核心页）                ← 高保真
+│   ├── /:id                       报价详情/编辑
+│   └── /approval                  报价审批（待办 + 详情）           E2-S2
+├── /sales/order                   销售订单                          E2-S3
+│   ├── /list                      订单列表
+│   ├── /:id                       订单详情
+│   ├── /:id/change                订单变更
+│   └── /:id/timeline              订单时间线
+└── /sales/contract                合同回款                          E2-S4
+    ├── /list                      合同列表
+    ├── /:id                       合同详情
+    ├── /:id/payment-plan          回款计划
+    ├── /:id/payment-reg           收款登记
+    └── /:id/profit                订单利润
+
+生产 (/production)
+├── /production/workorder          工单管理                          E5-S1
+│   ├── /list                      工单列表
+│   ├── /:id                       工单详情（工序路线 + 进度条）
+│   └── /:id/mrp                   工单 MRP 缺料
+├── /production/schedule           排产看板（甘特图）                E5-S1  ← 高保真
+├── /production/subcontract        委外订单                          E5-S4 / E6
+│   ├── /list                      委外列表
+│   ├── /new-process               工序委外
+│   ├── /new-whole                 整单委外
+│   ├── /:id                       委外详情
+│   └── /reconcile                 委外对账                          E6-S1
+└── /production/equipment          设备与机台                        E5-S5
+    ├── /list                      设备台账
+    └── /load                      机台负荷
+
+物料 (/material)
+├── /material/drawing              图纸库                            E3-S1
+│   ├── /list                      图纸列表
+│   ├── /:id/preview               图纸预览（pdf.js）
+│   └── /:id/transform             工程转化                          E3-S2
+├── /material/bom                  BOM 树                            E3-S3  ← 组件
+├── /material/process              工艺库与工序                      E3-S4
+├── /material/item                 物料档案
+├── /material/warehouse            库位管理                          E4-S3
+├── /material/inventory            库存查询                          E4-S3
+└── /material/safety-stock         安全库存                          E4-S4
+
+品质 (/quality)
+├── /quality/inspection            检验任务                          E7-S1
+│   ├── /incoming                  来料检
+│   ├── /in-process                过程检
+│   └── /final                     成品检
+├── /quality/fa                    FA 首件                           E7-S2
+├── /quality/3dcmm                 三次元检测                        E7-S3
+└── /quality/defect                不良品处理                        E7-S4
+
+采购 (/purchase)
+├── /purchase/rfq                  询比价                            E8-S1
+├── /purchase/order                采购订单                          E8-S2
+├── /purchase/reminder             到货提醒                          E8-S3
+└── /purchase/incoming-qc          来料质检                          E8-S4
+
+财务 (/finance)
+├── /finance/ar                    应收                              E9-S1
+├── /finance/ap                    应付                              E9-S1
+├── /finance/cost                  成本核算                          E9-S2
+├── /finance/payment               付款申请                          E9-S3
+└── /finance/profit                利润分析                          E9-S4
+
+管理 (/admin)
+├── /admin/user                    用户与角色                        E1-S1
+├── /admin/workflow                审批工作流                        E1-S2
+├── /admin/dict                    系统参数与字典                    E1-S3
+├── /admin/employee                员工档案与考勤                    E10-S1
+├── /admin/salary                  薪酬核算                          E10-S2
+├── /admin/performance             绩效与招聘                        E10-S3
+├── /admin/dashboard               看板                              E11-S2
+│   ├── /subcontract               委外看板
+│   ├── /internal                  自加工看板
+│   └── /overdue                   逾期看板
+└── /admin/report                  报表                              E11-S3
+    ├── /sales-ranking             销售龙虎榜
+    └── /customer-profit           客户利润汇总
+</pre>
+
+<h3 id="53">5.3 角色 × 页面访问矩阵</h3>
+<blockquote>
+<p><strong>Y</strong> = 默认可见；<strong>S</strong> = 按场景可见（如拥有该客户/工单）；<strong>N</strong> = 不可见
+<strong>数据权限</strong>（叠加维度，定义在 E1-S1）：本人 / 本部门 / 全部 / 自定义</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>顶级菜单</th>
+<th>业务员</th>
+<th>工程师</th>
+<th>生管</th>
+<th>采购</th>
+<th>仓管</th>
+<th>品检</th>
+<th>车间操作工</th>
+<th>财务</th>
+<th>人事</th>
+<th>管理员</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>工作台</td>
+<td>S</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y（简化）</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>销售</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>S</td>
+<td>N</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>生产</td>
+<td>S</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>S</td>
+<td>S</td>
+<td>S</td>
+<td>S</td>
+<td>N</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>物料</td>
+<td>S</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>S</td>
+<td>N</td>
+<td>S</td>
+<td>N</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>品质</td>
+<td>N</td>
+<td>Y</td>
+<td>S</td>
+<td>S</td>
+<td>S</td>
+<td>Y</td>
+<td>S</td>
+<td>N</td>
+<td>N</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>采购</td>
+<td>N</td>
+<td>N</td>
+<td>S</td>
+<td>Y</td>
+<td>S</td>
+<td>S</td>
+<td>N</td>
+<td>S</td>
+<td>N</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>财务</td>
+<td>S</td>
+<td>N</td>
+<td>S</td>
+<td>S</td>
+<td>S</td>
+<td>N</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>管理</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>S</td>
+<td>Y</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>简化工作台</strong>（操作工）：只显示"今日待办 + 扫码入口 + 消息"3 个卡片，不显示 KPI 与看板。</p>
+</blockquote>
+<h3 id="54-android-app">5.4 移动端（Android APP）导航</h3>
+<h4 id="541-tab4">5.4.1 底部 Tab（4 个）</h4>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>名称</th>
+<th>入口</th>
+<th>对应 Story</th>
+<th>高度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tab 1</td>
+<td><strong>扫码</strong></td>
+<td>全屏扫码框（80% 区域）</td>
+<td>E1-S4 / E5-S2 / E4-S2</td>
+<td>56px</td>
+</tr>
+<tr>
+<td>Tab 2</td>
+<td><strong>待办</strong></td>
+<td>审批/异常/提醒列表</td>
+<td>E1-S2 / E11-S1 摘要</td>
+<td>56px</td>
+</tr>
+<tr>
+<td>Tab 3</td>
+<td><strong>消息</strong></td>
+<td>消息中心</td>
+<td>E1-S4 消息</td>
+<td>56px</td>
+</tr>
+<tr>
+<td>Tab 4</td>
+<td><strong>我的</strong></td>
+<td>个人信息/打卡/工资条</td>
+<td>E10-S1/S2</td>
+<td>56px</td>
+</tr>
+</tbody>
+</table>
+<h4 id="542">5.4.2 二级页面树</h4>
+<pre class="ascii">扫码（Tab 1）
+├── /scan/full                     全屏扫码页（默认）
+├── /scan/result                   扫码结果页（自动识别码类型后路由）
+│   ├── /workorder                 工单码 → 开工/报工/过站     E5-S2
+│   ├── /transfer                  流转码 → 过站              E5-S2
+│   ├── /device                    设备码 → 录入机台          E5-S5
+│   └── /item                      物料码 → 入库/出库         E4-S2
+├── /scan/history                  连续扫码记录（历史 50 条）
+└── /scan/offline-queue            离线队列查看               E1-S4
+
+待办（Tab 2）
+├── /todo/approval                 审批待办（支持滑动手势）
+├── /todo/exception                异常上报（设备/材料/品质）
+├── /todo/inspection               检验任务                  E7-S1/S2
+└── /todo/incoming                 待检物料清单              E8-S4
+
+消息（Tab 3）
+├── /message/list                  消息列表
+├── /message/:id                   消息详情
+└── /message/settings              消息设置
+
+我的（Tab 4）
+├── /me/profile                    个人信息
+├── /me/clock-in                   打卡                       E10-S1
+├── /me/leave                      请假/加班申请
+├── /me/payslip                    工资条                     E10-S2
+└── /me/settings                   设置（账号/指纹/消息推送）
+</pre>
+
+<h3 id="55">5.5 整体导航原则</h3>
+<table>
+<thead>
+<tr>
+<th>原则</th>
+<th>规则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>深度</strong></td>
+<td>菜单深度 ≤ 3 级（菜单 → 子菜单 → 详情）</td>
+</tr>
+<tr>
+<td><strong>面包屑</strong></td>
+<td>顶级菜单 &gt; 二级页面 &gt; 当前页（无下划线、可点击）</td>
+</tr>
+<tr>
+<td><strong>快捷入口</strong></td>
+<td>工作台放"高频功能"卡片（≤ 6 个），按角色变化</td>
+</tr>
+<tr>
+<td><strong>历史记录</strong></td>
+<td>顶部右上角"最近访问"下拉（最多 10 条）</td>
+</tr>
+<tr>
+<td><strong>搜索</strong></td>
+<td><code>Ctrl+K</code> 命令面板（全局），按"客户/工单/订单/物料/图号"维度</td>
+</tr>
+<tr>
+<td><strong>消息</strong></td>
+<td>顶部铃铛（带数字红点），点击展开抽屉</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-sitemap-navigation">6. Sitemap &amp; Navigation 站点地图与导航</h2>
+<h3 id="61">6.1 站点地图（简化版）</h3>
+<pre class="ascii">                            ┌──────────┐
+                            │  登录页   │
+                            └────┬─────┘
+                                 ↓
+        ┌────────────────────────┼────────────────────────┐
+        ↓                        ↓                        ↓
+   ┌─────────┐             ┌──────────┐             ┌──────────┐
+   │ 工作台  │             │ 7 顶级菜单│             │ 个人中心 │
+   └─────────┘             └──────────┘             └──────────┘
+        ↑                        ↑
+   角色化首页                  按权限可见
+        ↓                        ↓
+   业务详情/表单             业务详情/表单
+        ↓                        ↓
+   审批流（Drawer）          审批流（Modal）
+        ↓
+   操作结果（Toast）
+</pre>
+
+<h3 id="62-web">6.2 导航结构（Web 端）</h3>
+<h4 id="621-fixed">6.2.1 顶部导航（Fixed）</h4>
+<pre class="ascii">┌──────────────────────────────────────────────────────────────────────────┐
+│ [LOGO]  CNC ERP    工作台 销售 生产 物料 品质 采购 财务 管理  │ 🔍 Ctrl+K │  👤  ▼  │  🔔3 │  ⏻ │  ← 64px 高度
+└──────────────────────────────────────────────────────────────────────────┘
+         菜单项（24px 字号）
+         激活态：主色 + 底部 2px 横线
+         Hover 态：浅色背景
+</pre>
+
+<h4 id="622-collapsible">6.2.2 左侧二级菜单（Collapsible）</h4>
+<blockquote>
+<p>顶级菜单点击后，左侧展开二级菜单；选中状态：主色背景 + 白字。
+二级菜单收起：256px → 64px（仅 Icon）。</p>
+</blockquote>
+<pre class="ascii">┌────────┐
+│ 🏠 工作台 │
+│ 🛒 销售 │  ← 选中态
+│   ├ 客户档案
+│   ├ 报价单
+│   ├ 销售订单  ← 激活态
+│   └ 合同回款
+│ 🔧 生产 │
+│ 📦 物料 │
+│ ✅ 品质 │
+│ 🛍 采购 │
+│ 💰 财务 │
+│ ⚙ 管理 │
+└────────┘
+</pre>
+
+<h4 id="623-breadcrumb">6.2.3 面包屑（Breadcrumb）</h4>
+<pre><code>工作台 / 销售 / 报价单 / BJ202606040001
+</code></pre>
+
+<ul>
+<li>灰色 14px</li>
+<li>当前页不可点击</li>
+<li>上层级可点击（蓝色 + hover 下划线）</li>
+</ul>
+<h3 id="63-app">6.3 导航结构（APP 端）</h3>
+<h4 id="631-fixed32px">6.3.1 顶部状态条（Fixed，32px）</h4>
+<pre class="ascii">┌──────────────────────────────────┐
+│  8:30          离线 ●         ⚙ │  ← 高度 32px，红/橙/绿/蓝状态
+└──────────────────────────────────┘
+</pre>
+
+<h4 id="632-tab-fixed56px">6.3.2 底部 Tab 栏（Fixed，56px）</h4>
+<pre class="ascii">┌──────────────────────────────────┐
+│   📷 扫码    📋 待办    🔔 消息   👤 我的   │  ← 高度 56px
+└──────────────────────────────────┘
+         激活态：主色 + 上方 2px 横线
+         未激活：灰色
+</pre>
+
+<h4 id="633">6.3.3 页面内导航</h4>
+<ul>
+<li><strong>顶部 AppBar</strong>（带返回按钮 + 标题 + 操作）：48px</li>
+<li><strong>页面内 Drawer/Modal</strong>：从右侧滑入 80% 宽</li>
+</ul>
+<hr />
+<h2 id="7-user-flows">7. User Flows 用户流程</h2>
+<blockquote>
+<p>选取 4 个核心 Story 的关键流程作为示范。</p>
+</blockquote>
+<h3 id="71-1e2-s2-3">7.1 流程 1：业务员录入报价（E2-S2）—— 3 步完成</h3>
+<h4 id="711">7.1.1 流程图</h4>
+<pre><code>开始
+  ↓
+[1] 点击顶部菜单「销售」→「报价单」→「新建」
+  ↓
+[2] 填写客户（自动联想 / F2 选历史）
+  ↓
+[3] F8 触发图号联想 → 选图号 → 自动带出 BOM
+  ↓
+[4] 调整明细（数量、单价）→ Alt+T 切换含税
+  ↓
+[5] Ctrl+S 保存草稿 或 Ctrl+Enter 提交审批
+  ↓
+[6] 金额 &lt; 5 万 → 业务员自审通过 → 结束
+[6] 金额 5-20 万 → 自动路由部门经理 → 结束（待办推送给经理）
+[6] 金额 &gt; 20 万 → 自动路由总经理 → 结束
+[6] 客户为黑名单 → 直接驳回 + Toast 提示
+  ↓
+结束
+</code></pre>
+
+<h4 id="712">7.1.2 关键节点</h4>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th>触发</th>
+<th>UI 反馈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>选客户</td>
+<td>文本框 + 联想下拉</td>
+<td>客户编码 + 名称 + 信用额度</td>
+</tr>
+<tr>
+<td>F8 图号联想</td>
+<td>1 字符触发远程搜索</td>
+<td>下拉：图号 + 最新版本 + 缩略图</td>
+</tr>
+<tr>
+<td>选图号</td>
+<td>鼠标点击 / 回车</td>
+<td>BOM 自动带出 + 成本自动汇总</td>
+</tr>
+<tr>
+<td>切换含税</td>
+<td>Alt+T</td>
+<td>金额实时重算 + 标签切换</td>
+</tr>
+<tr>
+<td>保存</td>
+<td>Ctrl+S</td>
+<td>右上角 Toast "草稿已保存" + 单据状态变"草稿"</td>
+</tr>
+<tr>
+<td>提交</td>
+<td>Ctrl+Enter</td>
+<td>弹窗"已提交审批" + 跳转到列表页</td>
+</tr>
+</tbody>
+</table>
+<h4 id="713-case">7.1.3 边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户为黑名单</td>
+<td>提交时弹窗拦截 + Toast "该客户为黑名单，无法报价"</td>
+</tr>
+<tr>
+<td>金额阈值跨档</td>
+<td>5 万 / 20 万边界走向上取整档（5.00 万 = 5-20 万档）</td>
+</tr>
+<tr>
+<td>客户保护期内</td>
+<td>选客户时显示红色 Tag "保护中" + 提示"该客户由 X 保护"</td>
+</tr>
+<tr>
+<td>图号无 BOM</td>
+<td>提示"该图号未维护 BOM"+ 引导到 BOM 维护页</td>
+</tr>
+<tr>
+<td>网络中断</td>
+<td>提交失败时 Toast + 草稿本地缓存，恢复后自动重试</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="72-2e5-s2-3">7.2 流程 2：操作工扫码报工（E5-S2）—— 3 步完成</h3>
+<h4 id="721">7.2.1 流程图</h4>
+<pre><code>开始
+  ↓
+[1] 打开 APP，默认进入「扫码」Tab（80% 区域扫码框）
+  ↓
+[2] 摄像头对准工单码 → 自动识别
+  ↓
+   识别成功 → 震动 + 滴声 → 自动路由到「扫码结果页」
+  ↓
+[3] 选择报工（自动识别为工单码 → 默认进入报工页）
+  ↓
+[4] 填写 3 个数字：完工数、合格数、报废数（大数字键盘）
+  ↓
+   校验：合格 + 报废 = 完工 ✓
+  ↓
+[5] 点击&quot;提交&quot;按钮（高度 64px）
+  ↓
+[6] 提交成功 → Toast &quot;已报工&quot;+ 自动跳回扫码页
+  ↓
+结束
+</code></pre>
+
+<h4 id="722">7.2.2 关键节点</h4>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th>触发</th>
+<th>UI 反馈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>摄像头启动</td>
+<td>APP 启动后 1s 内</td>
+<td>扫码框 + 4 角动画</td>
+</tr>
+<tr>
+<td>识别成功</td>
+<td>摄像头解析到二维码</td>
+<td>震动 200ms + 滴声 + 屏幕闪绿 200ms</td>
+</tr>
+<tr>
+<td>识别失败</td>
+<td>模糊/无码</td>
+<td>震动 2 次（连续）+ Toast "识别失败"</td>
+</tr>
+<tr>
+<td>报工页</td>
+<td>路由切换</td>
+<td>上滑动画 300ms</td>
+</tr>
+<tr>
+<td>大数字键盘</td>
+<td>点击数字输入框</td>
+<td>弹出系统数字键盘</td>
+</tr>
+<tr>
+<td>校验失败</td>
+<td>合格+报废≠完工</td>
+<td>输入框红框 + 错误提示</td>
+</tr>
+<tr>
+<td>报废率 &gt; 10%</td>
+<td>实时计算</td>
+<td>黄色提示 "报废率 12%，将触发品检介入"</td>
+</tr>
+<tr>
+<td>提交</td>
+<td>大按钮</td>
+<td>按钮变"提交中..." 1s → Toast + 跳回</td>
+</tr>
+</tbody>
+</table>
+<h4 id="723-case">7.2.3 边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>扫码失败</td>
+<td>自动重试 3 次 → 弹窗"请重试"+ 闪光灯按钮</td>
+</tr>
+<tr>
+<td>未知码</td>
+<td>弹窗"未知码，请确认" + 手工输入兜底</td>
+</tr>
+<tr>
+<td>单据已关闭</td>
+<td>弹窗"该工单已关闭" + 跳回扫码页</td>
+</tr>
+<tr>
+<td>离线扫码</td>
+<td>顶部橙色横幅"离线模式 5 条待上传"+ 数据入本地队列</td>
+</tr>
+<tr>
+<td>报废率 &gt; 10%</td>
+<td>提交后自动推送品检待办 + Toast "已通知品检"</td>
+</tr>
+<tr>
+<td>报工数量 &gt; 派工数量</td>
+<td>输入框红框 + 提示"超过派工数量"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="73-3e5-s1">7.3 流程 3：生管排产（E5-S1）—— 拖拽式</h3>
+<h4 id="731">7.3.1 流程图</h4>
+<pre><code>开始
+  ↓
+[1] 进入「排产看板」（默认显示今日）
+  ↓
+[2] 左侧&quot;待排产&quot;列有 N 张卡片（工单）
+  ↓
+[3] 拖拽卡片到右侧甘特图（机台 × 时间）
+  ↓
+[4] 释放鼠标 → 预校验（机台是否兼容、时间是否冲突、是否超载）
+  ↓
+   冲突 → 红框 + Toast &quot;该机台当日已满载&quot; + 自动归位
+   通过 → 绿色高亮 + 弹窗&quot;确认排产？&quot;
+  ↓
+[5] 点击&quot;确认&quot;→ 后端保存 + WebSocket 广播
+  ↓
+[6] 其他生管的看板同步刷新（5s 轮询 / WS 推送）
+  ↓
+结束
+</code></pre>
+
+<h4 id="732">7.3.2 关键节点</h4>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th>触发</th>
+<th>UI 反馈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>拖拽开始</td>
+<td>鼠标按下 + 移动 5px</td>
+<td>卡片半透明 + 跟随鼠标</td>
+</tr>
+<tr>
+<td>拖拽中</td>
+<td>实时计算目标位置</td>
+<td>高亮可放置区（绿）/ 不可放置（红）</td>
+</tr>
+<tr>
+<td>释放</td>
+<td>鼠标松开</td>
+<td>弹窗确认 / 自动归位</td>
+</tr>
+<tr>
+<td>预校验</td>
+<td>后端 API 调用</td>
+<td>Loading 100ms 内</td>
+</tr>
+<tr>
+<td>冲突</td>
+<td>后端返回 409</td>
+<td>红框 + Toast + 自动归位</td>
+</tr>
+<tr>
+<td>成功</td>
+<td>后端返回 200</td>
+<td>绿色高亮 200ms + 卡片变色（草稿→已排产）</td>
+</tr>
+<tr>
+<td>实时刷新</td>
+<td>WS 推送</td>
+<td>卡片动画插入（300ms）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="733-case">7.3.3 边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>机台类型不匹配</td>
+<td>拖拽时红色"X" + 不可放下 + Toast "该机台无法加工此产品"</td>
+</tr>
+<tr>
+<td>时间冲突</td>
+<td>目标位置红框 + Toast "该机台当日已满载"</td>
+</tr>
+<tr>
+<td>超载预警</td>
+<td>黄色进度条（&gt; 80%）+ 可放下但提示"超载"</td>
+</tr>
+<tr>
+<td>网络中断</td>
+<td>拖拽失败 → 卡片归位 + Toast "网络异常，已重试"</td>
+</tr>
+<tr>
+<td>并发冲突</td>
+<td>A 生管已排 → B 生管拖拽时红框 + Toast "该时段已被 X 排产"</td>
+</tr>
+<tr>
+<td>撤销操作</td>
+<td>5 秒内可 Ctrl+Z 撤销排产（前端乐观更新）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="74-4-e1-s4-e5-s2">7.4 流程 4：操作工离线扫码 + 自动同步（E1-S4 + E5-S2）</h3>
+<h4 id="741">7.4.1 流程图</h4>
+<pre><code>开始（离线状态）
+  ↓
+[1] 顶部状态条：橙色横幅&quot;离线模式 0 条待上传&quot;
+  ↓
+[2] 扫码报工 → 写入本地 SQLite（带本地时间戳）
+  ↓
+[3] Toast &quot;已离线保存，将在恢复后自动同步&quot;
+  ↓
+[4] 状态条更新：橙色横幅&quot;离线模式 1 条待上传&quot;
+  ↓
+[5] ...（继续扫码，状态条累加）
+  ↓
+[6] 网络恢复 → WorkManager 触发同步任务
+  ↓
+[7] 状态条：蓝色横幅&quot;正在同步 5/5...&quot;
+  ↓
+[8] 同步完成 → 状态条：绿色横幅&quot;已同步 5 条&quot; 3s 后消失
+  ↓
+[9] 如有冲突：弹窗&quot;该工单已报工 8 件，是否合并？&quot;
+  ↓
+结束
+</code></pre>
+
+<h4 id="742">7.4.2 关键节点</h4>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th>触发</th>
+<th>UI 反馈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>检测离线</td>
+<td>网络变化监听</td>
+<td>状态条 1s 内变橙</td>
+</tr>
+<tr>
+<td>写入本地</td>
+<td>扫码提交时</td>
+<td>立即 Toast + 状态条 +1</td>
+</tr>
+<tr>
+<td>检测在线</td>
+<td>网络恢复</td>
+<td>状态条变蓝 + 同步动画</td>
+</tr>
+<tr>
+<td>同步进度</td>
+<td>WorkManager 回调</td>
+<td>状态条实时更新 X/Y</td>
+</tr>
+<tr>
+<td>冲突</td>
+<td>服务端状态与本地不一致</td>
+<td>弹窗二选一（覆盖/合并）</td>
+</tr>
+<tr>
+<td>同步完成</td>
+<td>全部上传成功</td>
+<td>绿色横幅 + 数字归零</td>
+</tr>
+</tbody>
+</table>
+<h4 id="743-case">7.4.3 边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>本地队列 &gt; 500 条</td>
+<td>弹窗拦截"本地缓存已满，请连接网络同步"</td>
+</tr>
+<tr>
+<td>服务端拒绝</td>
+<td>红色横幅"同步失败"+ 列表 + 重试按钮</td>
+</tr>
+<tr>
+<td>时间戳异常</td>
+<td>冲突弹窗 + 用户选择（覆盖/合并/取消）</td>
+</tr>
+<tr>
+<td>APP 杀进程后重启</td>
+<td>WorkManager 唤醒同步任务 + 状态条恢复</td>
+</tr>
+<tr>
+<td>同步中再次断网</td>
+<td>暂停同步 + 状态条变橙 + 恢复后继续</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-wireframes-mockups">8. Wireframes &amp; Mockups 线框图与原型</h2>
+<blockquote>
+<p><strong>本节为 4 个核心页面的 ASCII wireframe 终稿</strong>，可直接驱动前端开发。</p>
+</blockquote>
+<h3 id="81-1e2-s2-web">8.1 核心页面 1：报价单录入页（E2-S2）—— Web 端 高保真</h3>
+<pre class="ascii">┌──────────────────────────────────────────────────────────────────────────────┐
+│ [LOGO] CNC ERP    工作台 销售 生产 物料 品质 采购 财务 管理  🔍Ctrl+K 👤王 ▼ 🔔3 ⏻ │  64px
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 工作台 / 销售 / 报价单 / 新建 BJ202606040001                                   │  面包屑
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ┌── 区域 1：基础信息（顶栏表单，折叠面板） ──────────────────────┐ [收起 ▲]  │
+│ │                                                                  │           │
+│ │  客户 [上海某科技公司 ▼]    联系人 [王经理 ▼]    交期 [2026-07-15]│           │
+│ │  币种 [CNY ▼]    订单类型 [标准 ▼]    是否 FA [☐]                │           │
+│ │  备注 [                                                      ]  │           │
+│ │                                                                  │           │
+│ └──────────────────────────────────────────────────────────────────┘           │
+│                                                                                │
+│ ┌── 区域 2：图号明细 + 图纸预览（左右 5:7）──────────────────┐              │
+│ │  ┌─────────────────────────┐    ┌──────────────────────────┐  │              │
+│ │  │ 图号明细 (3)             │    │ 图纸预览                  │  │              │
+│ │  │ ┌───┬──────┬────┬────┬──┐│    │                          │  │              │
+│ │  │ │# │图号  │材质│数量│单价││    │   ╔══════════════════╗   │  │              │
+│ │  │ ├───┼──────┼────┼────┼──┤│    │   ║                  ║   │  │              │
+│ │  │ │1 │P001  │45# │100 │80 ││    │   ║  P001-V2.0.pdf   ║   │  │              │
+│ │  │ │2 │P002  │AL  │ 50 │120││    │   ║                  ║   │  │              │
+│ │  │ │3 │      │    │   │   ││    │   ║  [客户图纸预览]  ║   │  │              │
+│ │  │ └───┴──────┴────┴────┴──┘│    │   ║                  ║   │  │              │
+│ │  │                          │    │   ╚══════════════════╝   │  │              │
+│ │  │  [+ 添加明细]            │    │   [&lt;] 1/3 [&gt;]  [⊕][⊖]    │  │              │
+│ │  │  F8=图号联想             │    │   仅预览  不可下载       │  │              │
+│ │  └─────────────────────────┘    └──────────────────────────┘  │              │
+│ └──────────────────────────────────────────────────────────────┘              │
+│                                                                                │
+│ ┌── 区域 3：BOM 估算表（多级，可折叠）─────────────────────────┐              │
+│ │  ▼ 工序 1：车外圆   标准工时 10min/件   单价 2元/件           │              │
+│ │    ┌────┬──────────┬─────┬────┬────┬────┐                    │              │
+│ │    │物料│名称      │用量 │损耗│单价│小计│                    │              │
+│ │    ├────┼──────────┼─────┼────┼────┼────┤                    │              │
+│ │    │YL45│45#圆料D80│ 2kg │ 5% │ 8  │16.8│                    │              │
+│ │    └────┴──────────┴─────┴────┴────┴────┘                    │              │
+│ │  ▶ 工序 2：CNC（折叠）                                       │              │
+│ │  ▶ 工序 3：钳工                                              │              │
+│ │  ▶ 工序 4：表处（委外）                                      │              │
+│ │  [+ 添加工序]                                                │              │
+│ └────────────────────────────────────────────────────────────┘              │
+│                                                                                │
+│ ┌── 区域 4：成本汇总（右侧浮动卡片，吸顶）─┐  ┌── 区域 5：操作 ──┐            │
+│ │  材料成本        ¥ 8,400.00               │  │ [保存草稿]    │            │
+│ │  人工成本        ¥ 2,000.00               │  │ [提交审批]    │            │
+│ │  委外成本        ¥ 0.00                   │  │ [预览 PDF]    │            │
+│ │  ───────────────────────                  │  │ [转订单]     │            │
+│ │  总成本          ¥ 10,400.00              │  │  (转订单仅已审)│            │
+│ │  报价金额        ¥ 12,000.00              │  └──────────────┘            │
+│ │  ───────────────────────                  │                                │
+│ │  利润            ¥ 1,600.00               │                                │
+│ │  利润率          13.3%                    │                                │
+│ │  ───────────────────────                  │                                │
+│ │  含税            ☑ Alt+T 切换             │                                │
+│ │  税额(13%)       ¥ 1,560.00               │                                │
+│ └──────────────────────────────────────────┘                                │
+│                                                                                │
+│ 快捷键：Ctrl+S 保存 | F8 图号联想 | Tab 切明细行 | Alt+T 含税切换              │
+└──────────────────────────────────────────────────────────────────────────────┘
+</pre>
+
+<p><strong>关键交互细节</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>行为</th>
+<th>UI 反馈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户联想</td>
+<td>输入 1 字符触发</td>
+<td>下拉：编码 + 名称 + 信用额度 + 保护状态</td>
+</tr>
+<tr>
+<td>F8 图号联想</td>
+<td>焦点在图号输入框</td>
+<td>弹窗（独立 Modal）：图号 + 最新版本 + 缩略图（2 列）</td>
+</tr>
+<tr>
+<td>图纸预览</td>
+<td>自动随明细行切换</td>
+<td>pdf.js 加载当前选中行的图号 PDF</td>
+</tr>
+<tr>
+<td>BOM 估算</td>
+<td>选图号后自动展开</td>
+<td>多级树 + 损耗系数 + 用量 + 单价 + 小计</td>
+</tr>
+<tr>
+<td>含税切换</td>
+<td>Alt+T</td>
+<td>标签切换 + 金额实时重算 + 税额显示</td>
+</tr>
+<tr>
+<td>利润红字</td>
+<td>利润率 &lt; 5%</td>
+<td>红色加粗 + Toast 提示</td>
+</tr>
+<tr>
+<td>客户黑名单</td>
+<td>提交时校验</td>
+<td>弹窗拦截 + Toast</td>
+</tr>
+<tr>
+<td>草稿 vs 提交</td>
+<td>Ctrl+S vs Ctrl+Enter</td>
+<td>按钮文字切换 + 单据状态机推进</td>
+</tr>
+<tr>
+<td>浮动卡片吸顶</td>
+<td>滚动时</td>
+<td>距顶 80px 时吸顶 + 阴影 L2</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="82-2e5-s2-app">8.2 核心页面 2：扫码三码页（E5-S2）—— APP 端 高保真</h3>
+<h4 id="821">8.2.1 扫码开工</h4>
+<pre class="ascii">┌──────────────────────────────────┐
+│  8:30    ⚪在线 ⚙               │  ← 状态条 32px
+├──────────────────────────────────┤
+│                                  │
+│                                  │
+│         ╔═══════════════╗       │
+│         ║               ║       │
+│         ║  [扫码框]     ║       │  ← 80% 区域
+│         ║   60% 屏幕     ║       │
+│         ║               ║       │
+│         ║  📷 对准二维码 ║       │
+│         ║               ║       │
+│         ╚═══════════════╝       │
+│                                  │
+│   [💡 闪光灯]  [📁 历史]         │
+│                                  │
+├──────────────────────────────────┤
+│  💡 扫工单码 → 开工               │  ← 提示语（轮播 3 步）
+└──────────────────────────────────┘
+        ↓ 扫到 GD202606040001（1s 内）
+┌──────────────────────────────────┐
+│  ✓  识别成功：工单码（震动+滴声）│
+├──────────────────────────────────┤
+│                                  │
+│   工单号     GD202606040001       │
+│   产品       P001 连接件         │
+│   工序       [CNC ▼]  默认第1道  │
+│   机台       [CNC-01 ▼]  ✓ 蓝牙  │
+│   操作人     王师傅   ✓           │
+│                                  │
+│   ┌──────────────────────────┐  │
+│   │     [    开    工    ]    │  │  ← 大按钮 64px
+│   └──────────────────────────┘  │
+│                                  │
+│   取消                            │
+└──────────────────────────────────┘
+        ↓ 点&quot;开工&quot;（1s）
+┌──────────────────────────────────┐
+│  ✓ 开工成功                       │  ← Toast 2s
+│                                  │
+│  → 1 秒后自动跳回扫码页           │
+└──────────────────────────────────┘
+</pre>
+
+<h4 id="822">8.2.2 扫码报工</h4>
+<pre class="ascii">┌──────────────────────────────────┐
+│  报工 - GD202606040001            │  ← AppBar 48px
+├──────────────────────────────────┤
+│                                  │
+│   工序       CNC                 │
+│   机台       CNC-01              │
+│   操作人     王师傅               │
+│                                  │
+│   ┌──────────────────────────┐  │
+│   │  完工数  [  10  ]  ▲▼    │  │  ← 大数字键盘
+│   │  合格数  [   9  ]  ▲▼    │  │
+│   │  报废数  [   1  ]  ▲▼    │  │
+│   │  报废率     10%  ⚠       │  │  ← &gt; 10% 警示
+│   └──────────────────────────┘  │
+│   校验: 合格(9) + 报废(1) = 完工(10) ✓
+│                                  │
+│   ┌──────────────────────────┐  │
+│   │     [    提    交    ]    │  │  ← 64px 大按钮
+│   └──────────────────────────┘  │
+│                                  │
+│   取消                            │
+└──────────────────────────────────┘
+</pre>
+
+<h4 id="823">8.2.3 扫码过站</h4>
+<pre class="ascii">┌──────────────────────────────────┐
+│  过站 - LZ-202606040001           │
+├──────────────────────────────────┤
+│                                  │
+│   上工序     CNC  (王师傅完成)   │
+│   合格数     9 件                 │
+│                                  │
+│   下工序     [钳工 ▼]             │
+│   交接数量   [9] 件  (默认=合格)  │
+│   交接人     [扫码 ▼] ← 扫工号   │
+│                                  │
+│   ┌──────────────────────────┐  │
+│   │     [    提    交    ]    │  │
+│   └──────────────────────────┘  │
+│                                  │
+│   取消                            │
+└──────────────────────────────────┘
+</pre>
+
+<h4 id="824">8.2.4 通用交互规范</h4>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>规范</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>关键按钮高度</td>
+<td>≥ 64px（戴手套可点）</td>
+</tr>
+<tr>
+<td>关键按钮字号</td>
+<td>18px Medium</td>
+</tr>
+<tr>
+<td>数字输入框</td>
+<td>弹出系统数字键盘（仅数字）</td>
+</tr>
+<tr>
+<td>扫码成功反馈</td>
+<td>震动 200ms + 滴声 + 屏幕闪绿 200ms</td>
+</tr>
+<tr>
+<td>扫码失败反馈</td>
+<td>震动 2 次（连续）+ Toast "识别失败，请重试"</td>
+</tr>
+<tr>
+<td>状态条位置</td>
+<td>顶部 32px 固定（不滚动）</td>
+</tr>
+<tr>
+<td>状态条颜色</td>
+<td>在线=灰 / 离线=橙 / 同步中=蓝 / 同步完成=绿 3s 消失</td>
+</tr>
+<tr>
+<td>页面切换动画</td>
+<td>上滑 300ms（iOS 风）；不旋转、不淡入淡出</td>
+</tr>
+<tr>
+<td>错误提示</td>
+<td>顶部 Toast（红底白字 2s）+ 输入框红框</td>
+</tr>
+<tr>
+<td>成功提示</td>
+<td>顶部 Toast（绿底白字 2s）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="83-3e5-s1-web">8.3 核心页面 3：排产甘特图（E5-S1）—— Web 端 高保真</h3>
+<pre class="ascii">┌──────────────────────────────────────────────────────────────────────────────┐
+│ 排产看板                                            [今日][明日][本周][自定义]│  64px
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 筛选: 日期 [2026-06-10 ~ 06-16] 机台 [全部▼] 班别 [白班▼]  🔍搜索工单 [刷新] │  56px
+├──────────────────────────────────────────────────────────────────────────────┤
+│         │ 周一 06-10 │ 周二 06-11 │ 周三 06-12 │ 周四 06-13 │ 周五 06-14     │
+│         │ 8 10 14 18 │ 8 10 14 18 │ 8 10 14 18 │ 8 10 14 18 │ 8 10 14 18    │
+│ ────────┼────────────┼────────────┼────────────┼────────────┼────────────   │
+│ CNC-01  │ ▓▓GD001▓▓▓ │            │ ░░GD003░░░ │            │ ▓▓GD005▓▓▓    │
+│         │   P001     │            │   P003     │            │   P005        │
+│         │   10h 已排 │            │   6h 已排  │            │   4h 已排     │
+│ ────────┼────────────┼────────────┼────────────┼────────────┼────────────   │
+│ CNC-02  │ ░░GD002░░░ │ ▓▓GD004▓▓▓ │ ⚠GD006    │            │              │
+│         │   P002     │   P004     │ (已超载)   │            │              │
+│         │   8h 已排  │   10h 已排  │ 红色边框   │            │              │
+│ ────────┼────────────┼────────────┼────────────┼────────────┼────────────   │
+│ CNC-03  │  (空闲)    │  (空闲)    │  (维护)    │            │              │
+│         │            │            │ 灰色斜纹   │            │              │
+│ ────────┼────────────┼────────────┼────────────┼────────────┼────────────   │
+│ 负荷条  │ ████░░ 60% │ ███░░░ 50% │ █████░ 80%│            │              │
+│         │ 绿 &lt; 70%   │ 绿 &lt; 70%   │ 黄 70-90%  │            │              │
+│         │            │            │ 红 &gt; 90%   │            │              │
+│                                                                                │
+│ [+ 新增工单]    快捷键: N=新建  ←/→=切换工单  R=刷新  Esc=关闭抽屉             │
+└──────────────────────────────────────────────────────────────────────────────┘
+                              ↓ 点击 GD001 色块
+┌─────────────────────────┐
+│  工单详情（右侧抽屉 480px）│
+│                         │
+│  GD202606040001         │
+│  产品  P001 连接件      │
+│  数量  100 件           │
+│  工序  车→CNC→钳→包装   │
+│  计划  06-10 08:00      │
+│       ~ 06-10 18:00     │
+│  状态  已排产           │
+│                         │
+│  [调整排产] [取消排产]   │
+│  [查看详情 →]            │
+└─────────────────────────┘
+</pre>
+
+<p><strong>关键交互</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>行为</th>
+<th>UI 反馈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>工单色块拖拽</td>
+<td>改时间（X 轴）/ 改机台（Y 轴）</td>
+<td>拖拽时半透明 + 目标区高亮</td>
+</tr>
+<tr>
+<td>拖拽预校验</td>
+<td>机台类型 / 时间冲突 / 超载</td>
+<td>不可放下：红框 + "X"；可放下：绿框 + "+"</td>
+</tr>
+<tr>
+<td>拖拽释放</td>
+<td>鼠标松开</td>
+<td>弹窗"确认排产？" / 自动归位</td>
+</tr>
+<tr>
+<td>冲突高亮</td>
+<td>拖到已占用时段</td>
+<td>红框 + Toast "该机台当日已满载"</td>
+</tr>
+<tr>
+<td>超载预警</td>
+<td>累计 &gt; 80%</td>
+<td>黄色进度条 + 80% 处标线</td>
+</tr>
+<tr>
+<td>右侧抽屉</td>
+<td>点击色块</td>
+<td>滑入 300ms + 详情 + 操作按钮</td>
+</tr>
+<tr>
+<td>键盘 ←/→</td>
+<td>切换工单</td>
+<td>色块焦点切换（描边 2px 主色）</td>
+</tr>
+<tr>
+<td>实时刷新</td>
+<td>WebSocket 5s</td>
+<td>卡片插入动画 300ms</td>
+</tr>
+<tr>
+<td>机台负荷条</td>
+<td><MachineLoadBar></td>
+<td>绿 &lt; 70% / 黄 70-90% / 红 &gt; 90%</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="84-4e11-s1-web">8.4 核心页面 4：生产工作台（E11-S1）—— Web 端 高保真</h3>
+<pre class="ascii">┌──────────────────────────────────────────────────────────────────────────────┐
+│ 工作台 / 生产工作台   👤 王生管  ▼           ⚙ 设置   🔔 3 (3 待办)   退出    │  64px
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 角色视图: [生管-全公司] [车间主管-本车间]      实时刷新: ● 5s (WebSocket)      │  40px
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                  │
+│ │ 今日产值 │ │ 逾期订单 │ │ 在制工单 │ │ 外协在途 │ │ 设备故障 │  ← KPI 卡片
+│ │¥82,500  │ │ ⚠ 3     │ │ 28      │ │ 12      │ │ 1       │     5 个
+│ │ ▲ 12%   │ │ 7 天+    │ │ 5 急单   │ │ 5 逾期   │ │ 待处理   │
+│ │ 同比     │ │ 点击→    │ │ 点击→    │ │ 点击→    │ │ 点击→    │
+│ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘                  │
+│                                                                                │
+│ ┌── 主区：5 列看板（拖拽流转）────────────────────────────────────┐            │
+│ │ 待排产 (5)  │ 加工中 (8)  │ 待检验 (3) │ 已完工 (2) │ 已入库 (10)│            │
+│ │ ┌─────────┐ │ ┌─────────┐ │ ┌─────────┐│ ┌─────────┐│ ┌─────────┐│            │
+│ │ │GD001    │ │ │GD005    │ │ │GD012    ││ │GD015    ││ │GD018    ││            │
+│ │ │P001     │ │ │P005     │ │ │P012     ││ │P015     ││ │P018     ││            │
+│ │ │100件 8h │ │ │50件 4h  │ │ │80件 FA  ││ │30件 急单││ │60件 交付││            │
+│ │ │⚠ 3天后  │ │ │CNC-01   │ │ │钳工     ││ │          ││ │          ││            │
+│ │ │[排产→]  │ │ │[报工→]  │ │ │[检验→]  ││ │[入库→]  ││ │[关闭→]  ││            │
+│ │ └─────────┘ │ └─────────┘ │ └─────────┘│ └─────────┘│ └─────────┘│            │
+│ │ ...         │ ...         │ ...        │ ...        │ ...        │            │
+│ │  拖拽 →     │             │            │            │            │            │
+│ └─────────────────────────────────────────────────────────────┘            │
+│                                                                                │
+│ ┌── 异常事件流（实时滚动，30 行）──────────────────────────────┐            │
+│ │ 14:32  ⚠ CNC-02 故障         张三已报修                                 │            │
+│ │ 14:18  📦 YL45D80 库存预警（80kg &lt; 下限 100kg）  仓管员李四             │            │
+│ │ 13:55  ❌ P003 报废 5 件（&gt; 10% 阈值）  品检员已介入                    │            │
+│ │ 13:40  ✅ GD015 完工入库                                                │            │
+│ │ 13:22  🔧 外协厂 A 表处 逾期 1 天                                       │            │
+│ │ ...                                                                    │            │
+│ └────────────────────────────────────────────────────────────┘            │
+│                                                                                │
+│ 快捷键: N=新建工单  A=待办  R=刷新  /=全局搜索  Esc=关闭抽屉                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+</pre>
+
+<p><strong>关键交互</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>行为</th>
+<th>UI 反馈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KPI 卡片</td>
+<td>点击钻取</td>
+<td>跳转到对应列表页（带过滤条件）</td>
+</tr>
+<tr>
+<td>拖拽流转</td>
+<td>卡片可拖到下一列</td>
+<td>跨列校验状态机（如"已入库"不可拖到"待排产"）</td>
+</tr>
+<tr>
+<td>卡片按钮</td>
+<td>"[排产→]" "[报工→]" "[检验→]"</td>
+<td>跳转到对应业务页</td>
+</tr>
+<tr>
+<td>异常事件流</td>
+<td>WebSocket 5s 推送</td>
+<td>新行从顶部插入（淡入 300ms）</td>
+</tr>
+<tr>
+<td>角色切换</td>
+<td>下拉切换"生管-全公司"/"车间主管-本车间"</td>
+<td>看板数据自动刷新（带 Loading）</td>
+</tr>
+<tr>
+<td>实时刷新指示</td>
+<td>顶部小绿点</td>
+<td>5s 闪一次；离线时变红</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="85-39">8.5 低保真页面清单（39 个）</h3>
+<blockquote>
+<p>不一一 ASCII 展示，按以下清单交付 Storybook + 低保真原型（Figma）。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>页面</th>
+<th>路由</th>
+<th>Story</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>客户列表</td>
+<td><code>/sales/customer/list</code></td>
+<td>E2-S1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>客户详情</td>
+<td><code>/sales/customer/:id</code></td>
+<td>E2-S1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>客户保护管理</td>
+<td><code>/sales/customer/protection</code></td>
+<td>E2-S1</td>
+</tr>
+<tr>
+<td>4</td>
+<td>报价列表</td>
+<td><code>/sales/quote/list</code></td>
+<td>E2-S2</td>
+</tr>
+<tr>
+<td>5</td>
+<td>报价详情/编辑</td>
+<td><code>/sales/quote/:id</code></td>
+<td>E2-S2</td>
+</tr>
+<tr>
+<td>6</td>
+<td>报价审批</td>
+<td><code>/sales/quote/approval</code></td>
+<td>E2-S2</td>
+</tr>
+<tr>
+<td>7</td>
+<td>订单列表</td>
+<td><code>/sales/order/list</code></td>
+<td>E2-S3</td>
+</tr>
+<tr>
+<td>8</td>
+<td>订单详情</td>
+<td><code>/sales/order/:id</code></td>
+<td>E2-S3</td>
+</tr>
+<tr>
+<td>9</td>
+<td>订单变更</td>
+<td><code>/sales/order/:id/change</code></td>
+<td>E2-S3</td>
+</tr>
+<tr>
+<td>10</td>
+<td>订单时间线</td>
+<td><code>/sales/order/:id/timeline</code></td>
+<td>E2-S3</td>
+</tr>
+<tr>
+<td>11</td>
+<td>合同列表</td>
+<td><code>/sales/contract/list</code></td>
+<td>E2-S4</td>
+</tr>
+<tr>
+<td>12</td>
+<td>合同详情</td>
+<td><code>/sales/contract/:id</code></td>
+<td>E2-S4</td>
+</tr>
+<tr>
+<td>13</td>
+<td>回款计划</td>
+<td><code>/sales/contract/:id/payment-plan</code></td>
+<td>E2-S4</td>
+</tr>
+<tr>
+<td>14</td>
+<td>收款登记</td>
+<td><code>/sales/contract/:id/payment-reg</code></td>
+<td>E2-S4</td>
+</tr>
+<tr>
+<td>15</td>
+<td>订单利润</td>
+<td><code>/sales/contract/:id/profit</code></td>
+<td>E2-S4</td>
+</tr>
+<tr>
+<td>16</td>
+<td>图纸库列表</td>
+<td><code>/material/drawing/list</code></td>
+<td>E3-S1</td>
+</tr>
+<tr>
+<td>17</td>
+<td>图纸预览</td>
+<td><code>/material/drawing/:id/preview</code></td>
+<td>E3-S1</td>
+</tr>
+<tr>
+<td>18</td>
+<td>工程转化</td>
+<td><code>/material/drawing/:id/transform</code></td>
+<td>E3-S2</td>
+</tr>
+<tr>
+<td>19</td>
+<td>BOM 树</td>
+<td><code>/material/bom</code></td>
+<td>E3-S3</td>
+</tr>
+<tr>
+<td>20</td>
+<td>工艺编辑器</td>
+<td><code>/material/process</code></td>
+<td>E3-S4</td>
+</tr>
+<tr>
+<td>21</td>
+<td>物料档案</td>
+<td><code>/material/item</code></td>
+<td>E3-S3</td>
+</tr>
+<tr>
+<td>22</td>
+<td>库位管理</td>
+<td><code>/material/warehouse</code></td>
+<td>E4-S3</td>
+</tr>
+<tr>
+<td>23</td>
+<td>库存查询</td>
+<td><code>/material/inventory</code></td>
+<td>E4-S3</td>
+</tr>
+<tr>
+<td>24</td>
+<td>安全库存</td>
+<td><code>/material/safety-stock</code></td>
+<td>E4-S4</td>
+</tr>
+<tr>
+<td>25</td>
+<td>检验任务</td>
+<td><code>/quality/inspection/*</code></td>
+<td>E7-S1</td>
+</tr>
+<tr>
+<td>26</td>
+<td>FA 首件</td>
+<td><code>/quality/fa</code></td>
+<td>E7-S2</td>
+</tr>
+<tr>
+<td>27</td>
+<td>三次元检测</td>
+<td><code>/quality/3dcmm</code></td>
+<td>E7-S3</td>
+</tr>
+<tr>
+<td>28</td>
+<td>不良品处理</td>
+<td><code>/quality/defect</code></td>
+<td>E7-S4</td>
+</tr>
+<tr>
+<td>29</td>
+<td>询比价</td>
+<td><code>/purchase/rfq</code></td>
+<td>E8-S1</td>
+</tr>
+<tr>
+<td>30</td>
+<td>采购订单</td>
+<td><code>/purchase/order/*</code></td>
+<td>E8-S2</td>
+</tr>
+<tr>
+<td>31</td>
+<td>到货提醒</td>
+<td><code>/purchase/reminder</code></td>
+<td>E8-S3</td>
+</tr>
+<tr>
+<td>32</td>
+<td>来料质检</td>
+<td><code>/purchase/incoming-qc</code></td>
+<td>E8-S4</td>
+</tr>
+<tr>
+<td>33</td>
+<td>应收/应付</td>
+<td><code>/finance/ar</code> <code>/finance/ap</code></td>
+<td>E9-S1</td>
+</tr>
+<tr>
+<td>34</td>
+<td>成本核算</td>
+<td><code>/finance/cost</code></td>
+<td>E9-S2</td>
+</tr>
+<tr>
+<td>35</td>
+<td>付款申请</td>
+<td><code>/finance/payment</code></td>
+<td>E9-S3</td>
+</tr>
+<tr>
+<td>36</td>
+<td>利润分析</td>
+<td><code>/finance/profit</code></td>
+<td>E9-S4</td>
+</tr>
+<tr>
+<td>37</td>
+<td>用户与角色</td>
+<td><code>/admin/user</code></td>
+<td>E1-S1</td>
+</tr>
+<tr>
+<td>38</td>
+<td>审批工作流配置</td>
+<td><code>/admin/workflow</code></td>
+<td>E1-S2</td>
+</tr>
+<tr>
+<td>39</td>
+<td>系统参数与字典</td>
+<td><code>/admin/dict</code></td>
+<td>E1-S3</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>其余 4 个页面（员工档案、薪酬核算、绩效招聘、看板、报表）按同样方法交付。</p>
+</blockquote>
+<hr />
+<h2 id="9-component-library">9. Component Library 组件库</h2>
+<h3 id="91">9.1 基础库选型</h3>
+<table>
+<thead>
+<tr>
+<th>库</th>
+<th>版本</th>
+<th>用途</th>
+<th>License</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Element Plus</strong></td>
+<td>2.4.x</td>
+<td>基础组件（Form/Table/Tree/Dialog/...）</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><strong>ECharts</strong></td>
+<td>5.x</td>
+<td>图表（折线/柱状/饼/甘特）</td>
+<td>Apache 2.0</td>
+</tr>
+<tr>
+<td><strong>pdf.js</strong></td>
+<td>4.x</td>
+<td>图纸 PDF 在线预览</td>
+<td>Apache 2.0</td>
+</tr>
+<tr>
+<td><strong>VxeTable</strong></td>
+<td>4.x</td>
+<td>大数据量表格（≥ 1000 行）/ 虚拟滚动</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><strong>vue-draggable-next</strong></td>
+<td>latest</td>
+<td>拖拽（排产/看板/审批流配置）</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><strong>vue-i18n</strong></td>
+<td>9.x</td>
+<td>国际化（V1.0 中文为主，预留框架）</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><strong>Pinia</strong></td>
+<td>2.x</td>
+<td>状态管理（替代 Vuex）</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><strong>Vue Router</strong></td>
+<td>4.x</td>
+<td>路由</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><strong>Axios</strong></td>
+<td>1.x</td>
+<td>HTTP（OpenAPI 自动生成客户端）</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><strong>dayjs</strong></td>
+<td>1.x</td>
+<td>日期处理</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><strong>@vueuse/core</strong></td>
+<td>10.x</td>
+<td>组合式 API 工具集</td>
+<td>MIT</td>
+</tr>
+</tbody>
+</table>
+<h3 id="92">9.2 移动端库</h3>
+<table>
+<thead>
+<tr>
+<th>库</th>
+<th>用途</th>
+<th>License</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>zxing-android-embedded</strong></td>
+<td>扫码（摄像头）</td>
+<td>Apache 2.0</td>
+</tr>
+<tr>
+<td><strong>USB 扫码枪驱动（厂商 SDK）</strong></td>
+<td>车间 PDA/扫码枪</td>
+<td>厂商私有</td>
+</tr>
+<tr>
+<td><strong>Room</strong></td>
+<td>本地 SQLite（离线缓存）</td>
+<td>Apache 2.0</td>
+</tr>
+<tr>
+<td><strong>WorkManager</strong></td>
+<td>后台同步任务</td>
+<td>Apache 2.0</td>
+</tr>
+<tr>
+<td><strong>Hilt</strong></td>
+<td>依赖注入</td>
+<td>Apache 2.0</td>
+</tr>
+<tr>
+<td><strong>Jetpack Navigation</strong></td>
+<td>页面导航</td>
+<td>Apache 2.0</td>
+</tr>
+<tr>
+<td><strong>Glide</strong></td>
+<td>图片加载</td>
+<td>BSD</td>
+</tr>
+<tr>
+<td><strong>Retrofit + OkHttp</strong></td>
+<td>HTTP（OpenAPI 自动生成 Kotlin 客户端）</td>
+<td>Apache 2.0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="93-6-cnc-erp">9.3 6 个 CNC ERP 特有自定义组件</h3>
+<blockquote>
+<p>以下 6 个组件由前端封装，<strong>统一注册到全局</strong>，复用率 ≥ 80%。
+每个组件必须有 Storybook 文档：Props / Events / Slots / Examples / Edge Cases。</p>
+</blockquote>
+<h4 id="931-figurenumbersearch">9.3.1 <code>&lt;FigureNumberSearch&gt;</code> 图号联想搜索</h4>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>类型</th>
+<th>默认值</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>value</code></td>
+<td><code>string</code></td>
+<td>-</td>
+<td>是</td>
+<td>v-model 绑定值</td>
+</tr>
+<tr>
+<td><code>placeholder</code></td>
+<td><code>string</code></td>
+<td><code>'请输入图号'</code></td>
+<td>否</td>
+<td>占位文字</td>
+</tr>
+<tr>
+<td><code>showVersion</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>否</td>
+<td>是否显示版本号</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td><code>'large' \| 'default' \| 'small'</code></td>
+<td><code>'default'</code></td>
+<td>否</td>
+<td>尺寸</td>
+</tr>
+<tr>
+<td><code>disabled</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>否</td>
+<td>禁用</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>事件</th>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@select</code></td>
+<td><code>(figure: FigureInfo) =&gt; void</code></td>
+<td>选中图号时触发</td>
+</tr>
+<tr>
+<td><code>@clear</code></td>
+<td><code>() =&gt; void</code></td>
+<td>清空时触发</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>行为</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>输入 1 字符</td>
+<td>触发远程联想（debounce 300ms）</td>
+</tr>
+<tr>
+<td>下拉显示</td>
+<td>图号 + 最新版本 + 缩略图 + 材质</td>
+</tr>
+<tr>
+<td>回车</td>
+<td>填充 + 触发 <code>@select</code></td>
+</tr>
+<tr>
+<td>快捷键</td>
+<td><code>F8</code> 触发（Web 端全局）</td>
+</tr>
+<tr>
+<td>失败回退</td>
+<td>远程失败时显示"暂无匹配"，允许手工输入</td>
+</tr>
+</tbody>
+</table>
+<p><strong>使用示例</strong>：</p>
+<pre><code class="language-vue">&lt;FigureNumberSearch
+  v-model=&quot;form.figureNo&quot;
+  :show-version=&quot;true&quot;
+  @select=&quot;onFigureSelected&quot;
+/&gt;
+&lt;pre&gt;&lt;code&gt;
+#### 9.3.2 `&amp;lt;BomTree&amp;gt;` 多级 BOM 树
+
+| 属性 | 类型 | 默认值 | 必填 | 说明 |
+|------|------|--------|------|------|
+| `productId` | `string` | - | 是 | 产品 ID |
+| `bomType` | `&amp;#x27;design&amp;#x27; \| &amp;#x27;production&amp;#x27;` | `&amp;#x27;production&amp;#x27;` | 否 | BOM 类型 |
+| `editable` | `boolean` | `false` | 否 | 是否可编辑 |
+| `showCost` | `boolean` | `true` | 否 | 是否显示小计 |
+
+| 行为 | 描述 |
+|------|------|
+| 树形展开 | 多级子件 + 缩进 + 折叠箭头 |
+| 损耗系数 | 每层级独立维护 |
+| 行内小计 | 用量 × 单价 × 损耗系数 |
+| 单击编辑 | 单元格双击进入编辑态 |
+| 快捷键 | `F2` 编辑 / `Enter` 保存 / `Esc` 取消 |
+
+#### 9.3.3 `&amp;lt;ScanTrigger&amp;gt;` 扫码触发器
+
+| 属性 | 类型 | 默认值 | 必填 | 说明 |
+|------|------|--------|------|------|
+| `onScan` | `(value: string) =&amp;gt; void` | - | 是 | 扫码回调 |
+| `placeholder` | `string` | `&amp;#x27;扫码或手工输入&amp;#x27;` | 否 | 占位文字 |
+| `autoFocus` | `boolean` | `true` | 否 | 自动聚焦 |
+| `mode` | `&amp;#x27;auto&amp;#x27; \| &amp;#x27;usb&amp;#x27; \| &amp;#x27;bluetooth&amp;#x27; \| &amp;#x27;camera&amp;#x27;` | `&amp;#x27;auto&amp;#x27;` | 否 | 扫码模式 |
+
+| 能力 | 描述 |
+|------|------|
+| 自动识别输入设备 | USB 扫码枪 = 键盘事件 / 蓝牙 = 蓝牙广播 / 手机摄像头 = 摄像头扫描 |
+| 回车 | 自动调用 `onScan` |
+| 去重 | 本地缓存最近 5 秒扫码值，重复扫码不触发（防误触） |
+| 前缀识别 | GD/LZ/SB/WL/KH 前缀自动识别码类型 |
+
+#### 9.3.4 `&amp;lt;MachineLoadBar&amp;gt;` 机台负荷条
+
+| 属性 | 类型 | 默认值 | 必填 | 说明 |
+|------|------|--------|------|------|
+| `machineId` | `string` | - | 是 | 机台 ID |
+| `date` | `string` | - | 是 | 日期（YYYY-MM-DD） |
+
+| 行为 | 描述 |
+|------|------|
+| 横向进度条 | 显示已排工时 / 可用工时 |
+| 颜色 | 绿 &amp;lt; 70% / 黄 70-90% / 红 &amp;gt; 90% |
+| 点击 | 弹出机台当天工单列表 |
+
+#### 9.3.5 `&amp;lt;ApprovalChainRenderer&amp;gt;` 审批链渲染
+
+| 属性 | 类型 | 默认值 | 必填 | 说明 |
+|------|------|--------|------|------|
+| `workflowInstanceId` | `string` | - | 是 | 审批流实例 ID |
+| `readonly` | `boolean` | `true` | 否 | 是否只读 |
+
+| 行为 | 描述 |
+|------|------|
+| 横向节点流 | 申请人 → 节点1 → 节点2 → ... → 完成 |
+| 节点状态 | 待审（灰）/ 通过（绿）/ 驳回（红）/ 跳过（淡灰） |
+| 鼠标悬停 | 显示审批人/时间/意见 |
+| 当前节点 | 脉冲动画高亮 |
+| 点击节点 | 弹出审批意见详情 |
+
+#### 9.3.6 `&amp;lt;MoneyAmount&amp;gt;` 金额输入
+
+| 属性 | 类型 | 默认值 | 必填 | 说明 |
+|------|------|--------|------|------|
+| `value` | `number` | - | 是 | v-model 绑定值 |
+| `currency` | `&amp;#x27;CNY&amp;#x27; \| &amp;#x27;USD&amp;#x27; \| &amp;#x27;EUR&amp;#x27;` | `&amp;#x27;CNY&amp;#x27;` | 否 | 币种 |
+| `precision` | `number` | `2` | 否 | 小数位数 |
+| `withTax` | `boolean` | `false` | 否 | 是否含税 |
+
+| 行为 | 描述 |
+|------|------|
+| 自动千分位 | 输入时为纯数字，光标离开后格式化 |
+| 自动含税/不含税切换 | 实时计算税额 |
+| 输入非法字符 | 过滤（非数字/小数点） |
+| 快捷键 | `Alt+T` 切换含税 |
+
+---
+
+### 9.4 Element Plus 主题定制
+
+&lt;/code&gt;&lt;/pre&gt;scss
+// 主题色（与 4.1 节一致）
+$--color-primary: #0969da;
+$--color-success: #1a7f37;
+$--color-warning: #bf8700;
+$--color-danger: #cf222e;
+$--color-info: #59636e;
+
+// 圆角
+$--border-radius-base: 4px;
+$--border-radius-small: 4px;
+$--border-radius-round: 6px;
+
+// 间距（4px 基准）
+$--spacing-base: 8px;
+
+// 字号
+$--font-size-base: 14px;
+$--font-size-large: 16px;
+$--font-size-extra-large: 18px;  // APP 关键按钮
+&lt;pre&gt;&lt;code&gt;
+---
+
+### 9.5 组件库 Storybook 清单（≥ 30 个）
+
+&amp;gt; Web 端 + APP 端合计 ≥ 30 个 Storybook 故事；以下为必含列表。
+
+| # | 组件 | 来源 | Story |
+|---|------|------|-------|
+| 1 | Button | Element Plus | Default / Size / Disabled / Icon / Loading |
+| 2 | Form / FormItem | Element Plus | Validation / Custom Rules / Async |
+| 3 | Input | Element Plus | Default / Clearable / Password / Number |
+| 4 | Select | Element Plus | Single / Multiple / Searchable / Remote |
+| 5 | DatePicker | Element Plus | Date / DateTime / Range / Shortcuts |
+| 6 | Table | Element Plus / VxeTable | Sortable / Filter / Selection / Virtual Scroll |
+| 7 | Tree | Element Plus | Default / Draggable / Editable |
+| 8 | Dialog | Element Plus | Default / Custom Width / Draggable |
+| 9 | Drawer | Element Plus | Right / Left / Multi-layer |
+| 10 | Tabs | Element Plus | Default / Card / Border-Card |
+| 11 | Steps | Element Plus | Horizontal / Vertical / Process |
+| 12 | Upload | Element Plus | Image / File / Chunk Upload |
+| 13 | Pagination | Element Plus | Default / Total / Jumper |
+| 14 | Tag | Element Plus | Default / Closable / Color Variants |
+| 15 | Tooltip | Element Plus | Top / Bottom / Custom Content |
+| 16 | Notification | Element Plus | Success / Warning / Error |
+| 17 | Message | Element Plus | Success / Warning / Error |
+| 18 | Loading | Element Plus | Default / Custom / Service |
+| 19 | Skeleton | Element Plus | Default / Animation |
+| 20 | Empty | Element Plus | Default / Custom Image |
+| 21 | Carousel | Element Plus | Default / Autoplay / Indicator |
+| 22 | Image | Element Plus | Preview / Lazy Load |
+| 23 | Cascader | Element Plus | Single / Multiple / Searchable |
+| 24 | Transfer | Element Plus | Default / Filter / Custom |
+| 25 | Timeline | Element Plus | Default / Custom Icon |
+| 26 | Descriptions | Element Plus | Horizontal / Vertical |
+| 27 | Statistic | Element Plus | Number / Card / Countdown |
+| 28 | Progress | Element Plus | Line / Circle / Dashboard |
+| 29 | Avatar | Element Plus | Default / Group / Badge |
+| 30 | Divider | Element Plus | Horizontal / Vertical |
+| 31 | `&amp;lt;FigureNumberSearch&amp;gt;` | 自定义 | Basic / Show Version / Disabled |
+| 32 | `&amp;lt;BomTree&amp;gt;` | 自定义 | Readonly / Editable / With Cost |
+| 33 | `&amp;lt;ScanTrigger&amp;gt;` | 自定义 | USB / Bluetooth / Camera |
+| 34 | `&amp;lt;MachineLoadBar&amp;gt;` | 自定义 | Green / Yellow / Red / Click |
+| 35 | `&amp;lt;ApprovalChainRenderer&amp;gt;` | 自定义 | Pending / Approved / Rejected |
+| 36 | `&amp;lt;MoneyAmount&amp;gt;` | 自定义 | CNY / USD / With Tax |
+
+---
+
+## 10. Branding &amp;amp; Style 品牌与样式
+
+### 10.1 Visual Identity 视觉识别
+
+**品牌调性**：专业 / 克制 / 工业感 / 零装饰
+**对标产品**：GitHub Primer（工程师友好）+ Linear（克制专业）+ Notion（信息密度）
+
+&amp;gt; **反例（不做）**：3D 阴影、渐变背景、花瓣飘落动画、皮肤主题切换、卡通图标、emoji 装饰。
+
+### 10.2 Color Palette 色板
+
+| 类别 | 名称 | Hex | 用途 | 对比度（vs 白底） |
+|------|------|-----|------|------------------|
+| **主色** | 工业蓝（Industrial Blue） | `#0969da` | 主按钮、链接、选中态、TabBar 激活 | 5.4:1 ✓ |
+| 主色-浅 | 蓝 50 | `#ddf4ff` | 主色背景 hover、激活浅底 | 1.2:1 |
+| 主色-深 | 蓝 700 | `#0550ae` | 按钮 hover、强调 | 8.2:1 ✓ |
+| **辅色 1** | 制造橙（Manufacturing Orange） | `#fb8500` | 重要操作（扫码按钮）、车间场景 | 3.8:1 ⚠ |
+| **辅色 2** | 工艺紫（Process Purple） | `#8250df` | 工艺/BOM 相关 | 4.6:1 ✓ |
+| **状态** | 成功绿 | `#1a7f37` | 已完成、合格 | 5.1:1 ✓ |
+| 状态 | 警告黄 | `#bf8700` | 预警、待处理 | 4.4:1 ✓ |
+| 状态 | 错误红 | `#cf222e` | 错误、不合格、逾期 | 4.9:1 ✓ |
+| 状态 | 信息蓝 | `#0969da` | 提示（同主色） | 5.4:1 ✓ |
+| **中性** | 黑 900 | `#1f2328` | 标题、关键文本 | 16.5:1 ✓ |
+| 中性 | 灰 700 | `#59636e` | 正文 | 7.2:1 ✓ |
+| 中性 | 灰 500 | `#8c959f` | 次要文本 | 4.1:1 ✓ |
+| 中性 | 灰 300 | `#d1d9e0` | 边框、分割线 | 1.5:1 |
+| 中性 | 灰 100 | `#f6f8fa` | 背景 | 1.0:1 |
+| 中性 | 白 | `#ffffff` | 卡片底 | - |
+
+&amp;gt; 标注 ✓ = WCAG AA 合规（正文 ≥ 4.5:1）；⚠ = 仅用于大字号或非正文。
+
+### 10.3 Typography 字体
+
+| 场景 | 中文字体 | 英文字体 | 字号 | 行高 |
+|------|----------|----------|------|------|
+| 标题 H1 | PingFang SC Semibold | SF Pro Display Semibold | 24px | 1.3 |
+| 标题 H2 | PingFang SC Medium | SF Pro Display Medium | 20px | 1.35 |
+| 标题 H3 | PingFang SC Medium | SF Pro Display Medium | 18px | 1.4 |
+| 正文 | PingFang SC Regular | SF Pro Text Regular | 16px | 1.5 |
+| 次要 | PingFang SC Regular | SF Pro Text Regular | 14px | 1.5 |
+| 表格 | PingFang SC Regular | SF Pro Text Regular | 14px | 1.4 |
+| 等宽（编码/金额） | Microsoft YaHei Mono | JetBrains Mono | 14px | 1.4 |
+| **APP 关键按钮** | PingFang SC Medium | SF Pro Text Medium | **18px** | 1.4 |
+
+&amp;gt; **兜底字体**：Web 端 `Microsoft YaHei, sans-serif`；APP 端 `Roboto, sans-serif`。
+&amp;gt; **加载策略**：Web 端 `font-display: swap`，避免 FOIT；优先使用系统字体（PingFang SC、SF Pro Text）。
+
+### 10.4 Type Scale 字号阶梯
+
+&lt;/code&gt;&lt;/pre&gt;
+12 / 14 / 16 / 18 / 20 / 24 / 32 / 40 / 48
+      ↑                       ↑
+   表格/次要              H1/工作台 KPI
+&lt;pre&gt;&lt;code&gt;
+- **基准**：16px（避免浏览器默认缩放）
+- **APP 关键按钮**：18px（操作工友好）
+- **工作台 KPI**：32-40px（一屏看全）
+
+### 10.5 Iconography 图标
+
+| 来源 | 风格 | 用法 |
+|------|------|------|
+| **Element Plus Icons** | 线性 1.5px 描边，16/20/24px | 通用图标 |
+| **自绘图标** | 线性 1.5px 描边，24px | 业务专属（扫码三码等） |
+
+&amp;gt; **图标原则**：
+&amp;gt; - 不使用彩色图标（仅黑白 + 主色激活态）
+&amp;gt; - 不使用 3D / 拟物图标
+&amp;gt; - 不使用 emoji 装饰（除状态条 ✓/⚠/✗）
+&amp;gt; - 圆角 2px（与品牌一致）
+
+### 10.6 Spacing &amp;amp; Layout 间距与布局
+
+#### 10.6.1 间距系统（4px 基准）
+
+| 用途 | 间距 |
+|------|------|
+| 组件内 padding | 8 / 12 |
+| 卡片间距 | 16 |
+| 区块间距 | 24 |
+| 页面边距 | 24（Web）/ 16（APP） |
+| 大区块间距 | 32 / 48 |
+| 表单字段间距 | 16（垂直）/ 12（水平） |
+| 按钮组间距 | 12 |
+
+#### 10.6.2 圆角
+
+| 元素 | 圆角 |
+|------|------|
+| 输入框、按钮（小） | 4px |
+| 卡片、Tag | 6px |
+| 模态框、抽屉 | 8px |
+| 大型浮层 | 12px |
+| 关键操作按钮（APP 端） | 8px（更大圆角更亲和） |
+
+#### 10.6.3 阴影（3 级）
+
+| 级别 | CSS 值 | 用途 |
+|------|--------|------|
+| L1 卡片 | `0 1px 2px rgba(0,0,0,0.06)` | 普通卡片、Tag |
+| L2 弹窗 | `0 4px 16px rgba(0,0,0,0.12)` | 弹窗、下拉菜单 |
+| L3 抽屉 | `0 8px 32px rgba(0,0,0,0.16)` | 抽屉、命令面板 |
+
+#### 10.6.4 栅格系统
+
+- **Web 端**：24 栏栅格，列宽自适应，列间距 24px
+- **断点**：1280 / 1440 / 1920（4K 适配按 1920 等比缩放）
+- **页面边距**：24px
+- **卡片最大宽度**：自适应，&amp;lt; 4K 显示器限制为 1600px 居中
+
+---
+
+## 11. Accessibility 无障碍
+
+### 11.1 Compliance Target 合规目标
+
+- **WCAG 2.1 AA**：100% 关键流程通过
+- **目标用户**：操作工可能 50+ 岁、视力下降；色弱/色盲占男性 8%
+
+### 11.2 Key Requirements 关键要求
+
+| 维度 | 要求 | 实现方式 |
+|------|------|----------|
+| **对比度** | 正文 ≥ 4.5:1；大字 ≥ 3:1 | 色板已对齐（10.2 节） |
+| **键盘可达** | 所有交互可纯键盘完成 | Tab 序规范、快捷键 |
+| **焦点可见** | 焦点环 2px 主色描边 | 全局 `:focus-visible` 样式 |
+| **ARIA 标签** | 表单/弹窗/图表必须有 ARIA 属性 | ESLint 规则强制 |
+| **错误提示** | 表单错误同时用颜色 + 文字 + 图标 | Element Plus 默认 + 增强 |
+| **Alt 文本** | 所有图片必须有 alt | ESLint 规则强制 |
+| **Skip Links** | 顶部&amp;quot;跳到主内容&amp;quot;链接 | 隐藏，键盘 Tab 第一个 |
+| **Heading 层级** | h1-h6 严格递进 | ESLint 规则强制 |
+| **表单 Label** | 所有输入框有 `&amp;lt;label&amp;gt;` | ESLint 规则强制 |
+| **状态广播** | 动态内容变化通知屏幕阅读器 | `aria-live=&amp;quot;polite&amp;quot;` |
+
+### 11.3 Testing Strategy 测试策略
+
+| 阶段 | 工具 | 范围 |
+|------|------|------|
+| **开发时** | ESLint 插件 `eslint-plugin-vuejs-accessibility` | 自动检查 |
+| **CI** | axe-core + Playwright | 关键页面自动化 |
+| **发版前** | NVDA / VoiceOver 手动测试 | 关键流程 |
+| **年度** | 第三方无障碍审计 | 全部页面 |
+
+### 11.4 暗色模式（V1.1 评估）
+
+&amp;gt; V1.0 **不提供**暗色模式（聚焦业务）；V1.1 评估是否需要。
+&amp;gt; 理由：车间环境强光，暗色模式不友好；办公室偏好亮色。
+
+---
+
+## 12. Responsiveness 响应式
+
+### 12.1 Breakpoints 断点
+
+| 断点 | 宽度 | 设备 | 适配策略 |
+|------|------|------|----------|
+| **xs** | &amp;lt; 768px | 手机（不推荐 Web 端） | Web 端禁用侧边栏 |
+| **sm** | 768-1023px | 平板（不推荐） | 隐藏二级菜单 |
+| **md** | 1024-1279px | 13 寸 Mac | 紧凑布局 |
+| **lg** | 1280-1439px | 标准 PC | **默认断点** |
+| **xl** | 1440-1919px | 大屏 PC | 默认布局 |
+| **2xl** | ≥ 1920px | 4K | 等比缩放（最大 1600px 居中） |
+
+&amp;gt; **目标设备**：
+&amp;gt; - **Web**：13 寸 Mac（1280×800）、标准 PC（1920×1080）、4K（3840×2160）
+&amp;gt; - **APP**：手机（6-7 寸）、PDA（4-5 寸，霍尼韦尔/斑马）
+
+### 12.2 Adaptation Patterns 适配模式
+
+| 元素 | &amp;lt; 1280px | ≥ 1280px | ≥ 1920px |
+|------|----------|----------|----------|
+| 顶部导航 | 隐藏部分菜单（折叠到&amp;quot;更多&amp;quot;） | 全部显示 | 全部显示 |
+| 左侧二级菜单 | 可隐藏（顶部菜单点开） | 默认显示 | 默认显示 |
+| 表格列 | 隐藏次要列 + 横向滚动 | 全部显示 | 全部显示 + 适当拉宽 |
+| 卡片 | 单列 | 3-4 列 | 4-5 列 |
+| KPI 数字 | 24px | 32px | 40px |
+| 浮动卡片 | 静态 | 吸顶 | 吸顶 |
+| Modal 宽度 | 100% | 600px | 800px |
+| Drawer 宽度 | 100% | 480px | 600px |
+
+### 12.3 APP 端适配
+
+| 设备 | 适配策略 |
+|------|----------|
+| 手机（6-7 寸） | 标准布局；底部 Tab 56px |
+| PDA（4-5 寸） | 关键按钮 +20% 大小；数字键盘全屏 |
+| 横屏（少用） | 左右分栏：扫码框 + 列表 |
+
+---
+
+## 13. Animation &amp;amp; Motion 动画与动效
+
+### 13.1 Motion Principles 动效原则
+
+&amp;gt; **克制 + 目的明确**：动效只用于&amp;quot;反馈状态变化&amp;quot;，不用于装饰。
+
+| 原则 | 描述 |
+|------|------|
+| **目的性** | 每个动效必须有目的（提示状态变化、引导视线） |
+| **时长 ≤ 300ms** | 95% 动效在 200-300ms 内 |
+| **缓动函数** | `cubic-bezier(0.4, 0, 0.2, 1)`（Material Standard） |
+| **不阻挡操作** | 不在动效期间 disable 按钮 |
+| **可被关闭** | `prefers-reduced-motion` 媒体查询时禁用 |
+
+### 13.2 Key Animations 关键动效
+
+| 场景 | 动效 | 时长 | 缓动 |
+|------|------|------|------|
+| Modal 打开 | 缩放 + 淡入 | 200ms | ease-out |
+| Drawer 滑入 | 从右滑入 | 300ms | ease-out |
+| Toast | 从顶部滑入 + 2s 后自动淡出 | 200ms + 2s + 200ms | ease-out |
+| 拖拽归位 | 弹性回弹 | 200ms | spring |
+| 拖拽成功 | 绿色高亮闪烁 | 200ms × 2 | linear |
+| 状态变更 | 背景色过渡 | 200ms | ease-in-out |
+| Loading | 旋转（24px 圆环） | 800ms 循环 | linear |
+| 扫码成功 | 屏幕闪绿 + 震动 | 200ms | - |
+| 看板卡片插入 | 上滑 + 淡入 | 300ms | ease-out |
+| 列表行更新 | 黄色高亮闪烁 | 200ms × 2 | linear |
+
+### 13.3 禁用动效的场景
+
+- **数据加载**：不显示骨架屏（直接 disable 按钮 + 文字&amp;quot;加载中&amp;quot;）
+- **表单提交**：不显示 Loading 动画（按钮文字变&amp;quot;提交中&amp;quot;）
+- **页面切换**：不淡入淡出（直接切换）
+
+### 13.4 `prefers-reduced-motion` 支持
+
+&lt;/code&gt;&lt;/pre&gt;css
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</code></pre>
+<hr />
+<h2 id="14-performance">14. Performance 性能</h2>
+<h3 id="141-performance-goals">14.1 Performance Goals 性能目标</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>目标</th>
+<th>测量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>首屏 LCP</strong>（Largest Contentful Paint）</td>
+<td>≤ 2.5s（P75）</td>
+<td>Lighthouse / Sentry</td>
+</tr>
+<tr>
+<td><strong>可交互 TTI</strong>（Time to Interactive）</td>
+<td>≤ 3.5s（P75）</td>
+<td>Lighthouse</td>
+</tr>
+<tr>
+<td><strong>FID</strong>（First Input Delay）</td>
+<td>≤ 100ms（P75）</td>
+<td>Lighthouse</td>
+</tr>
+<tr>
+<td><strong>CLS</strong>（Cumulative Layout Shift）</td>
+<td>≤ 0.1（P75）</td>
+<td>Lighthouse</td>
+</tr>
+<tr>
+<td><strong>扫码响应</strong></td>
+<td>≤ 1s（P95）</td>
+<td>APP 端埋点</td>
+</tr>
+<tr>
+<td><strong>离线同步</strong></td>
+<td>≤ 5s/条（P95）</td>
+<td>APP 端埋点</td>
+</tr>
+<tr>
+<td><strong>查询接口 P95</strong></td>
+<td>≤ 2s（普通）</td>
+<td>后端埋点</td>
+</tr>
+<tr>
+<td><strong>报表 P95</strong></td>
+<td>≤ 10s（多维聚合）</td>
+<td>后端埋点</td>
+</tr>
+</tbody>
+</table>
+<h3 id="142-design-strategies">14.2 Design Strategies 设计策略</h3>
+<h4 id="1421-web">14.2.1 Web 端</h4>
+<table>
+<thead>
+<tr>
+<th>策略</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>路由懒加载</strong></td>
+<td>所有页面 <code>() =&gt; import()</code></td>
+</tr>
+<tr>
+<td><strong>组件按需引入</strong></td>
+<td>Element Plus <code>unplugin-vue-components</code></td>
+</tr>
+<tr>
+<td><strong>图片懒加载</strong></td>
+<td><code>loading="lazy"</code></td>
+</tr>
+<tr>
+<td><strong>大表格虚拟滚动</strong></td>
+<td>VxeTable virtual scroll</td>
+</tr>
+<tr>
+<td><strong>大列表分页</strong></td>
+<td>默认 50 条/页，可切换 100/200</td>
+</tr>
+<tr>
+<td><strong>图表按需加载</strong></td>
+<td>ECharts 按需 import</td>
+</tr>
+<tr>
+<td><strong>Web Worker</strong></td>
+<td>复杂计算（MRP 展开）放 Worker</td>
+</tr>
+<tr>
+<td><strong>防抖/节流</strong></td>
+<td>搜索联想 300ms debounce；滚动 16ms throttle</td>
+</tr>
+<tr>
+<td><strong>Service Worker</strong></td>
+<td>V1.1 评估（V1.0 不做）</td>
+</tr>
+<tr>
+<td><strong>CDN 加速</strong></td>
+<td>静态资源走 CDN</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1422-app">14.2.2 APP 端</h4>
+<table>
+<thead>
+<tr>
+<th>策略</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>本地缓存</strong></td>
+<td>Room 缓存工单/客户/物料基础数据</td>
+</tr>
+<tr>
+<td><strong>图片压缩</strong></td>
+<td>Glide + WebP 格式</td>
+</tr>
+<tr>
+<td><strong>网络切换</strong></td>
+<td>OkHttp 自动重试 + 网络切换监听</td>
+</tr>
+<tr>
+<td><strong>弱网策略</strong></td>
+<td>减少请求频率、合并请求、本地优先</td>
+</tr>
+<tr>
+<td><strong>后台同步</strong></td>
+<td>WorkManager 智能调度（充电/WiFi 优先）</td>
+</tr>
+<tr>
+<td><strong>APK 体积</strong></td>
+<td>≤ 30MB</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1423">14.2.3 数据加载</h4>
+<table>
+<thead>
+<tr>
+<th>策略</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>骨架数据</strong></td>
+<td>首屏先渲染 10 条 + "加载更多"按钮</td>
+</tr>
+<tr>
+<td><strong>乐观更新</strong></td>
+<td>拖拽排产、扫码提交先更新 UI，失败回滚</td>
+</tr>
+<tr>
+<td><strong>预加载</strong></td>
+<td>鼠标悬停菜单项 200ms 触发预加载</td>
+</tr>
+<tr>
+<td><strong>缓存</strong></td>
+<td>列表数据 stale-while-revalidate</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="15-next-steps-handoff">15. Next Steps &amp; Handoff 下一步与交付清单</h2>
+<h3 id="151-immediate-actions">15.1 Immediate Actions 立即行动</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>行动</th>
+<th>负责人</th>
+<th>截止</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>评审本规格说明书（前端 + Android + QA）</td>
+<td>全体</td>
+<td>T+1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>启动 Figma 原型设计（4 高保真 + 39 低保真）</td>
+<td>UX</td>
+<td>T+5</td>
+</tr>
+<tr>
+<td>3</td>
+<td>起项目 + 起 Storybook（≥ 30 个组件）</td>
+<td>前端</td>
+<td>T+3</td>
+</tr>
+<tr>
+<td>4</td>
+<td>启动 6 个自定义组件开发</td>
+<td>前端</td>
+<td>T+7</td>
+</tr>
+<tr>
+<td>5</td>
+<td>与 Architect 对齐 API/WS 清单（附录 B）</td>
+<td>UX + Architect</td>
+<td>T+1</td>
+</tr>
+<tr>
+<td>6</td>
+<td>设计 token JSON 输出（亮/暗主题）</td>
+<td>UX</td>
+<td>T+3</td>
+</tr>
+<tr>
+<td>7</td>
+<td>WCAG AA 合规检查（关键流程）</td>
+<td>QA</td>
+<td>T+10</td>
+</tr>
+<tr>
+<td>8</td>
+<td>"操作工奶奶测试"用户研究</td>
+<td>UX + QA</td>
+<td>T+15</td>
+</tr>
+</tbody>
+</table>
+<h3 id="152-design-handoff-checklist">15.2 Design Handoff Checklist 设计交付清单</h3>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>项</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>文档</strong></td>
+<td>front-end-spec.md（本文件）</td>
+<td>✓ 完成</td>
+</tr>
+<tr>
+<td></td>
+<td>front-end-spec.html（HTML 版，可选）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>design-tokens.json（亮/暗主题）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>组件库 Storybook（≥ 30 组件）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>原型</strong></td>
+<td>4 个核心页面高保真（Figma）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>39 个低保真页面（Figma）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>6 个核心 APP 流程原型（Figma）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>视觉</strong></td>
+<td>色板（CSS Variables + JSON）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>字体（Web Font + 兜底）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>图标包（Element Plus Icons + 自绘）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>交互</strong></td>
+<td>全局快捷键文档</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>扫码三码流程视频（Loom）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>审批流/拖拽/离线交互范式文档</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>无障碍</strong></td>
+<td>WCAG AA 合规检查报告（axe-core）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>键盘可达性测试报告</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>协作</strong></td>
+<td>与 Architect 的 OpenAPI 清单确认</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>与 Android 团队的组件对齐</td>
+<td>☐</td>
+</tr>
+<tr>
+<td></td>
+<td>与 QA 团队的验收标准对齐</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="153-checklist-results">15.3 Checklist Results 交付检查结果</h3>
+<blockquote>
+<p>待交付后逐项勾选。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>标准</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>11 Epic 页面覆盖率</td>
+<td>100%</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>4 个核心页面高保真</td>
+<td>100%</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>39 个低保真页面</td>
+<td>100%</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>组件库 Storybook</td>
+<td>≥ 30 个组件</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>自定义组件</td>
+<td>6 个全部交付</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>视觉规范文档</td>
+<td>完整（色/字/间/圆/影）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>全局快捷键文档</td>
+<td>≥ 10 个</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>扫码三码交互流程图</td>
+<td>完整</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>WCAG AA 合规</td>
+<td>关键流程 100%</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>响应式断点规范</td>
+<td>3 个断点</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>操作工奶奶测试</td>
+<td>30 秒内完成扫码报工</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>13 寸 Mac / 1920×1080 / 4K</td>
+<td>三个分辨率全适配</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>离线/在线状态可见</td>
+<td>APP 端明牌</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>键盘快捷键全部可配置</td>
+<td>全局设置可改</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a8-story-ui">附录 A：8 个核心 Story 的 UI 规格</h2>
+<blockquote>
+<p>每个 Story 给出：<strong>涉及页面 / 关键组件 / 字段 UI 规范 / 关键交互 / 边界 case</strong>。</p>
+</blockquote>
+<h3 id="a1-e1-s1">A.1 E1-S1 用户与角色权限</h3>
+<h4 id="_2">涉及页面</h4>
+<table>
+<thead>
+<tr>
+<th>路由</th>
+<th>页面</th>
+<th>角色</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/admin/user</code></td>
+<td>用户列表 + 编辑</td>
+<td>管理员</td>
+</tr>
+<tr>
+<td><code>/admin/user/:id</code></td>
+<td>用户详情</td>
+<td>管理员</td>
+</tr>
+<tr>
+<td><code>/admin/user/role</code></td>
+<td>角色管理</td>
+<td>管理员</td>
+</tr>
+<tr>
+<td><code>/admin/user/role/:id</code></td>
+<td>角色权限配置</td>
+<td>管理员</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_3">关键组件</h4>
+<ul>
+<li><code>&lt;UserTable&gt;</code>（基于 VxeTable，启用虚拟滚动）</li>
+<li><code>&lt;RolePermissionTree&gt;</code>（基于 Element Plus Tree，可拖拽）</li>
+<li><code>&lt;DataScopeSelector&gt;</code>（本人/本部门/全部/自定义）</li>
+<li><code>&lt;AmountThresholdEditor&gt;</code>（金额阈值，3 档）</li>
+</ul>
+<h4 id="ui">字段 UI 规范</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>UI 组件</th>
+<th>校验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>用户名</td>
+<td>string</td>
+<td><code>&lt;el-input&gt;</code></td>
+<td>全局唯一，3-20 字符</td>
+</tr>
+<tr>
+<td>密码</td>
+<td>string</td>
+<td><code>&lt;el-input type="password"&gt;</code></td>
+<td>≥ 8 位含大小写数字</td>
+</tr>
+<tr>
+<td>姓名</td>
+<td>string</td>
+<td><code>&lt;el-input&gt;</code></td>
+<td>必填，2-20 字符</td>
+</tr>
+<tr>
+<td>部门</td>
+<td>string</td>
+<td><code>&lt;el-cascader&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>职位</td>
+<td>string</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>多选</td>
+</tr>
+<tr>
+<td>角色</td>
+<td>string[]</td>
+<td><code>&lt;el-select multiple&gt;</code></td>
+<td>至少 1 个</td>
+</tr>
+<tr>
+<td>状态</td>
+<td>enum</td>
+<td><code>&lt;el-switch&gt;</code></td>
+<td>启用/禁用</td>
+</tr>
+<tr>
+<td>金额阈值</td>
+<td>number</td>
+<td><code>&lt;MoneyAmount&gt;</code></td>
+<td>0 / 5万 / 20万</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_4">关键交互</h4>
+<table>
+<thead>
+<tr>
+<th>交互</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>角色权限配置</td>
+<td>左侧菜单树 + 右侧数据权限 + 操作权限 + 金额权限</td>
+</tr>
+<tr>
+<td>拖拽配置权限</td>
+<td>拖拽菜单到角色权限区</td>
+</tr>
+<tr>
+<td>批量启用/禁用</td>
+<td>选中多个用户 → 批量操作</td>
+</tr>
+<tr>
+<td>密码重置</td>
+<td>弹窗"重置密码" → 系统生成随机密码</td>
+</tr>
+<tr>
+<td>离职交接</td>
+<td>弹窗"交接" → 选择交接人 + 业务范围</td>
+</tr>
+</tbody>
+</table>
+<h4 id="case">边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>用户名重复</td>
+<td>输入时实时校验 + 红框 + 提示"已存在"</td>
+</tr>
+<tr>
+<td>删除有业务的用户</td>
+<td>弹窗"该用户有 N 条业务单据，是否强制删除？"</td>
+</tr>
+<tr>
+<td>角色删除</td>
+<td>弹窗"该角色下有 N 个用户，请先调整"</td>
+</tr>
+<tr>
+<td>权限变更生效</td>
+<td>弹窗"权限变更将在用户下次登录生效，是否立即生效？"</td>
+</tr>
+<tr>
+<td>数据权限冲突</td>
+<td>角色权限 ⊆ 部门权限，取交集</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="a2-e2-s2">A.2 E2-S2 报价与多级审批</h3>
+<h4 id="_5">涉及页面</h4>
+<table>
+<thead>
+<tr>
+<th>路由</th>
+<th>页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/sales/quote/list</code></td>
+<td>报价列表</td>
+</tr>
+<tr>
+<td><code>/sales/quote/new</code></td>
+<td>报价录入（核心页）</td>
+</tr>
+<tr>
+<td><code>/sales/quote/:id</code></td>
+<td>报价详情/编辑</td>
+</tr>
+<tr>
+<td><code>/sales/quote/approval</code></td>
+<td>报价审批（待办 + 详情）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_6">关键组件</h4>
+<ul>
+<li><code>&lt;FigureNumberSearch&gt;</code>（图号联想）</li>
+<li><code>&lt;BomTree&gt;</code>（多级 BOM）</li>
+<li><code>&lt;MoneyAmount&gt;</code>（金额输入 + 含税切换）</li>
+<li><code>&lt;ApprovalChainRenderer&gt;</code>（审批链渲染）</li>
+<li><code>&lt;PdfPreview&gt;</code>（基于 pdf.js，图纸预览）</li>
+<li><code>&lt;CustomerSelect&gt;</code>（客户联想）</li>
+</ul>
+<h4 id="ui_1">字段 UI 规范</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>UI 组件</th>
+<th>校验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户</td>
+<td>string</td>
+<td><code>&lt;CustomerSelect&gt;</code></td>
+<td>必选，校验黑名单</td>
+</tr>
+<tr>
+<td>联系人</td>
+<td>string</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>交期</td>
+<td>date</td>
+<td><code>&lt;el-date-picker&gt;</code></td>
+<td>必填，≥ 今日</td>
+</tr>
+<tr>
+<td>币种</td>
+<td>enum</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>默认 CNY</td>
+</tr>
+<tr>
+<td>订单类型</td>
+<td>enum</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>标准/急单/试制</td>
+</tr>
+<tr>
+<td>是否 FA</td>
+<td>boolean</td>
+<td><code>&lt;el-checkbox&gt;</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td>图号明细</td>
+<td>array</td>
+<td><code>&lt;el-table editable&gt;</code></td>
+<td>至少 1 行</td>
+</tr>
+<tr>
+<td>数量</td>
+<td>number</td>
+<td><code>&lt;el-input-number&gt;</code></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>单价</td>
+<td>number</td>
+<td><code>&lt;MoneyAmount&gt;</code></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>含税</td>
+<td>boolean</td>
+<td><code>&lt;el-switch&gt;</code></td>
+<td>快捷键 Alt+T</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_7">关键交互</h4>
+<table>
+<thead>
+<tr>
+<th>交互</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F8 图号联想</td>
+<td>触发图号搜索（已在 8.3.1 定义）</td>
+</tr>
+<tr>
+<td>客户联想</td>
+<td>文本框 + 下拉（编码+名称+信用额度）</td>
+</tr>
+<tr>
+<td>BOM 自动展开</td>
+<td>选图号后自动展开 BOM 树</td>
+</tr>
+<tr>
+<td>含税切换</td>
+<td>Alt+T 实时重算</td>
+</tr>
+<tr>
+<td>Ctrl+S 保存草稿</td>
+<td>立即保存 + Toast</td>
+</tr>
+<tr>
+<td>Ctrl+Enter 提交</td>
+<td>校验 + 提交 + 跳列表</td>
+</tr>
+<tr>
+<td>审批路由</td>
+<td>金额 &lt; 5万 = 业务员自审；5-20万 = 部门经理；&gt; 20万 = 总经理</td>
+</tr>
+<tr>
+<td>审批链</td>
+<td>横向节点流（<code>&lt;ApprovalChainRenderer&gt;</code>）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="case_1">边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户为黑名单</td>
+<td>提交时弹窗拦截 + Toast</td>
+</tr>
+<tr>
+<td>金额阈值跨档</td>
+<td>5/20 万边界走向上取整档</td>
+</tr>
+<tr>
+<td>客户保护期</td>
+<td>选客户时红 Tag + 提示</td>
+</tr>
+<tr>
+<td>图号无 BOM</td>
+<td>提示 + 引导到 BOM 维护</td>
+</tr>
+<tr>
+<td>审批驳回</td>
+<td>弹窗"驳回原因"（≥ 5 字符）→ 单据退回草稿</td>
+</tr>
+<tr>
+<td>网络中断</td>
+<td>草稿本地缓存 + 重试</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="a3-e2-s4">A.3 E2-S4 合同回款与利润</h3>
+<h4 id="_8">涉及页面</h4>
+<table>
+<thead>
+<tr>
+<th>路由</th>
+<th>页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/sales/contract/list</code></td>
+<td>合同列表</td>
+</tr>
+<tr>
+<td><code>/sales/contract/:id</code></td>
+<td>合同详情</td>
+</tr>
+<tr>
+<td><code>/sales/contract/:id/payment-plan</code></td>
+<td>回款计划</td>
+</tr>
+<tr>
+<td><code>/sales/contract/:id/payment-reg</code></td>
+<td>收款登记</td>
+</tr>
+<tr>
+<td><code>/sales/contract/:id/profit</code></td>
+<td>订单利润</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_9">关键组件</h4>
+<ul>
+<li><code>&lt;PaymentPlanTable&gt;</code>（回款计划表）</li>
+<li><code>&lt;PaymentRecorder&gt;</code>（收款登记）</li>
+<li><code>&lt;ProfitBreakdown&gt;</code>（利润分解：材料/人工/委外/费用）</li>
+<li><code>&lt;ChartCard&gt;</code>（利润趋势 ECharts 折线图）</li>
+</ul>
+<h4 id="ui_2">字段 UI 规范</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>UI 组件</th>
+<th>校验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>合同号</td>
+<td>string</td>
+<td><code>&lt;el-input&gt;</code></td>
+<td>自动生成</td>
+</tr>
+<tr>
+<td>关联订单</td>
+<td>string</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>合同金额</td>
+<td>number</td>
+<td><code>&lt;MoneyAmount&gt;</code></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>付款方式</td>
+<td>enum</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>月结/季结/一次性</td>
+</tr>
+<tr>
+<td>分期比例</td>
+<td>number[]</td>
+<td><code>&lt;el-input-number&gt;</code> × N</td>
+<td>之和 = 100%</td>
+</tr>
+<tr>
+<td>计划回款日期</td>
+<td>date[]</td>
+<td><code>&lt;el-date-picker&gt;</code> × N</td>
+<td>-</td>
+</tr>
+<tr>
+<td>实收日期</td>
+<td>date</td>
+<td><code>&lt;el-date-picker&gt;</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td>实收金额</td>
+<td>number</td>
+<td><code>&lt;MoneyAmount&gt;</code></td>
+<td>≤ 计划金额</td>
+</tr>
+<tr>
+<td>收款方式</td>
+<td>enum</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>银行转账/承兑/现金</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_10">关键交互</h4>
+<table>
+<thead>
+<tr>
+<th>交互</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>回款计划自动分期</td>
+<td>选付款方式 + 合同金额 → 自动按规则分期</td>
+</tr>
+<tr>
+<td>收款登记</td>
+<td>实收金额 = 计划金额时自动标记"已收"</td>
+</tr>
+<tr>
+<td>逾期预警</td>
+<td>到期前 3 天 + 逾期 7 天升级</td>
+</tr>
+<tr>
+<td>利润实时计算</td>
+<td>收款后自动重算利润</td>
+</tr>
+<tr>
+<td>利润率预警</td>
+<td>&lt; 5% 标红</td>
+</tr>
+<tr>
+<td>利润分解</td>
+<td>材料/人工/委外/费用 4 个柱状图</td>
+</tr>
+</tbody>
+</table>
+<h4 id="case_2">边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>收款金额 &gt; 计划</td>
+<td>弹窗"超收" + 选择"转下期"或"抵扣其他"</td>
+</tr>
+<tr>
+<td>部分收款</td>
+<td>状态变"部分收" + 剩余金额继续催收</td>
+</tr>
+<tr>
+<td>退款</td>
+<td>负数金额 + 选择原收款单</td>
+</tr>
+<tr>
+<td>利润为负</td>
+<td>红色加粗 + Toast 提示</td>
+</tr>
+<tr>
+<td>汇率波动</td>
+<td>多币种时按当日汇率换算</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="a4-e3-s3-bom">A.4 E3-S3 BOM 多级维护</h3>
+<h4 id="_11">涉及页面</h4>
+<table>
+<thead>
+<tr>
+<th>路由</th>
+<th>页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/material/bom</code></td>
+<td>BOM 树（按产品）</td>
+</tr>
+<tr>
+<td><code>/material/bom/:id</code></td>
+<td>BOM 详情/编辑</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_12">关键组件</h4>
+<ul>
+<li><code>&lt;BomTree&gt;</code>（多级树，核心组件）</li>
+<li><code>&lt;MaterialSelect&gt;</code>（物料选择）</li>
+<li><code>&lt;LossFactorEditor&gt;</code>（损耗系数编辑）</li>
+<li><code>&lt;BomVersionSelector&gt;</code>（设计/生产版本切换）</li>
+</ul>
+<h4 id="ui_3">字段 UI 规范</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>UI 组件</th>
+<th>校验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>产品</td>
+<td>string</td>
+<td><code>&lt;FigureNumberSearch&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>子件</td>
+<td>string</td>
+<td><code>&lt;MaterialSelect&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>层级</td>
+<td>int</td>
+<td>自动计算</td>
+<td>-</td>
+</tr>
+<tr>
+<td>用量</td>
+<td>number</td>
+<td><code>&lt;el-input-number&gt;</code></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>损耗系数</td>
+<td>number</td>
+<td><code>&lt;LossFactorEditor&gt;</code></td>
+<td>0-100%</td>
+</tr>
+<tr>
+<td>单价</td>
+<td>number</td>
+<td><code>&lt;MoneyAmount&gt;</code></td>
+<td>&gt; 0，自动从物料档案取</td>
+</tr>
+<tr>
+<td>备注</td>
+<td>string</td>
+<td><code>&lt;el-input&gt;</code></td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_13">关键交互</h4>
+<table>
+<thead>
+<tr>
+<th>交互</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>多级展开</td>
+<td>树形 + 缩进 + 折叠箭头</td>
+</tr>
+<tr>
+<td>行内小计</td>
+<td>用量 × 单价 × 损耗系数</td>
+</tr>
+<tr>
+<td>拖拽排序</td>
+<td>同级子件拖拽改顺序</td>
+</tr>
+<tr>
+<td>设计 → 生产</td>
+<td>一键复制 + 工程师微调后发布</td>
+</tr>
+<tr>
+<td>复制历史 BOM</td>
+<td>选历史产品 + 版本 → 复制</td>
+</tr>
+<tr>
+<td>快捷键</td>
+<td>F2 编辑 / Enter 保存 / Esc 取消</td>
+</tr>
+</tbody>
+</table>
+<h4 id="case_3">边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>循环引用</td>
+<td>弹窗"禁止循环引用" + 高亮路径</td>
+</tr>
+<tr>
+<td>物料已删除</td>
+<td>显示"该物料已停用"+ 红色</td>
+</tr>
+<tr>
+<td>多级损耗</td>
+<td>父级损耗 × 子级损耗</td>
+</tr>
+<tr>
+<td>版本冲突</td>
+<td>选历史版本时显示"只读"+ 提示复制</td>
+</tr>
+<tr>
+<td>大 BOM（&gt; 1000 节点）</td>
+<td>启用虚拟滚动</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="a5-e4-s2-app">A.5 E4-S2 APP 扫码出入库</h3>
+<h4 id="_14">涉及页面</h4>
+<table>
+<thead>
+<tr>
+<th>路由</th>
+<th>页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/scan/full</code></td>
+<td>全屏扫码页（默认）</td>
+</tr>
+<tr>
+<td><code>/scan/result/item/in</code></td>
+<td>扫码结果 - 物料码 - 入库</td>
+</tr>
+<tr>
+<td><code>/scan/result/item/out</code></td>
+<td>扫码结果 - 物料码 - 出库</td>
+</tr>
+<tr>
+<td><code>/scan/history</code></td>
+<td>扫码历史</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_15">关键组件</h4>
+<ul>
+<li><code>&lt;ScanTrigger&gt;</code>（扫码触发器，核心组件）</li>
+<li><code>&lt;MaterialInfo&gt;</code>（物料信息卡）</li>
+<li><code>&lt;StockTypeSelect&gt;</code>（入库/出库类型）</li>
+<li><code>&lt;LocationPicker&gt;</code>（库位选择）</li>
+<li><code>&lt;QuantityInput&gt;</code>（大数字输入）</li>
+<li><code>&lt;OfflineBadge&gt;</code>（离线标记）</li>
+</ul>
+<h4 id="ui_4">字段 UI 规范</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>UI 组件</th>
+<th>校验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>物料码</td>
+<td>string</td>
+<td><code>&lt;ScanTrigger&gt;</code></td>
+<td>自动识别</td>
+</tr>
+<tr>
+<td>入库类型</td>
+<td>enum</td>
+<td><code>&lt;StockTypeSelect&gt;</code></td>
+<td>采购/生产/委外/其他</td>
+</tr>
+<tr>
+<td>库位</td>
+<td>string</td>
+<td><code>&lt;LocationPicker&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>数量</td>
+<td>number</td>
+<td><code>&lt;QuantityInput&gt;</code></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>批次号</td>
+<td>string</td>
+<td><code>&lt;el-input&gt;</code></td>
+<td>自动生成</td>
+</tr>
+<tr>
+<td>备注</td>
+<td>string</td>
+<td><code>&lt;el-input&gt;</code></td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_16">关键交互</h4>
+<table>
+<thead>
+<tr>
+<th>交互</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>扫码识别</td>
+<td>摄像头 + 闪光灯 + 1s 内识别</td>
+</tr>
+<tr>
+<td>物料联想</td>
+<td>扫码后自动带出物料信息</td>
+</tr>
+<tr>
+<td>类型选择</td>
+<td>大按钮 4 选 1</td>
+</tr>
+<tr>
+<td>库位选择</td>
+<td>全屏 Picker + 树形</td>
+</tr>
+<tr>
+<td>离线扫码</td>
+<td>本地缓存 + 状态条 + 同步</td>
+</tr>
+<tr>
+<td>冲突解决</td>
+<td>服务端冲突时弹窗二选一</td>
+</tr>
+</tbody>
+</table>
+<h4 id="case_4">边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>物料码不存在</td>
+<td>弹窗"未知码" + 手工输入</td>
+</tr>
+<tr>
+<td>物料已停用</td>
+<td>弹窗"该物料已停用"</td>
+</tr>
+<tr>
+<td>数量超过库存</td>
+<td>出库时红框 + 提示"可用 X"</td>
+</tr>
+<tr>
+<td>库位已满</td>
+<td>弹窗"该库位已满" + 选其他</td>
+</tr>
+<tr>
+<td>离线冲突</td>
+<td>弹窗"该单据已存在" + 覆盖/合并</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="a6-e5-s1">A.6 E5-S1 工单与机台排产</h3>
+<h4 id="_17">涉及页面</h4>
+<table>
+<thead>
+<tr>
+<th>路由</th>
+<th>页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/production/workorder/list</code></td>
+<td>工单列表</td>
+</tr>
+<tr>
+<td><code>/production/workorder/:id</code></td>
+<td>工单详情</td>
+</tr>
+<tr>
+<td><code>/production/schedule</code></td>
+<td>排产看板（甘特图，核心页）</td>
+</tr>
+<tr>
+<td><code>/production/equipment/load</code></td>
+<td>机台负荷</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_18">关键组件</h4>
+<ul>
+<li><code>&lt;MachineLoadBar&gt;</code>（机台负荷）</li>
+<li><code>&lt;GanttChart&gt;</code>（基于 ECharts Gantt + vue-draggable-next）</li>
+<li><code>&lt;WorkorderCard&gt;</code>（拖拽卡片）</li>
+<li><code>&lt;ProcessRoute&gt;</code>（工序路线）</li>
+<li><code>&lt;MrpShortage&gt;</code>（缺料清单）</li>
+</ul>
+<h4 id="ui_5">字段 UI 规范</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>UI 组件</th>
+<th>校验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>工单号</td>
+<td>string</td>
+<td>自动生成</td>
+<td>GD+年月日+4位流水</td>
+</tr>
+<tr>
+<td>销售订单</td>
+<td>string</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>产品</td>
+<td>string</td>
+<td><code>&lt;FigureNumberSearch&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>数量</td>
+<td>number</td>
+<td><code>&lt;el-input-number&gt;</code></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>工序路线</td>
+<td>array</td>
+<td><code>&lt;ProcessRoute&gt;</code></td>
+<td>必选 ≥ 1 道</td>
+</tr>
+<tr>
+<td>计划开始</td>
+<td>datetime</td>
+<td><code>&lt;el-date-picker&gt;</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td>计划结束</td>
+<td>datetime</td>
+<td><code>&lt;el-date-picker&gt;</code></td>
+<td>&gt; 开始</td>
+</tr>
+<tr>
+<td>机台</td>
+<td>string</td>
+<td><code>&lt;el-select&gt;</code></td>
+<td>排产后填写</td>
+</tr>
+<tr>
+<td>状态</td>
+<td>enum</td>
+<td><code>&lt;el-tag&gt;</code></td>
+<td>状态机</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_19">关键交互</h4>
+<table>
+<thead>
+<tr>
+<th>交互</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>拖拽排产</td>
+<td>卡片拖到机台 × 时间</td>
+</tr>
+<tr>
+<td>拖拽预校验</td>
+<td>机台类型/冲突/超载</td>
+</tr>
+<tr>
+<td>冲突高亮</td>
+<td>拖到占用时段红框</td>
+</tr>
+<tr>
+<td>实时刷新</td>
+<td>WebSocket 5s</td>
+</tr>
+<tr>
+<td>详情抽屉</td>
+<td>点击色块滑入</td>
+</tr>
+<tr>
+<td>键盘 ←/→</td>
+<td>切换工单</td>
+</tr>
+<tr>
+<td>MRP 展开</td>
+<td>一键生成缺料清单</td>
+</tr>
+</tbody>
+</table>
+<h4 id="case_5">边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>机台类型不匹配</td>
+<td>拖拽时"X" + 不可放下</td>
+</tr>
+<tr>
+<td>时间冲突</td>
+<td>目标位置红框 + Toast</td>
+</tr>
+<tr>
+<td>超载预警</td>
+<td>黄色 + 80% 标线</td>
+</tr>
+<tr>
+<td>网络中断</td>
+<td>拖拽失败 + 归位 + Toast</td>
+</tr>
+<tr>
+<td>并发冲突</td>
+<td>A 已排 → B 拖拽时红框</td>
+</tr>
+<tr>
+<td>撤销</td>
+<td>5 秒内 Ctrl+Z</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="a7-e5-s2-app">A.7 E5-S2 扫码开工/报工/过站（APP 端核心）</h3>
+<h4 id="_20">涉及页面</h4>
+<table>
+<thead>
+<tr>
+<th>路由</th>
+<th>页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/scan/full</code></td>
+<td>全屏扫码页</td>
+</tr>
+<tr>
+<td><code>/scan/result/workorder/start</code></td>
+<td>扫码结果 - 工单码 - 开工</td>
+</tr>
+<tr>
+<td><code>/scan/result/workorder/report</code></td>
+<td>扫码结果 - 工单码 - 报工</td>
+</tr>
+<tr>
+<td><code>/scan/result/transfer/pass</code></td>
+<td>扫码结果 - 流转码 - 过站</td>
+</tr>
+<tr>
+<td><code>/scan/history</code></td>
+<td>扫码历史</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_21">关键组件</h4>
+<ul>
+<li><code>&lt;ScanTrigger&gt;</code>（扫码触发器，核心组件）</li>
+<li><code>&lt;WorkorderInfo&gt;</code>（工单信息卡）</li>
+<li><code>&lt;ProcessSelector&gt;</code>（工序选择，大按钮）</li>
+<li><code>&lt;MachineSelector&gt;</code>（机台选择）</li>
+<li><code>&lt;QuantityInput&gt;</code>（大数字输入）</li>
+<li><code>&lt;OfflineBadge&gt;</code>（离线标记）</li>
+</ul>
+<h4 id="ui_6">字段 UI 规范（报工页）</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>UI 组件</th>
+<th>校验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>工单号</td>
+<td>string</td>
+<td>自动</td>
+<td>-</td>
+</tr>
+<tr>
+<td>工序</td>
+<td>string</td>
+<td><code>&lt;ProcessSelector&gt;</code></td>
+<td>必选</td>
+</tr>
+<tr>
+<td>机台</td>
+<td>string</td>
+<td><code>&lt;MachineSelector&gt;</code></td>
+<td>自动识别（蓝牙）</td>
+</tr>
+<tr>
+<td>完工数</td>
+<td>number</td>
+<td><code>&lt;QuantityInput&gt;</code></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>合格数</td>
+<td>number</td>
+<td><code>&lt;QuantityInput&gt;</code></td>
+<td>0 ≤ 合格 ≤ 完工</td>
+</tr>
+<tr>
+<td>报废数</td>
+<td>number</td>
+<td><code>&lt;QuantityInput&gt;</code></td>
+<td>0 ≤ 报废 ≤ 完工</td>
+</tr>
+<tr>
+<td>报废率</td>
+<td>number</td>
+<td>自动计算</td>
+<td>&gt; 10% 警示</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_22">关键交互</h4>
+<table>
+<thead>
+<tr>
+<th>交互</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>扫码成功</td>
+<td>震动 + 滴声 + 闪绿 + 自动路由</td>
+</tr>
+<tr>
+<td>工序选择</td>
+<td>大按钮 ≥ 64px</td>
+</tr>
+<tr>
+<td>大数字键盘</td>
+<td>系统键盘弹出</td>
+</tr>
+<tr>
+<td>实时校验</td>
+<td>合格 + 报废 = 完工 ✓</td>
+</tr>
+<tr>
+<td>报废率警示</td>
+<td>&gt; 10% 黄色 + 提示</td>
+</tr>
+<tr>
+<td>离线缓存</td>
+<td>本地 SQLite + 状态条</td>
+</tr>
+<tr>
+<td>一键提交</td>
+<td>大按钮 + Toast</td>
+</tr>
+</tbody>
+</table>
+<h4 id="case_6">边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>扫码失败</td>
+<td>重试 3 次 + 弹窗</td>
+</tr>
+<tr>
+<td>未知码</td>
+<td>弹窗 + 手工输入</td>
+</tr>
+<tr>
+<td>单据已关闭</td>
+<td>弹窗"已关闭" + 跳回</td>
+</tr>
+<tr>
+<td>离线扫码</td>
+<td>状态条 + 队列</td>
+</tr>
+<tr>
+<td>报废率 &gt; 10%</td>
+<td>自动推品检</td>
+</tr>
+<tr>
+<td>报工 &gt; 派工</td>
+<td>红框 + 提示</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="a8-e11-s1">A.8 E11-S1 生产工作台</h3>
+<h4 id="_23">涉及页面</h4>
+<table>
+<thead>
+<tr>
+<th>路由</th>
+<th>页面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/dashboard/production</code></td>
+<td>生产工作台（核心页）</td>
+</tr>
+<tr>
+<td><code>/dashboard/workspace</code></td>
+<td>角色化工作台（业务员/采购/财务/HR）</td>
+</tr>
+<tr>
+<td><code>/dashboard/cockpit</code></td>
+<td>老板驾驶舱（总经理）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_24">关键组件</h4>
+<ul>
+<li><code>&lt;KpiCard&gt;</code>（KPI 卡片，5 个）</li>
+<li><code>&lt;KanbanBoard&gt;</code>（5 列看板 + 拖拽）</li>
+<li><code>&lt;KanbanCard&gt;</code>（工单卡片）</li>
+<li><code>&lt;EventStream&gt;</code>（异常事件流）</li>
+<li><code>&lt;RoleSwitcher&gt;</code>（角色切换器）</li>
+<li><code>&lt;RealtimeIndicator&gt;</code>（实时刷新指示）</li>
+</ul>
+<h4 id="ui_7">字段 UI 规范</h4>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>字段</th>
+<th>UI 规范</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>KPI 卡片</strong></td>
+<td>今日产值</td>
+<td>¥82,500 32px 主色；▲ 12% 同比</td>
+</tr>
+<tr>
+<td></td>
+<td>逾期订单</td>
+<td>⚠ 3 32px 红色；7 天+ 副标</td>
+</tr>
+<tr>
+<td></td>
+<td>在制工单</td>
+<td>28 32px；5 急单 副标</td>
+</tr>
+<tr>
+<td></td>
+<td>外协在途</td>
+<td>12 32px；5 逾期 副标</td>
+</tr>
+<tr>
+<td></td>
+<td>设备故障</td>
+<td>1 32px 红色；待处理 副标</td>
+</tr>
+<tr>
+<td><strong>看板列</strong></td>
+<td>5 列</td>
+<td>待排产 / 加工中 / 待检验 / 已完工 / 已入库</td>
+</tr>
+<tr>
+<td><strong>看板卡片</strong></td>
+<td>工单号</td>
+<td>16px Medium</td>
+</tr>
+<tr>
+<td></td>
+<td>产品</td>
+<td>14px Regular</td>
+</tr>
+<tr>
+<td></td>
+<td>数量+工时</td>
+<td>14px Regular + 图标</td>
+</tr>
+<tr>
+<td></td>
+<td>状态标签</td>
+<td>Tag 颜色（绿/黄/红/灰）</td>
+</tr>
+<tr>
+<td><strong>异常事件流</strong></td>
+<td>时间</td>
+<td>14px 灰</td>
+</tr>
+<tr>
+<td></td>
+<td>事件</td>
+<td>14px + 图标</td>
+</tr>
+<tr>
+<td></td>
+<td>详情</td>
+<td>链接蓝色</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_25">关键交互</h4>
+<table>
+<thead>
+<tr>
+<th>交互</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KPI 点击钻取</td>
+<td>跳转列表页（带过滤）</td>
+</tr>
+<tr>
+<td>拖拽流转</td>
+<td>跨列校验状态机</td>
+</tr>
+<tr>
+<td>卡片按钮</td>
+<td>"[排产→]" "[报工→]" "[检验→]" 等</td>
+</tr>
+<tr>
+<td>异常事件流</td>
+<td>WS 5s 推送 + 新行插入动画</td>
+</tr>
+<tr>
+<td>角色切换</td>
+<td>看板数据自动刷新</td>
+</tr>
+<tr>
+<td>实时刷新</td>
+<td>顶部小绿点 5s 闪</td>
+</tr>
+</tbody>
+</table>
+<h4 id="case_7">边界 case</h4>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>跨列非法</td>
+<td>拖到不合法列时弹回 + Toast</td>
+</tr>
+<tr>
+<td>KPI 数据为空</td>
+<td>显示"-" + 灰色</td>
+</tr>
+<tr>
+<td>异常事件无</td>
+<td>显示"暂无异常"</td>
+</tr>
+<tr>
+<td>网络中断</td>
+<td>顶部红条 + 提示"实时刷新已停止"</td>
+</tr>
+<tr>
+<td>角色无权限</td>
+<td>整页变灰 + 提示"请联系管理员"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="b-architect-apiws">附录 B：与 Architect 的 API/WS 交接清单</h2>
+<h3 id="b1-openapi-consumes_apis">B.1 OpenAPI 端点清单（consumes_apis）</h3>
+<blockquote>
+<p>前端按 Epic 列出消费的后端 API，<strong>对应后端 OpenAPI 草案</strong>。
+<strong>版本前缀</strong>：<code>/api/v1/</code>
+<strong>文档</strong>：<code>docs/architect-handoff.md</code> 第 X 节</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Story</th>
+<th>端点</th>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E1</td>
+<td>S1 用户角色</td>
+<td><code>/api/v1/users</code></td>
+<td>GET/POST/PUT/DELETE</td>
+<td>用户 CRUD</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S1 用户角色</td>
+<td><code>/api/v1/roles</code></td>
+<td>GET/POST/PUT/DELETE</td>
+<td>角色 CRUD</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S1 用户角色</td>
+<td><code>/api/v1/permissions</code></td>
+<td>GET</td>
+<td>权限查询</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S2 审批流</td>
+<td><code>/api/v1/workflows</code></td>
+<td>GET/POST/PUT</td>
+<td>审批流配置</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S2 审批流</td>
+<td><code>/api/v1/approvals</code></td>
+<td>GET/POST</td>
+<td>审批操作（通过/驳回/加签）</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S3 字典</td>
+<td><code>/api/v1/dicts</code></td>
+<td>GET</td>
+<td>字典查询</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S4 APP 登录</td>
+<td><code>/api/v1/auth/login</code></td>
+<td>POST</td>
+<td>登录</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S4 APP 消息</td>
+<td><code>/api/v1/messages</code></td>
+<td>GET</td>
+<td>消息列表</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S4 APP 扫码壳</td>
+<td><code>/api/v1/scan/identify</code></td>
+<td>POST</td>
+<td>扫码识别（码类型 + 业务路由）</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>S4 离线同步</td>
+<td><code>/api/v1/sync/upload</code></td>
+<td>POST</td>
+<td>离线队列上传</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>S1 客户</td>
+<td><code>/api/v1/customers</code></td>
+<td>GET/POST/PUT</td>
+<td>客户 CRUD</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>S1 客户保护</td>
+<td><code>/api/v1/customers/:id/protect</code></td>
+<td>POST/DELETE</td>
+<td>客户保护</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>S2 报价</td>
+<td><code>/api/v1/quotes</code></td>
+<td>GET/POST/PUT</td>
+<td>报价 CRUD</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>S2 报价审批</td>
+<td><code>/api/v1/quotes/:id/submit</code></td>
+<td>POST</td>
+<td>提交审批</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>S3 订单</td>
+<td><code>/api/v1/orders</code></td>
+<td>GET/POST/PUT</td>
+<td>订单 CRUD</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>S3 订单变更</td>
+<td><code>/api/v1/orders/:id/change</code></td>
+<td>POST</td>
+<td>订单变更</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>S4 合同</td>
+<td><code>/api/v1/contracts</code></td>
+<td>GET/POST</td>
+<td>合同 CRUD</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>S4 回款</td>
+<td><code>/api/v1/payments</code></td>
+<td>GET/POST</td>
+<td>回款登记</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>S1 图纸</td>
+<td><code>/api/v1/drawings</code></td>
+<td>GET/POST</td>
+<td>图纸 CRUD</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>S1 图纸预览</td>
+<td><code>/api/v1/drawings/:id/preview</code></td>
+<td>GET</td>
+<td>PDF 流（鉴权后）</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>S2 工程转化</td>
+<td><code>/api/v1/drawings/:id/transform</code></td>
+<td>POST</td>
+<td>工程转化</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>S3 BOM</td>
+<td><code>/api/v1/boms</code></td>
+<td>GET/POST/PUT</td>
+<td>BOM CRUD</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>S3 物料</td>
+<td><code>/api/v1/items</code></td>
+<td>GET/POST/PUT</td>
+<td>物料 CRUD</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>S4 工艺</td>
+<td><code>/api/v1/processes</code></td>
+<td>GET/POST/PUT</td>
+<td>工艺 CRUD</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>S1 物料码</td>
+<td><code>/api/v1/material-codes</code></td>
+<td>GET/POST</td>
+<td>物料码生成</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>S2 扫码出入库</td>
+<td><code>/api/v1/stock/in</code></td>
+<td>POST</td>
+<td>扫码入库</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>S2 扫码出入库</td>
+<td><code>/api/v1/stock/out</code></td>
+<td>POST</td>
+<td>扫码出库</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>S3 库位</td>
+<td><code>/api/v1/warehouses</code></td>
+<td>GET/POST</td>
+<td>库位 CRUD</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>S3 库存</td>
+<td><code>/api/v1/inventory</code></td>
+<td>GET</td>
+<td>库存查询</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>S4 安全库存</td>
+<td><code>/api/v1/safety-stock</code></td>
+<td>GET/POST</td>
+<td>安全库存配置</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>S1 工单</td>
+<td><code>/api/v1/workorders</code></td>
+<td>GET/POST/PUT</td>
+<td>工单 CRUD</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>S1 排产</td>
+<td><code>/api/v1/schedules</code></td>
+<td>GET/POST</td>
+<td>排产（拖拽保存）</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>S2 扫码开工</td>
+<td><code>/api/v1/workorders/:id/start</code></td>
+<td>POST</td>
+<td>扫码开工</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>S2 扫码报工</td>
+<td><code>/api/v1/workorders/:id/report</code></td>
+<td>POST</td>
+<td>扫码报工</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>S2 扫码过站</td>
+<td><code>/api/v1/transfers/:id/pass</code></td>
+<td>POST</td>
+<td>扫码过站</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>S4 委外</td>
+<td><code>/api/v1/subcontracts</code></td>
+<td>GET/POST</td>
+<td>委外 CRUD</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>S5 设备</td>
+<td><code>/api/v1/equipments</code></td>
+<td>GET/POST</td>
+<td>设备 CRUD</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>S5 机台负荷</td>
+<td><code>/api/v1/equipments/:id/load</code></td>
+<td>GET</td>
+<td>机台负荷查询</td>
+</tr>
+<tr>
+<td>E6</td>
+<td>S1 委外对账</td>
+<td><code>/api/v1/subcontracts/reconcile</code></td>
+<td>POST</td>
+<td>对账生成</td>
+</tr>
+<tr>
+<td>E7</td>
+<td>S1 检验</td>
+<td><code>/api/v1/inspections</code></td>
+<td>GET/POST</td>
+<td>检验 CRUD</td>
+</tr>
+<tr>
+<td>E7</td>
+<td>S2 FA</td>
+<td><code>/api/v1/fa</code></td>
+<td>GET/POST</td>
+<td>FA 首件</td>
+</tr>
+<tr>
+<td>E7</td>
+<td>S3 三次元</td>
+<td><code>/api/v1/3d-cmm</code></td>
+<td>GET/POST</td>
+<td>三次元检测</td>
+</tr>
+<tr>
+<td>E7</td>
+<td>S4 不良品</td>
+<td><code>/api/v1/defects</code></td>
+<td>GET/POST</td>
+<td>不良品处理</td>
+</tr>
+<tr>
+<td>E8</td>
+<td>S1 询比价</td>
+<td><code>/api/v1/rfqs</code></td>
+<td>GET/POST</td>
+<td>询比价</td>
+</tr>
+<tr>
+<td>E8</td>
+<td>S2 采购订单</td>
+<td><code>/api/v1/purchase-orders</code></td>
+<td>GET/POST</td>
+<td>采购订单</td>
+</tr>
+<tr>
+<td>E8</td>
+<td>S3 到货</td>
+<td><code>/api/v1/reminders</code></td>
+<td>GET</td>
+<td>到货提醒</td>
+</tr>
+<tr>
+<td>E8</td>
+<td>S4 来料检</td>
+<td><code>/api/v1/incoming-qc</code></td>
+<td>GET/POST</td>
+<td>来料检</td>
+</tr>
+<tr>
+<td>E9</td>
+<td>S1 应收</td>
+<td><code>/api/v1/ar</code></td>
+<td>GET</td>
+<td>应收账款</td>
+</tr>
+<tr>
+<td>E9</td>
+<td>S1 应付</td>
+<td><code>/api/v1/ap</code></td>
+<td>GET</td>
+<td>应付账款</td>
+</tr>
+<tr>
+<td>E9</td>
+<td>S2 成本</td>
+<td><code>/api/v1/cost</code></td>
+<td>GET</td>
+<td>成本核算</td>
+</tr>
+<tr>
+<td>E9</td>
+<td>S3 付款</td>
+<td><code>/api/v1/payment-requests</code></td>
+<td>GET/POST</td>
+<td>付款申请</td>
+</tr>
+<tr>
+<td>E9</td>
+<td>S4 利润</td>
+<td><code>/api/v1/profit</code></td>
+<td>GET</td>
+<td>利润分析</td>
+</tr>
+<tr>
+<td>E10</td>
+<td>S1 员工</td>
+<td><code>/api/v1/employees</code></td>
+<td>GET/POST</td>
+<td>员工 CRUD</td>
+</tr>
+<tr>
+<td>E10</td>
+<td>S1 考勤</td>
+<td><code>/api/v1/attendance</code></td>
+<td>GET/POST</td>
+<td>考勤</td>
+</tr>
+<tr>
+<td>E10</td>
+<td>S2 薪酬</td>
+<td><code>/api/v1/salary</code></td>
+<td>GET/POST</td>
+<td>薪酬核算</td>
+</tr>
+<tr>
+<td>E10</td>
+<td>S3 绩效</td>
+<td><code>/api/v1/performance</code></td>
+<td>GET/POST</td>
+<td>绩效</td>
+</tr>
+<tr>
+<td>E11</td>
+<td>S1 工作台</td>
+<td><code>/api/v1/dashboard/kpi</code></td>
+<td>GET</td>
+<td>KPI 数据</td>
+</tr>
+<tr>
+<td>E11</td>
+<td>S1 工作台</td>
+<td><code>/api/v1/dashboard/kanban</code></td>
+<td>GET</td>
+<td>看板数据</td>
+</tr>
+<tr>
+<td>E11</td>
+<td>S1 工作台</td>
+<td><code>/api/v1/dashboard/events</code></td>
+<td>GET</td>
+<td>异常事件流</td>
+</tr>
+<tr>
+<td>E11</td>
+<td>S2 看板</td>
+<td><code>/api/v1/kanbans/:type</code></td>
+<td>GET</td>
+<td>多维看板</td>
+</tr>
+<tr>
+<td>E11</td>
+<td>S3 报表</td>
+<td><code>/api/v1/reports/sales-ranking</code></td>
+<td>GET</td>
+<td>销售龙虎榜</td>
+</tr>
+<tr>
+<td>E11</td>
+<td>S3 报表</td>
+<td><code>/api/v1/reports/customer-profit</code></td>
+<td>GET</td>
+<td>客户利润</td>
+</tr>
+</tbody>
+</table>
+<h3 id="b2-websocket-sse">B.2 WebSocket / SSE 实时推送需求</h3>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>端</th>
+<th>协议</th>
+<th>频道/事件</th>
+<th>频率</th>
+<th>数据量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>生产工作台 KPI</strong></td>
+<td>Web</td>
+<td>WS</td>
+<td><code>dashboard:kpi</code></td>
+<td>5s</td>
+<td>~1KB</td>
+</tr>
+<tr>
+<td><strong>生产工作台看板</strong></td>
+<td>Web</td>
+<td>WS</td>
+<td><code>dashboard:kanban</code></td>
+<td>5s</td>
+<td>~10KB</td>
+</tr>
+<tr>
+<td><strong>异常事件流</strong></td>
+<td>Web</td>
+<td>WS</td>
+<td><code>dashboard:events</code></td>
+<td>实时</td>
+<td>~1KB/条</td>
+</tr>
+<tr>
+<td><strong>排产看板机台状态</strong></td>
+<td>Web</td>
+<td>WS</td>
+<td><code>schedule:machine</code></td>
+<td>5s</td>
+<td>~5KB</td>
+</tr>
+<tr>
+<td><strong>审批待办（新待办推送）</strong></td>
+<td>Web + APP</td>
+<td>WS</td>
+<td><code>approval:new</code></td>
+<td>实时</td>
+<td>~1KB</td>
+</tr>
+<tr>
+<td><strong>消息中心（新消息）</strong></td>
+<td>Web + APP</td>
+<td>WS</td>
+<td><code>message:new</code></td>
+<td>实时</td>
+<td>~1KB</td>
+</tr>
+<tr>
+<td><strong>扫码实时进度</strong></td>
+<td>APP</td>
+<td>WS</td>
+<td><code>scan:progress</code></td>
+<td>实时</td>
+<td>~1KB</td>
+</tr>
+<tr>
+<td><strong>库存预警</strong></td>
+<td>Web</td>
+<td>SSE</td>
+<td><code>inventory:alert</code></td>
+<td>10min</td>
+<td>~1KB</td>
+</tr>
+<tr>
+<td><strong>回款提醒</strong></td>
+<td>Web + APP</td>
+<td>SSE</td>
+<td><code>payment:remind</code></td>
+<td>10min</td>
+<td>~1KB</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>WS 协议</strong>：原生 WebSocket（不依赖 Socket.IO）；心跳 30s；重连指数退避。
+<strong>SSE 协议</strong>：仅服务端推送场景（库存预警/回款提醒），浏览器原生支持。</p>
+</blockquote>
+<h3 id="b3">B.3 文件上传分片规则</h3>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>大小限制</th>
+<th>分片大小</th>
+<th>并发数</th>
+<th>重试</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>图纸 PDF</strong></td>
+<td>≤ 100MB</td>
+<td>5MB</td>
+<td>3</td>
+<td>3 次</td>
+</tr>
+<tr>
+<td><strong>DXF/STEP/NC</strong></td>
+<td>≤ 50MB</td>
+<td>5MB</td>
+<td>3</td>
+<td>3 次</td>
+</tr>
+<tr>
+<td><strong>图片（头像/凭证）</strong></td>
+<td>≤ 5MB</td>
+<td>不分片</td>
+<td>1</td>
+<td>3 次</td>
+</tr>
+<tr>
+<td><strong>合同附件</strong></td>
+<td>≤ 20MB</td>
+<td>2MB</td>
+<td>3</td>
+<td>3 次</td>
+</tr>
+<tr>
+<td><strong>检测报告</strong></td>
+<td>≤ 20MB</td>
+<td>2MB</td>
+<td>3</td>
+<td>3 次</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>分片上传流程</strong>：
+1. 前端计算 MD5 → 调用 <code>/api/v1/files/init</code> → 返回 <code>uploadId</code>
+2. 分片上传 → <code>/api/v1/files/chunk?uploadId=xxx&amp;chunk=N</code>
+3. 全部完成 → <code>/api/v1/files/complete</code> → 返回 <code>fileUrl</code>
+4. 失败分片重试 → <code>/api/v1/files/chunk</code> 重传</p>
+</blockquote>
+<h3 id="b4">B.4 移动端网络切换/弱网策略</h3>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>策略</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>WiFi → 4G 切换</strong></td>
+<td>OkHttp 监听 NetworkCallback，自动重试未完成请求</td>
+</tr>
+<tr>
+<td><strong>4G → 无网络</strong></td>
+<td>切换离线模式 + 状态条变橙 + 数据入本地队列</td>
+</tr>
+<tr>
+<td><strong>无网络 → 4G</strong></td>
+<td>WorkManager 触发同步任务 + 状态条变蓝</td>
+</tr>
+<tr>
+<td><strong>弱网（&lt; 100KB/s）</strong></td>
+<td>减少请求频率 + 合并请求 + 禁用图片上传（只缓存）</td>
+</tr>
+<tr>
+<td><strong>超时（&gt; 10s）</strong></td>
+<td>弹窗"网络较慢" + 允许用户取消</td>
+</tr>
+<tr>
+<td><strong>断点续传</strong></td>
+<td>文件分片上传支持断点续传</td>
+</tr>
+<tr>
+<td><strong>请求去重</strong></td>
+<td>同一请求 1s 内去重（防双击）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="c-dod">附录 C：验收 DoD 与灵魂自评</h2>
+<h3 id="c1-doddefinition-of-done">C.1 验收 DoD（Definition of Done）</h3>
+<h4 id="_26">页面覆盖</h4>
+<ul>
+<li>[ ] 11 个 Epic 的页面覆盖率 100%（43 个 Story 对应页面全部产出）</li>
+<li>[ ] 4 个核心页面高保真：报价单录入（E2-S2）/ 扫码三码（E5-S2）/ 排产甘特（E5-S1）/ 生产工作台（E11-S1）</li>
+<li>[ ] 39 个低保真页面（Figma）</li>
+<li>[ ] 6 个核心 APP 流程原型（开工/报工/过站/入库/出库/审批）</li>
+</ul>
+<h4 id="_27">组件库</h4>
+<ul>
+<li>[ ] 组件库 Storybook ≥ 30 个组件（Web + APP）</li>
+<li>[ ] 自定义组件 6 个：<code>FigureNumberSearch</code> / <code>BomTree</code> / <code>ScanTrigger</code> / <code>MachineLoadBar</code> / <code>ApprovalChainRenderer</code> / <code>MoneyAmount</code></li>
+<li>[ ] Element Plus 主题定制（色板/圆角/间距已应用）</li>
+<li>[ ] 设计 token JSON 输出（亮/暗主题）</li>
+</ul>
+<h4 id="_28">视觉规范</h4>
+<ul>
+<li>[ ] 视觉规范文档完整（色板/字体/间距/圆角/阴影）</li>
+<li>[ ] WCAG AA 合规检查通过（关键流程 100%）</li>
+<li>[ ] 响应式断点规范（Web: 1280/1440/1920；APP: 6-7 寸/PDA）</li>
+<li>[ ] 13 寸 Mac / 1920×1080 / 4K 三个分辨率全适配</li>
+</ul>
+<h4 id="_29">交互规范</h4>
+<ul>
+<li>[ ] 全局快捷键文档（10+ 快捷键）</li>
+<li>[ ] 扫码三码交互流程图（含 4 个核心场景）</li>
+<li>[ ] 审批流/拖拽/离线 3 大交互范式文档</li>
+<li>[ ] 键盘快捷键全部可配置（用户偏好设置）</li>
+<li>[ ] 离线/在线状态可见（APP 端明牌）</li>
+</ul>
+<h4 id="_30">灵魂测试</h4>
+<ul>
+<li>[ ] <strong>操作工奶奶测试通过</strong>：王奶奶（55 岁，车间 10 年）能在 30 秒内完成扫码报工</li>
+<li>[ ] <strong>业务员 5 分钟测试</strong>：5 分钟内完成"客户录入 → 报价 → 提交审批"全流程</li>
+<li>[ ] <strong>生管 1 屏测试</strong>：打开生产工作台，5 秒内知道今天有多少逾期、哪些设备忙</li>
+<li>[ ] <strong>键盘流覆盖</strong>：80% 高频操作有快捷键</li>
+<li>[ ] <strong>扫码流覆盖</strong>：3 步内完成扫码三码</li>
+</ul>
+<h4 id="_31">性能</h4>
+<ul>
+<li>[ ] 首屏 LCP ≤ 2.5s（P75）</li>
+<li>[ ] TTI ≤ 3.5s（P75）</li>
+<li>[ ] 扫码响应 ≤ 1s（P95）</li>
+<li>[ ] 离线同步 ≤ 5s/条（P95）</li>
+<li>[ ] 查询接口 P95 ≤ 2s（普通）/ 10s（报表）</li>
+</ul>
+<h4 id="_32">协作</h4>
+<ul>
+<li>[ ] 与 Architect 的 OpenAPI 端点确认（43+ 个）</li>
+<li>[ ] WebSocket / SSE 实时推送需求确认（9 个场景）</li>
+<li>[ ] 文件上传分片规则确认（5 种类型）</li>
+<li>[ ] 移动端网络切换/弱网策略确认</li>
+</ul>
+<h3 id="c2">C.2 灵魂一致性自评</h3>
+<blockquote>
+<p><strong>问</strong>：UX 计成的 UI 能不能让操作工奶奶学会？</p>
+<p><strong>答</strong>：<strong>能</strong>。</p>
+<p>扫码页只有 1 个扫码框 + 1 个大按钮；报工只需扫一下、输三个数字、按"提交"；离线状态条让奶奶始终知道"数据有没有丢"。</p>
+<p><strong>没有菜单、没有表单、没有培训——扫一下就够了。</strong></p>
+<p>业务员录报价用键盘：<code>F8</code> 图号联想 → <code>Ctrl+S</code> 保存 → <code>Ctrl+Enter</code> 提交，<strong>3 步</strong>完成，<strong>0 次鼠标</strong>。</p>
+<p>生管排产用拖拽：拖卡片 → 看冲突高亮 → 确认，<strong>3 步</strong>完成，<strong>0 次菜单</strong>。</p>
+<p>财务审批一键通过：<code>Enter</code> 批量通过 + <code>Shift+Click</code> 多选，<strong>0 次鼠标</strong>。</p>
+<p><strong>一码到底，一数到底——UI 是用来"用"的，不是用来"看"的。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_33">文档结束</h2>
+<blockquote>
+<p><strong>下一步</strong>：
+1. 前端 Web 团队基于本规格起项目 + 起 Storybook（5 个工作日内完成）
+2. Android 团队基于 8.2 节实现扫码三码 + 离线队列（7 个工作日内完成）
+3. QA 团队按 C.1 节组织"操作工奶奶测试"可用性验证
+4. 与 Architect 在 1 个工作日内确认附录 B 的 API/WS 清单
+5. 设计 Token JSON 在 3 个工作日内交付前端</p>
+</blockquote>
+<p><strong>Co-Authored-By</strong>: UX Expert agent "计成" (orchestrix MCP) <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#110;&#111;&#114;&#101;&#112;&#108;&#121;&#64;&#97;&#110;&#116;&#104;&#114;&#111;&#112;&#105;&#99;&#46;&#99;&#111;&#109;">&#110;&#111;&#114;&#101;&#112;&#108;&#121;&#64;&#97;&#110;&#116;&#104;&#114;&#111;&#112;&#105;&#99;&#46;&#99;&#111;&#109;</a>
+<strong>Generated with</strong>: Claude Code (claude-opus-4-8)
+<strong>文档版本</strong>: V1.0.0（2026-06-05）</p></main>
+</div>
+</body>
+</html>

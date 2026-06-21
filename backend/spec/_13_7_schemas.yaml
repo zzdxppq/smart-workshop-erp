@@ -1,0 +1,226 @@
+# V1.3.9 Sprint 14 Story 13.7 · baseline-typecheck-fix
+# 20 端点增量 + 7 schema 补齐（补 Sprint 12-13 已 ship 端点的契约描述）
+
+    # ===== V1.3.9 Sprint 14 Story 13.7 schema 补齐（12.2 / 12.3 / 12.4）=====
+    SysPrinter:
+      type: object
+      description: 打印机配置模型（V1.3.9 Sprint 12 Story 12.2 · sys_printer 表）
+      required: [name, type]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string, minLength: 1, maxLength: 50, description: '唯一名称 · 1-50 字符' }
+        type: { type: string, enum: [NORMAL, LABEL], description: '普通（NORMAL · OS 打印队列） / 标签（LABEL · Socket 9100）' }
+        ip: { type: string, format: ipv4, nullable: true, description: 'IPv4 · LABEL 必填 · NORMAL 可空' }
+        port: { type: integer, default: 9100, minimum: 1, maximum: 65535 }
+        protocol: { type: string, enum: [ZPL, TSPL, PDF_BROWSER], description: '协议 · 由设备型号决定' }
+        modelSuggestion: { type: string, enum: [DELI_DL888B, ZEBRA_ZD420, TSC_TTP244PRO, OTHER] }
+        enabled: { type: integer, enum: [0, 1], default: 1 }
+        status: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN], default: UNKNOWN, description: '心跳状态' }
+        failCount: { type: integer, default: 0, description: '连续失败次数 · 达 2 标 OFFLINE' }
+        lastHeartbeatAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        tenantId: { type: integer, format: int64 }
+
+    PrinterHeartbeatResult:
+      type: object
+      description: 心跳测试响应（TCP Socket 2s 探活结果）
+      properties:
+        status: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN] }
+        latencyMs: { type: integer, description: '延迟 ms' }
+        protocolDetected: { type: string, enum: [ZPL, TSPL, UNKNOWN] }
+        error: { type: string, nullable: true, description: '失败时填充' }
+        hint: { type: string, nullable: true, example: "请检查 IP/端口/网线" }
+
+    PrinterAvailableResponse:
+      type: object
+      description: 可用打印机列表响应（含心跳状态）
+      properties:
+        printers:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/SysPrinter' }
+        count: { type: integer }
+
+    LabelTemplate:
+      type: object
+      description: 标签模板元数据（V1.3.9 Sprint 12 Story 12.3 · label_template 表）
+      required: [type, colorStrip]
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        name: { type: string, maxLength: 20, example: "工单码" }
+        prefix: { type: string, maxLength: 5, example: "GD-" }
+        colorStrip: { type: string, pattern: "^#[0-9A-Fa-f]{6}$", example: "#1E40AF", description: '色条 HEX' }
+        reuseFrom: { type: string, nullable: true, description: 'SB=GD · 其他 null', example: "null" }
+        layout:
+          type: object
+          properties:
+            topBarH: { type: number, default: 5 }
+            qrAreaH: { type: number, default: 18 }
+            textAreaH: { type: number, default: 7 }
+            fontSize: { type: number, default: 8 }
+            qrSizePx: { type: integer, default: 300 }
+            qrSizeMm: { type: number, default: 12 }
+            widthMm: { type: number, default: 50 }
+            heightMm: { type: number, default: 30 }
+            colorStripWidthMm: { type: number, default: 8 }
+        dpi: { type: integer, enum: [203, 300], default: 300 }
+        enabled: { type: boolean, default: true }
+        qrExample: { type: string, maxLength: 100, example: "GD-260614-001" }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+
+    LabelTemplateListResponse:
+      type: object
+      description: 标签模板列表响应（12.3 listLabelTemplates 返回）
+      properties:
+        templates:
+          type: array
+          items: { $ref: '#/components/schemas/LabelTemplate' }
+        companyName: { type: string, default: "昆山佰泰胜精密加工", description: '厂名 · 读 sys_dict.COMPANY_NAME' }
+
+    LabelPreviewRequest:
+      type: object
+      description: 标签预览请求（12.3 previewLabel 输入）
+      required: [type, data]
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        data:
+          type: object
+          required: [qrContent]
+          properties:
+            qrContent: { type: string, maxLength: 200, description: '纯文本 · APP 扫码壳按前缀路由' }
+            lines:
+              type: array
+              maxItems: 6
+              items: { type: string, maxLength: 50 }
+            factoryName: { type: string, maxLength: 20, default: "昆山佰泰胜精密加工" }
+        format: { type: string, enum: [PNG, PDF], default: PNG }
+
+    LabelPreviewResponse:
+      type: object
+      description: 标签预览响应（base64 PNG / PDF）
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        format: { type: string, example: "PNG" }
+        base64: { type: string, description: 'data:image/png;base64,...' }
+        contentType: { type: string, example: "image/png" }
+        sizeBytes: { type: integer, description: 'PNG 字节数 · < 5120 (5KB)' }
+        renderedAt: { type: string, format: date-time }
+
+    ZplPrintRequest:
+      type: object
+      description: ZPL/TSPL 直连打印请求（12.4 模式一）
+      required: [templateCode, qrContent, lines, printerId, count]
+      properties:
+        templateCode: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        qrContent: { type: string, maxLength: 200 }
+        lines:
+          type: array
+          maxItems: 6
+          items: { type: string }
+        printerId: { type: integer, format: int64 }
+        count: { type: integer, minimum: 1, maximum: 100, default: 1 }
+        colorBarHex: { type: string, pattern: "^#?[0-9A-Fa-f]{6}$", default: "#1E40AF" }
+        remark: { type: string, maxLength: 200 }
+
+    ZplPrintResult:
+      type: object
+      description: ZPL/TSPL 直连打印响应
+      properties:
+        printLogId: { type: integer, format: int64 }
+        logNo: { type: string, example: "PR-20260614-001" }
+        bytesSent: { type: integer, example: 256 }
+        latencyMs: { type: integer, example: 350 }
+        protocol: { type: string, enum: [ZPL, TSPL] }
+
+    PdfA4PrintRequest:
+      type: object
+      description: A4 PDF 打印请求（12.4 模式二 · 3×9=27 标签/页）
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            type: object
+            required: [templateCode, qrContent, lines]
+            properties:
+              templateCode: { type: string, enum: [GD, LZ, SB, WW, WL] }
+              qrContent: { type: string, maxLength: 200 }
+              lines:
+                type: array
+                maxItems: 6
+                items: { type: string }
+              colorBarHex: { type: string, default: "#1E40AF" }
+        remark: { type: string, maxLength: 200 }
+
+    PrintLogResponse:
+      type: object
+      description: 打印日志响应（12.4 sys_print_log · V57 Flyway）
+      properties:
+        id: { type: integer, format: int64 }
+        logNo: { type: string, example: "PR-20260614-001" }
+        operatorUserId: { type: integer, format: int64 }
+        operatorName: { type: string }
+        printedAt: { type: string, format: date-time }
+        codeType: { type: string, enum: [GD, LZ, SB, WW, WL, DRAWING] }
+        codeValue: { type: string }
+        copies: { type: integer }
+        printerId: { type: integer, format: int64, nullable: true }
+        printerNameSnapshot: { type: string, nullable: true }
+        printerIpSnapshot: { type: string, nullable: true }
+        printMode: { type: string, enum: [ZPL_DIRECT, PDF_BROWSER] }
+        status: { type: string, enum: [SUCCESS, FAILED, PENDING] }
+        errorMsg: { type: string, nullable: true }
+        referenceLogId: { type: integer, format: int64, nullable: true, description: '补打时指向原始日志 · 防递归' }
+        remark: { type: string, nullable: true }
+        tenantId: { type: integer, format: int64 }
+
+    PageResponsePrintLog:
+      type: object
+      description: 打印日志分页响应
+      properties:
+        records:
+          type: array
+          items: { $ref: '#/components/schemas/PrintLogResponse' }
+        total: { type: integer }
+        pageNum: { type: integer }
+        pageSize: { type: integer }
+        pages: { type: integer }
+
+    ReprintRequest:
+      type: object
+      description: 补打请求（12.4 replayPrintLog 输入）
+      properties:
+        targetMode:
+          type: string
+          enum: [ZPL_DIRECT, PDF_BROWSER, SAME]
+          default: SAME
+          description: '同模式 / 换模式 / SAME（沿用原模式）'
+        printerId: { type: integer, format: int64, nullable: true, description: 'targetMode=ZPL_DIRECT 时必填' }
+        remark: { type: string, maxLength: 200 }
+
+    PrintStatisticsBucket:
+      type: object
+      description: 打印统计聚合桶（12.4 printStatistics 输出）
+      properties:
+        key: { type: string, example: "2026-06" }
+        operatorId: { type: integer, format: int64, nullable: true }
+        totalCount: { type: integer }
+        successCount: { type: integer }
+        failedCount: { type: integer }
+        totalCopies: { type: integer }
+
+    DrawingLinkCreateRequest:
+      type: object
+      description: 图纸关联新增请求（13.3 POST links）
+      required: [bizType, bizId]
+      properties:
+        bizType:
+          type: string
+          enum: [ORDER, PO, INBOUND, INSPECTION, WORKORDER_PROCESS]
+          description: '业务类型 · 5 类'
+        bizId: { type: integer, format: int64, description: '业务单据 ID' }
+        remark: { type: string, maxLength: 200, nullable: true }

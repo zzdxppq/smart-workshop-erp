@@ -1,0 +1,130 @@
+title: Orchestrix Core System
+description: >
+  CNC ERP Backend Implementation Repository
+  multi-repo role: backend
+  References product repo at ../smart-workshop-erp
+
+markdownExploder: true
+
+project:
+  name: 昆山佰泰胜专属 ERP 系统 - Backend
+  mode: multi-repo
+  testCommand: 'mvn test'
+  multi_repo:
+    role: backend
+    repository_id: smart-workshop-erp-backend
+    product_repo_path: '../smart-workshop-erp'
+    auto_filter_stories: true
+    assigned_stories:
+      # 1.1 已在 product 仓示范生成；backend 仓内 SM 重新 *draft 时会写到这里
+      - '1.1'
+      - '1.2'
+      - '1.3'
+      - '1.4'
+      - '1.5'
+      - '5.1'
+      - '5.2'
+      - '5.3'
+      - '5.4'
+      - '6.1'
+      - '6.5'
+      - '6.6'
+      - '6.7'
+      - '7.1'
+      - '7.2'
+      - '7.3'
+      - '7.4'
+      - '8.1'
+      - '8.2'
+      - '8.3'
+      - '8.4'
+      - '9.1'
+      - '9.2'
+      - '9.3'
+      - '9.4'
+
+prd:
+  prdFile: ../smart-workshop-erp/docs/prd.md
+  prdSharded: true
+  prdShardedLocation: ../smart-workshop-erp/docs/prd
+
+architecture:
+  architectureFile: ./docs/architecture.md
+  architectureSharded: false
+  architectureShardedLocation: ./docs/architecture
+  storyReviewsLocation: ./docs/architecture/story-reviews
+
+customTechnicalDocuments:
+  - path: ../smart-workshop-erp/backend/spec/openapi.yaml
+    role: api_contract
+  - path: ../smart-workshop-erp/backend/db/init.sql
+    role: database_schema
+  - path: ../smart-workshop-erp/docs/architecture/er.drawio
+    role: er_diagram
+  - path: ../smart-workshop-erp/docs/architect-handoff.md
+    role: system_architecture
+  - path: ../smart-workshop-erp/docs/contract-appendix-a-prd.md
+    role: prd_excerpt
+  - path: ../smart-workshop-erp/docs/contract-appendix-d-security.md
+    role: security
+
+devLoadAlwaysFiles:
+  - ./docs/architecture/*coding-standards.md
+  - ./docs/architecture/*tech-stack.md
+  - ./docs/architecture/*source-tree.md
+
+devDebugLog: .ai/debug-log.md
+devStoryLocation: ./docs/stories
+
+verticalSliceStrategy: true
+
+dev:
+  devLogLocation: ./docs/dev/logs
+  devLogEnabled: true
+
+architect:
+  storyReviewsLocation: ./docs/architecture/story-reviews
+
+qa:
+  qaLocation: ./docs/qa
+  qaReviewsLocation: ./docs/qa/reviews
+  evidenceLocation: ./docs/qa/evidence
+  testDesignThresholds:
+    simple:
+      maxComplexity: 0
+      minQualityScore: 8.5
+      securitySensitive: false
+      tasks: []
+    standard:
+      maxComplexity: 2
+      minQualityScore: 7
+      securitySensitive: false
+      tasks: [test-design]
+    comprehensive:
+      minComplexity: 3
+      securitySensitive: true
+      tasks: [test-design, risk-profile]
+
+slashPrefix: Orchestrix
+version: 15.17.0
+
+i18n:
+  default_language: zh
+  supported_languages: [en, zh]
+  fallback_to_default: true
+  file_pattern: '{name}.{lang}.{ext}'
+
+# V1.3.7 业务定制
+v137_custom:
+  - prd_version: V1.3.7
+  - contract_id: XP-ZPF202606082405
+  - tech_stack:
+      language: Java 17
+      framework: Spring Boot 3.2 + Spring Cloud Alibaba 2022
+      build: Maven 3.9
+      db: MySQL 8.0 (Master + Slave)
+      cache: Redis 7 (Stream + Distributed Lock)
+      oss: MinIO (S3-compatible)
+      message: Redis Stream + XXL-JOB
+      apm: SkyWalking 9
+  - outsub_state_machine: 7 主状态 + NOTIFIED_REPAIR

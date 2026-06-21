@@ -1,0 +1,82 @@
+spring:
+  application:
+    name: erp-gateway
+  profiles:
+    active: ${PROFILE:dev}
+  main:
+    web-application-type: reactive
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+    gateway:
+      # Nacos lb:// · /erp-{service}/auth/login → 下游 /auth/login
+      discovery:
+        locator:
+          enabled: false
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 600s
+      routes:
+        # 财务 OpenAPI 子路径：/finance/cost-accounting/{sub} → /cost-accounting/{sub}
+        # 纯 GET /finance/cost-accounting（无子路径）仍走 business FinanceWebController 分页列表
+        - id: erp-business-finance-cost-openapi-sub
+          uri: lb://erp-business
+          order: -10
+          predicates:
+            - Path=/erp-business/finance/cost-accounting/**
+          filters:
+            - StripPrefix=1
+            - RewritePath=/finance/cost-accounting/(?<segment>.+), /cost-accounting/${segment}
+        # 财务 OpenAPI 子路径：/finance/payment-plan/{sub} → /payment-plan/{sub}
+        - id: erp-business-finance-payment-openapi-sub
+          uri: lb://erp-business
+          order: -10
+          predicates:
+            - Path=/erp-business/finance/payment-plan/**
+          filters:
+            - StripPrefix=1
+            - RewritePath=/finance/payment-plan/(?<segment>.+), /payment-plan/${segment}
+        - id: erp-platform
+          uri: lb://erp-platform
+          predicates:
+            - Path=/erp-platform/**
+          filters:
+            - StripPrefix=1
+        - id: erp-business
+          uri: lb://erp-business
+          predicates:
+            - Path=/erp-business/**
+          filters:
+            - StripPrefix=1
+        - id: erp-production
+          uri: lb://erp-production
+          predicates:
+            - Path=/erp-production/**
+          filters:
+            - StripPrefix=1
+
+server:
+  port: ${SERVER_PORT:9080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"

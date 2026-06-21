@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="orchestrix-architect-v1.3.7" version="24.0.0">
+  <diagram id="erp-er-v137" name="CNC ERP V1.3.7 ER">
+    <mxGraphModel dx="2400" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="2400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 标题 -->
+        <mxCell id="title" value="CNC 加工厂 ERP 系统 V1.3.7 · 数据库 ER 图&#xa;3 物理库 · 9 schema · 60+ 表" style="text;html=1;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="900" y="20" width="1500" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- erp_platform 物理库 -->
+        <!-- ============================================== -->
+        <mxCell id="plat_schema" value="erp_platform (物理库 1)&#xa;用户/角色/工作流/字典/文件/审计/邮件" style="shape=schemaContainer;html=1;rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="800" height="1100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_user" value="sys_user&#xa;PK id&#xa;UK username&#xa;real_name, phone, email&#xa;password_hash (BCrypt)&#xa;dept_id, status&#xa;last_login_time" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="60" y="160" width="200" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_role" value="sys_role&#xa;PK id&#xa;UK role_code&#xa;role_name, data_scope&#xa;amount_threshold&#xa;status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="290" y="160" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_user_role" value="sys_user_role&#xa;PK,FK user_id&#xa;PK,FK role_id" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="520" y="160" width="200" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_dept" value="sys_dept&#xa;PK id&#xa;parent_id (自引用)&#xa;dept_name, sort, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="60" y="350" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_workflow" value="sys_workflow&#xa;PK id&#xa;UK workflow_code&#xa;nodes_json, conditions_json&#xa;status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="290" y="350" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_dict" value="sys_dict&#xa;PK id&#xa;dict_type, dict_code&#xa;dict_label, sort, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="520" y="350" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_file" value="sys_file (V1.3.6 加密元数据)&#xa;PK id&#xa;bucket, object_key&#xa;original_name, size, mime&#xa;uploader_id&#xa;encryption_meta (AES-256-GCM, iv=base64)&#xa;encryption_kek_id" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#fff2cc" vertex="1" parent="1">
+          <mxGeometry x="60" y="490" width="200" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_audit_log" value="sys_audit_log&#xa;PK id&#xa;user_id, module, action&#xa;before_json, after_json&#xa;ip, ts&#xa;UK (user_id, module, action, ts)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="290" y="490" width="200" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sys_download_log" value="sys_download_log (V1.3.6 新增)&#xa;PK id&#xa;FK file_id&#xa;FK user_id&#xa;ip, ts, action&#xa;签字件下载审计" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#fff2cc" vertex="1" parent="1">
+          <mxGeometry x="520" y="490" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="email_send_log" value="email_send_log (V1.3.7 新增)&#xa;PK id&#xa;to_address, subject&#xa;attachment_hash (SHA-256)&#xa;smtp_response&#xa;status: PENDING/SENT/FAILED/RETRY_1H/RETRY_6H/RETRY_24H/DEAD&#xa;retry_count, sent_at&#xa;idx (status, sent_at)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="60" y="700" width="280" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="email_quota_daily" value="email_quota_daily (V1.3.7 新增)&#xa;PK date&#xa;sent_count, quota&#xa;warn_threshold&#xa;last_alert_at" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="370" y="700" width="200" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="email_config" value="email_config (V1.3.7 新增)&#xa;PK id (singleton)&#xa;smtp_host, smtp_port, use_ssl&#xa;from_address, auth_code_kek&#xa;retry_policy JSON&#xa;daily_quota, warn_threshold&#xa;log_retention_days&#xa;attachment_max_size_mb" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="600" y="700" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="vendor_send_log" value="outsub_vendor_notify_log&#xa;(V1.3.7 收窄)&#xa;PK id&#xa;FK vendor_id&#xa;channel: email_163&#xa;subject, body, attachment_path&#xa;status, sent_at, retry_count" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="60" y="900" width="240" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- erp_business 物理库 -->
+        <!-- ============================================== -->
+        <mxCell id="biz_schema" value="erp_business (物理库 2) · 9 schema" style="shape=schemaContainer;html=1;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="900" y="100" width="1500" height="1100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="crm_label" value="crm (客户域)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="920" y="140" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="crm_customer" value="crm_customer&#xa;PK id&#xa;UK customer_code&#xa;name, industry&#xa;credit_limit&#xa;FK owner_id → sys_user&#xa;protect_until, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="920" y="180" width="200" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="crm_contact" value="crm_contact&#xa;PK id&#xa;FK customer_id&#xa;name, position&#xa;phone, email, is_primary" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="920" y="350" width="200" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="crm_follow_record" value="crm_follow_record&#xa;PK id&#xa;FK customer_id&#xa;FK owner_id&#xa;follow_time, content&#xa;stage, next_follow_time" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="920" y="500" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sales_label" value="sales (销售域)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1160" y="140" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sales_quote" value="sales_quote&#xa;PK id&#xa;UK quote_no&#xa;FK customer_id&#xa;currency, delivery_date&#xa;total_amount, status&#xa;FK owner_id, approver_id" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1160" y="180" width="200" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sales_order" value="sales_order&#xa;PK id&#xa;UK order_no&#xa;FK customer_id, quote_id&#xa;order_type, is_fa&#xa;total_amount, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1160" y="360" width="200" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sales_contract" value="sales_contract&#xa;PK id&#xa;UK contract_no&#xa;FK order_id, file_id&#xa;signed_at, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1160" y="530" width="200" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sales_payment_plan" value="sales_payment_plan&#xa;PK id&#xa;FK contract_id&#xa;period_no, plan_date&#xa;plan_amount, actual_amount&#xa;status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1160" y="680" width="200" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mdm_label" value="物料 (mdm)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1400" y="140" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mdm_material" value="mdm_material&#xa;PK id&#xa;UK material_code&#xa;name, category, spec, unit&#xa;safety_stock_min/max&#xa;price_limit" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1400" y="180" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mdm_bom_header" value="mdm_bom_header&#xa;PK id&#xa;UK (product_code, bom_version)&#xa;type, status, published_at" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1400" y="340" width="200" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mdm_bom_line" value="mdm_bom_line&#xa;PK id&#xa;FK bom_header_id&#xa;parent_code, child_code&#xa;qty, loss_rate, process_no" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1400" y="490" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mdm_process" value="mdm_process&#xa;PK id&#xa;UK process_code&#xa;process_name&#xa;std_time_min, machine_type&#xa;unit_price" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1400" y="650" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mdm_product_route" value="mdm_product_route&#xa;PK id&#xa;product_code, process_seq&#xa;process_code, is_outsource" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1400" y="810" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="warehouse_label" value="warehouse (仓储域)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1640" y="140" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wms_warehouse" value="wms_warehouse&#xa;PK id&#xa;UK warehouse_code&#xa;warehouse_name, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1640" y="180" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wms_location" value="wms_location&#xa;PK id&#xa;FK warehouse_id&#xa;UK location_code&#xa;capacity, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1640" y="310" width="200" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wms_inbound" value="wms_inbound&#xa;PK id&#xa;UK inbound_no&#xa;type, source_order_id&#xa;FK warehouse_id, operator_id&#xa;status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1640" y="450" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wms_outbound" value="wms_outbound&#xa;PK id&#xa;UK outbound_no&#xa;type, source_order_id&#xa;FK warehouse_id, operator_id&#xa;status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1640" y="610" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wms_inventory" value="wms_inventory&#xa;PK id&#xa;UK (material_id, warehouse_id, batch_no)&#xa;qty_on_hand, qty_frozen" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1640" y="770" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wms_batch" value="wms_batch&#xa;PK id&#xa;FK material_id&#xa;batch_no&#xa;production_date, expiry_date&#xa;FK supplier_id" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1640" y="930" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="quality_label" value="quality (品质)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1900" y="140" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qc_inspection" value="qc_inspection&#xa;PK id&#xa;type (来料/过程/成品/FA/三次元)&#xa;FK workorder_id, material_id&#xa;inspector_id, engineer_id&#xa;result (PASS/FAIL/CONDITIONAL)&#xa;report_file_id" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1900" y="180" width="200" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qc_defect" value="qc_defect&#xa;PK id&#xa;FK inspection_id&#xa;reason_category&#xa;(材料/工艺/设备/人为)&#xa;handle_type&#xa;(返工/报废/让步)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1900" y="380" width="200" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="finance_label" value="finance (财务)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="2160" y="140" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fin_receivable" value="fin_receivable&#xa;PK id&#xa;FK order_id, customer_id&#xa;amount, due_date&#xa;paid_amount, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2160" y="180" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fin_payable" value="fin_payable&#xa;PK id&#xa;FK source_order_id&#xa;source_type, FK vendor_id&#xa;amount, due_date&#xa;paid_amount, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2160" y="340" width="200" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fin_payment" value="fin_payment&#xa;PK id&#xa;UK payment_no&#xa;FK vendor_id&#xa;amount, approvers_json&#xa;status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2160" y="510" width="200" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fin_cost" value="fin_cost&#xa;PK id&#xa;FK workorder_id&#xa;material_cost, labor_cost&#xa;mfg_cost, outsource_cost&#xa;total_cost" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2160" y="660" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fin_ar_aging" value="fin_ar_aging (快照)&#xa;PK (snapshot_date, customer_id)&#xa;bucket_0_30, 30_60, 60_90, 90_plus" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2160" y="820" width="200" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hr_label" value="hr (人事)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1900" y="600" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hr_employee" value="hr_employee&#xa;PK id&#xa;UK employee_no&#xa;name, id_card (AES-256-GCM)&#xa;phone (AES-256-GCM)&#xa;hire_date, dept_id, position&#xa;status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1900" y="640" width="200" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hr_attendance" value="hr_attendance&#xa;PK id&#xa;FK employee_id&#xa;clock_in, clock_out&#xa;location_lat, location_lng&#xa;is_late, is_early" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1900" y="820" width="200" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hr_salary" value="hr_salary&#xa;PK id&#xa;FK employee_id, period&#xa;base, post, performance, overtime&#xa;social, tax, net" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1900" y="990" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="reporting_label" value="reporting (报表)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1640" y="1090" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cost_label" value="cost (V1.3.4 新增)" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1900" y="1150" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- 委外域（V1.3.7 关键升级） -->
+        <!-- ============================================== -->
+        <mxCell id="outsub_v137_label" value="V1.3.7 委外域 · 重大改版" style="text;html=1;align=center;fontSize=13;fontStyle=1;fillColor=#f8cecc" vertex="1" parent="1">
+          <mxGeometry x="900" y="1200" width="1100" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_vendor" value="outsub_vendor&#xa;PK id&#xa;UK vendor_code&#xa;vendor_name, capabilities_json&#xa;credit_level&#xa;contact_email NOT NULL (V1.3.7 仍必填)&#xa;contact_phone (V1.3.7 改选填)&#xa;notify_channel: email_163 (V1.3.7 收窄)&#xa;default_recon_email (V1.3.6)&#xa;avg_delivery_days (V1.3.4)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#fff2cc" vertex="1" parent="1">
+          <mxGeometry x="900" y="1240" width="280" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_allocation" value="outsub_allocation (V1.3.7 新增)&#xa;PK id&#xa;FK workorder_id&#xa;process_seq&#xa;UK (workorder_id, process_seq)&#xa;decision: INHOUSE/OUTSOURCE&#xa;FK decided_by_user_id (生管)&#xa;decided_at" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#f8cecc" vertex="1" parent="1">
+          <mxGeometry x="1200" y="1240" width="240" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_allocation_vendor" value="outsub_allocation_vendor (V1.3.7 新增)&#xa;PK id&#xa;FK allocation_id&#xa;FK vendor_id&#xa;unit_price, delivery_date&#xa;FK selected_by_user_id (采购)&#xa;selected_at, status" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#f8cecc" vertex="1" parent="1">
+          <mxGeometry x="1460" y="1240" width="240" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_order" value="outsub_order (V1.3.4 升级 7 状态机)&#xa;PK id&#xa;UK outsource_no&#xa;FK workorder_id, vendor_id&#xa;process_code, qty, unit_price&#xa;total_amount&#xa;status ENUM (7+1 状态机)&#xa;rework_count INT (V1.3.4 返修次数)&#xa;FK original_outsub_order_id (V1.3.4 返修关联)&#xa;is_rework_reinspection BOOL&#xa;delivery_date, actual_delivery_date&#xa;UK (vendor_id, outsource_no)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#fff2cc" vertex="1" parent="1">
+          <mxGeometry x="1720" y="1240" width="280" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_order_item" value="outsub_order_item&#xa;PK id&#xa;FK outsource_id&#xa;FK material_id&#xa;qty, unit_price" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="900" y="1470" width="240" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_order_history" value="outsub_order_history (V1.3.4 新增)&#xa;PK id&#xa;FK outsource_id&#xa;from_status, to_status&#xa;FK operator_id, ts, remark" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1160" y="1470" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_reconcile" value="outsub_reconcile (V1.3.6 改版 · 不含线下)&#xa;PK id&#xa;UK (vendor_id, period)&#xa;total_amount, freight, payable&#xa;status: DRAFT/SENT/CONFIRMED/PAYING/PAID/REJECTED&#xa;FK recon_pdf_file_id (对账单 PDF)&#xa;FK signed_scan_file_id (签字扫描件 · V1.3.6 AES-256-GCM)&#xa;recon_sent_at&#xa;recon_confirmed_at&#xa;FK payment_request_id (V1.3.6 付款触发)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#f8cecc" vertex="1" parent="1">
+          <mxGeometry x="1420" y="1470" width="280" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_reconcile_line" value="outsub_reconcile_line&#xa;PK id&#xa;FK reconcile_id&#xa;FK outsource_order_id&#xa;qty, unit_price, amount" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1720" y="1470" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="outsub_delivery_history" value="outsub_delivery_history (V1.3.4 新增)&#xa;PK id&#xa;FK vendor_id, process_code&#xa;delivery_days, completed_at" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="900" y="1700" width="240" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cost_part_aggregate" value="cost_part_aggregate (V1.3.4 新增)&#xa;PK id&#xa;UK (material_code, period)&#xa;material_cost, labor_cost&#xa;surface_cost, outsource_cost&#xa;mfg_cost (管理费分摊)&#xa;total_cost&#xa;version, computed_at&#xa;idx (material_code, computed_at)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#d5e8d4" vertex="1" parent="1">
+          <mxGeometry x="1160" y="1700" width="280" height="170" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- erp_production 物理库 -->
+        <!-- ============================================== -->
+        <mxCell id="prod_schema" value="erp_production (物理库 3)" style="shape=schemaContainer;html=1;rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="2480" y="100" width="800" height="1100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_workorder" value="prod_workorder&#xa;PK id&#xa;UK workorder_no (GD-)&#xa;FK order_id&#xa;product_code, qty&#xa;plan_start, plan_end&#xa;status&#xa;FK machine_id&#xa;idx (customer_id, status, delivery_date)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2500" y="160" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_workorder_process" value="prod_workorder_process&#xa;(V1.3.7 升级)&#xa;PK id&#xa;FK workorder_id&#xa;process_seq, process_code&#xa;qty, status&#xa;is_outsource (V1.3.7)&#xa;FK assigned_by (V1.3.7 生管/采购)&#xa;assigned_at&#xa;idx (workorder_id, process_seq)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11;fillColor=#fff2cc" vertex="1" parent="1">
+          <mxGeometry x="2750" y="160" width="240" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_scan_start" value="prod_scan_start&#xa;PK id&#xa;FK workorder_id, process_seq&#xa;FK operator_id, machine_id&#xa;started_at" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2500" y="370" width="220" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_scan_report" value="prod_scan_report&#xa;PK id&#xa;FK workorder_id, process_seq&#xa;FK operator_id&#xa;qty_done, qty_ok, qty_scrap&#xa;reported_at&#xa;idx (workorder_id, process_no, scan_time DESC)" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2750" y="370" width="240" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_scan_transfer" value="prod_scan_transfer&#xa;PK id&#xa;FK workorder_id&#xa;from_process, to_process&#xa;transfer_code (LZ-)&#xa;qty, transferred_by, transferred_at" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2500" y="530" width="220" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_machine" value="prod_machine&#xa;PK id&#xa;UK machine_code (SB-)&#xa;machine_name, machine_type&#xa;machine_no, status&#xa;last_maintenance" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2500" y="700" width="220" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_machine_load" value="prod_machine_load&#xa;PK id&#xa;FK machine_id&#xa;load_date&#xa;planned_hours, available_hours" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2750" y="700" width="240" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_machine_maintenance" value="prod_machine_maintenance&#xa;PK id&#xa;FK machine_id&#xa;maintenance_type&#xa;performed_at, next_due" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="2500" y="860" width="220" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_label" value="生产执行核心" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#ffe6cc" vertex="1" parent="1">
+          <mxGeometry x="2500" y="130" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_label2" value="设备" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#ffe6cc" vertex="1" parent="1">
+          <mxGeometry x="2500" y="670" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_label3" value="扫码" style="text;html=1;align=center;fontSize=12;fontStyle=1;fillColor=#ffe6cc" vertex="1" parent="1">
+          <mxGeometry x="2500" y="345" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- 关键外键关系（只画 V1.3.7 新增 / 重要变更的） -->
+        <!-- ============================================== -->
+        <mxCell id="fk1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#d79b00;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="prod_workorder" target="prod_workorder_process">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk2" value="V1.3.7&#xa;生管分配" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="prod_workorder_process" target="outsub_allocation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk3" value="V1.3.7&#xa;采购选厂商" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="outsub_allocation" target="outsub_allocation_vendor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk4" value="V1.3.7&#xa;创建 WW-" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="outsub_allocation_vendor" target="outsub_order">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk5" value="V1.3.4 返修关联原单" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="outsub_order" target="outsub_order">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk6" value="V1.3.4 7 状态机日志" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="outsub_order" target="outsub_order_history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk7" value="V1.3.6 月度对账" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="outsub_vendor" target="outsub_reconcile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk8" value="V1.3.6 签字件" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="outsub_reconcile" target="sys_file">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk9" value="V1.3.7 通知日志" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="outsub_vendor" target="vendor_send_log">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fk10" value="V1.3.4 料号成本" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;endArrow=ERmany;startArrow=ERone" edge="1" parent="1" source="mdm_material" target="cost_part_aggregate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 图例 -->
+        <mxCell id="legend_title" value="图例" style="text;html=1;align=left;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="1240" width="100" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_v137" value="🔴 V1.3.7 新增" style="text;html=1;fillColor=#f8cecc;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="40" y="1270" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_v136" value="🟡 V1.3.6 升级（签字件 / 对账）" style="text;html=1;fillColor=#fff2cc;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="40" y="1310" width="280" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_v134" value="🟢 V1.3.4 升级（7 状态机 / 料号成本 / 交期预估）" style="text;html=1;fillColor=#d5e8d4;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="40" y="1350" width="350" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_note" value="⚠ V1.3.7 红线：工序分配（生管）→ 选厂商（采购）→ 创建 WW- 单，数据层严格分离" style="text;html=1;fillColor=#ffe6cc;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="1390" width="800" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

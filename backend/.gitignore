@@ -1,0 +1,40 @@
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Glob artifacts (Windows bash 创建的空文件)
+**关联**：*
+**结论**：*
+**评审人**：*
+**评审日期**：*
+
+# Build
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.log
+
+# Java
+*.class
+hs_err_pid*
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Sensitive
+application-local.yml
+.env
+.env.local
+deploy/env.prod
+/etc/erp/dek.key
+
+# AI debug
+.ai/

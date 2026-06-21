@@ -1,0 +1,273 @@
+    # ===== V1.3.8 Sprint 7-10 Schemas =====
+
+    BatchCreateRequest:
+      type: object
+      required: [poId, arrivedAt, items]
+      properties:
+        poId: { type: integer, format: int64 }
+        arrivedAt: { type: string, format: date-time }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/BatchItem' }
+
+    BatchItem:
+      type: object
+      required: [materialId, quantity]
+      properties:
+        materialId: { type: integer, format: int64 }
+        quantity: { type: integer }
+        poItemId: { type: integer, format: int64 }
+
+    BatchCreateResponse:
+      type: object
+      properties:
+        batches:
+          type: array
+          items: { $ref: '#/components/schemas/BatchInfo' }
+        poStatusAfter:
+          type: string
+          enum: [PENDING_SHIP, PARTIAL_ARRIVED, ALL_ARRIVED, CANCELLED]
+        qualityOrders:
+          type: array
+          items: { type: string }
+
+    BatchInfo:
+      type: object
+      properties:
+        batchNo: { type: string }
+        materialId: { type: integer, format: int64 }
+        quantity: { type: integer }
+
+    PoStatusResponse:
+      type: object
+      properties:
+        poId: { type: integer, format: int64 }
+        poStatus: { type: string }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PoStatusItem' }
+
+    PoStatusItem:
+      type: object
+      properties:
+        materialId: { type: integer, format: int64 }
+        ordered: { type: integer }
+        arrived: { type: integer }
+        batchCount: { type: integer }
+        qualityStatus: { type: string }
+
+    MaterialBarcodeRequest:
+      type: object
+      required: [materialId, batchId, materialNo]
+      properties:
+        materialId: { type: integer, format: int64 }
+        batchId: { type: integer, format: int64 }
+        materialNo: { type: string }
+
+    MaterialBarcodeResponse:
+      type: object
+      properties:
+        barcodeNo: { type: string }
+        isNew: { type: boolean }
+        oldBarcode: { type: string }
+
+    MaterialBarcodeParseResponse:
+      type: object
+      properties:
+        materialId: { type: integer, format: int64 }
+        materialNo: { type: string }
+        batchId: { type: integer, format: int64 }
+        batchNo: { type: string }
+        arrivedAt: { type: string, format: date-time }
+        qualityStatus: { type: string, enum: [PENDING, PASSED, REJECTED] }
+
+    NoOrderPurchaseRequest:
+      type: object
+      required: [purchaseReason, supplierId, items]
+      properties:
+        purchaseReason: { type: string, enum: [URGENT_REPLENISH, CUSTOMER_ADD, STOCK_SWAP, OTHER] }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/NoOrderPurchaseItem' }
+        supplierId: { type: integer, format: int64 }
+        remark: { type: string }
+
+    NoOrderPurchaseItem:
+      type: object
+      required: [materialId, quantity, estimatedPrice]
+      properties:
+        materialId: { type: integer, format: int64 }
+        quantity: { type: integer }
+        estimatedPrice: { type: number, format: double }
+
+    NoOrderPurchaseResponse:
+      type: object
+      properties:
+        poId: { type: integer, format: int64 }
+        poNo: { type: string }
+        sourceType: { type: string, enum: [FROM_ORDER, FROM_MRP, NO_ORDER] }
+        purchaseReason: { type: string }
+        approvalRoute: { type: string }
+        estimatedTotal: { type: number, format: double }
+
+    PurchaseReason:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        color: { type: string, enum: [red, orange, blue, gray] }
+
+    ApprovalRouteRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number, format: double }
+        category: { type: string }
+        supplierStatus: { type: string }
+        urgency: { type: string, enum: [NORMAL, URGENT] }
+
+    ApprovalRouteResponse:
+      type: object
+      properties:
+        route: { type: array, items: { type: string } }
+        matchedThresholds: { type: array, items: { type: string } }
+        estimatedSigners: { type: integer }
+        compatibleLegacyRoute: { type: array, items: { type: string } }
+
+    GmSummaryResponse:
+      type: object
+      properties:
+        period: { type: string }
+        noOrderPoCount: { type: integer }
+        noOrderPoAmount: { type: number, format: double }
+        urgentReplenishCount: { type: integer }
+        amountThresholdPassedRate: { type: number, format: double }
+        procurementManagerWorkload: { type: integer }
+        outsourceCostRatio: { type: number, format: double }
+        trendChart:
+          type: array
+          items: { $ref: '#/components/schemas/GmTrendPoint' }
+
+    GmTrendPoint:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        noOrderCount: { type: integer }
+        amount: { type: number, format: double }
+
+    MaterialDetailResponse:
+      type: object
+      properties:
+        base: { $ref: '#/components/schemas/MaterialBaseInfo' }
+        process: { $ref: '#/components/schemas/ProcessInfo' }
+        drawing: { $ref: '#/components/schemas/DrawingInfo' }
+        price: { $ref: '#/components/schemas/PriceInfo' }
+        cost: { $ref: '#/components/schemas/CostInfo' }
+        labor: { $ref: '#/components/schemas/LaborInfo' }
+        outsource: { $ref: '#/components/schemas/OutsourceInfo' }
+
+    MaterialBaseInfo:
+      type: object
+      properties:
+        materialId: { type: integer, format: int64 }
+        materialNo: { type: string }
+        name: { type: string }
+        spec: { type: string }
+        unit: { type: string }
+        category: { type: string }
+        defaultWarehouse: { type: string }
+
+    ProcessInfo:
+      type: object
+      properties:
+        routes:
+          type: array
+          items: { $ref: '#/components/schemas/ProcessRouteStep' }
+
+    ProcessRouteStep:
+      type: object
+      properties:
+        stepSeq: { type: integer }
+        processNo: { type: string }
+        workcenter: { type: string }
+        stdMinutes: { type: number, format: double }
+        equipment: { type: string }
+
+    DrawingInfo:
+      type: object
+      properties:
+        dwgNo: { type: string }
+        version: { type: string }
+        status: { type: string }
+        pdfUrl: { type: string }
+        isLatest: { type: boolean }
+
+    PriceInfo:
+      type: object
+      properties:
+        currentPrice: { type: number, format: double }
+        avg30d: { type: number, format: double }
+        min30d: { type: number, format: double }
+        max30d: { type: number, format: double }
+        trendPoints:
+          type: array
+          items: { $ref: '#/components/schemas/PriceTrendPoint' }
+
+    PriceTrendPoint:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        price: { type: number, format: double }
+
+    CostInfo:
+      type: object
+      properties:
+        materialCost: { type: number, format: double }
+        scrapRate: { type: number, format: double }
+        effectiveCost: { type: number, format: double }
+
+    LaborInfo:
+      type: object
+      properties:
+        laborMinutes: { type: number, format: double }
+        hourlyRate: { type: number, format: double }
+        laborCost: { type: number, format: double }
+
+    OutsourceInfo:
+      type: object
+      properties:
+        outsourceCost: { type: number, format: double }
+        supplier: { type: string }
+        leadDays: { type: integer }
+
+    ChangeLogEntry:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        entityType: { type: string }
+        entityId: { type: integer, format: int64 }
+        action: { type: string }
+        fieldName: { type: string }
+        oldValue: { type: string }
+        newValue: { type: string }
+        changedBy: { type: integer, format: int64 }
+        changedAt: { type: string, format: date-time }
+
+    WorkflowEventStats:
+      type: object
+      properties:
+        totalCount: { type: integer, format: int64 }
+        byEventType:
+          type: object
+          additionalProperties: { type: integer, format: int64 }
+        byApproverRole:
+          type: object
+          additionalProperties: { type: integer, format: int64 }
+        period:
+          $ref: '#/components/schemas/StatsPeriod'
+
+    StatsPeriod:
+      type: object
+      properties:
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }

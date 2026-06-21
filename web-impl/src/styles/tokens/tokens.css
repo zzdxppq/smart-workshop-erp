@@ -1,0 +1,93 @@
+:root,
+[data-theme='industrial'] {
+  --erp-color-primary: #3b82f6;
+  --erp-color-primary-light: rgba(59, 130, 246, 0.12);
+  --erp-color-primary-dark: #2563eb;
+  --erp-color-accent-orange: #f59e0b;
+  --erp-color-accent-purple: #8250df;
+  --erp-color-success: #22c55e;
+  --erp-color-warning: #f59e0b;
+  --erp-color-danger: #ef4444;
+  --erp-color-info: #3b82f6;
+  --erp-text-primary: #e2e8f0;
+  --erp-text-secondary: #94a3b8;
+  --erp-text-muted: #64748b;
+  --erp-border: rgba(148, 163, 184, 0.22);
+  --erp-bg-page: #1a1f2e;
+  --erp-bg-card: #242a3a;
+  --erp-bg-table-head: #2d3548;
+  --erp-radius-sm: 2px;
+  --erp-radius-md: 6px;
+  --erp-radius-lg: 10px;
+  --erp-space-xs: 4px;
+  --erp-space-sm: 8px;
+  --erp-space-md: 12px;
+  --erp-space-lg: 16px;
+  --erp-space-xl: 24px;
+  --erp-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --erp-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --erp-font-family: PingFang SC, Microsoft YaHei, -apple-system, BlinkMacSystemFont, sans-serif;
+  --erp-font-mono: JetBrains Mono, Microsoft YaHei Mono, monospace;
+}
+
+[data-theme='light'] {
+  --erp-color-primary: #0969da;
+  --erp-color-primary-light: #ddf4ff;
+  --erp-color-primary-dark: #0550ae;
+  --erp-color-accent-orange: #fb8500;
+  --erp-color-accent-purple: #8250df;
+  --erp-color-success: #1a7f37;
+  --erp-color-warning: #bf8700;
+  --erp-color-danger: #cf222e;
+  --erp-color-info: #0969da;
+  --erp-text-primary: #1f2328;
+  --erp-text-secondary: #59636e;
+  --erp-text-muted: #8c959f;
+  --erp-border: #d1d9e0;
+  --erp-bg-page: #f6f8fa;
+  --erp-bg-card: #ffffff;
+  --erp-bg-table-head: #f0f3f6;
+  --erp-shadow-sm: 0 1px 2px rgba(31, 35, 40, 0.08);
+  --erp-shadow-md: 0 4px 12px rgba(31, 35, 40, 0.12);
+}
+
+[data-theme='dark'] {
+  --erp-color-primary: #3b82f6;
+  --erp-color-primary-light: rgba(59, 130, 246, 0.12);
+  --erp-color-primary-dark: #2563eb;
+  --erp-color-success: #22c55e;
+  --erp-color-warning: #f59e0b;
+  --erp-color-danger: #ef4444;
+  --erp-text-primary: #e2e8f0;
+  --erp-text-secondary: #94a3b8;
+  --erp-text-muted: #64748b;
+  --erp-border: rgba(148, 163, 184, 0.22);
+  --erp-bg-page: #1a1f2e;
+  --erp-bg-card: #242a3a;
+  --erp-bg-table-head: #2d3548;
+}
+
+/* 工业风 / 深色：Element Plus 描述列表、表格条纹避免白底 */
+[data-theme='industrial'] .el-descriptions__body,
+[data-theme='dark'] .el-descriptions__body,
+[data-theme='industrial'] .el-descriptions__table,
+[data-theme='dark'] .el-descriptions__table {
+  background-color: var(--erp-bg-card);
+}
+
+[data-theme='industrial'] .el-descriptions__label.el-descriptions__cell,
+[data-theme='dark'] .el-descriptions__label.el-descriptions__cell {
+  background-color: var(--erp-bg-table-head) !important;
+  color: var(--erp-text-secondary);
+}
+
+[data-theme='industrial'] .el-descriptions__content.el-descriptions__cell,
+[data-theme='dark'] .el-descriptions__content.el-descriptions__cell {
+  background-color: var(--erp-bg-card) !important;
+  color: var(--erp-text-primary);
+}
+
+[data-theme='industrial'] .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell,
+[data-theme='dark'] .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background-color: rgba(148, 163, 184, 0.06);
+}

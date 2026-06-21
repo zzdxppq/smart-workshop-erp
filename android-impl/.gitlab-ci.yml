@@ -1,0 +1,83 @@
+# V1.3.9 Sprint 14 Story 13.6 · GitLab CI for android-impl connectedAndroidTest
+#
+# 22 E2E 测例 + 4 worker parallel · 期望时长 ≤ 5min
+# 沙箱受限委托 DevOps 张良执行（Android SDK + AVD 模拟器）
+# 启动约束：13.7 ship 后启动 · 12.1 灰度阶段 4 启动前 ship
+
+stages:
+  - lint
+  - typecheck
+  - e2e
+
+variables:
+  ANDROID_HOME: "/opt/android-sdk"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4"
+  AVD_COUNT: "4"
+
+# ===== Lint + Typecheck =====
+lint_kotlin:
+  stage: lint
+  image: openjdk:17-jdk
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq unzip
+    - cd android-impl
+  script:
+    - ./gradlew lintDebug
+  artifacts:
+    when: always
+    paths:
+      - android-impl/app/build/reports/lint-results-debug.html
+    expire_in: 7 days
+
+typecheck:
+  stage: typecheck
+  image: openjdk:17-jdk
+  before_script:
+    - cd android-impl
+  script:
+    - ./gradlew compileDebugKotlin compileDebugAndroidTestKotlin
+  artifacts:
+    when: always
+    paths:
+      - android-impl/app/build/reports/
+    expire_in: 7 days
+
+# ===== connectedAndroidTest E2E（22 测例 · 4 worker parallel）=====
+e2e_7role_android:
+  stage: e2e
+  image: registry.gitlab.com/yourcompany/android-sdk-runner:v1
+  tags:
+    - android-avd
+    - shared-runner
+  services:
+    - name: erp-backend:latest
+      alias: backend
+  before_script:
+    - cd android-impl
+    - echo "sdk.dir=$ANDROID_HOME" > local.properties
+    - chmod +x gradlew
+    # AVD 启动（4 worker parallel）
+    - avdmanager create avd -n test_avd_$CI_NODE_INDEX -k "system-images;android-30;google_apis;x86_64" -d pixel_5 --force
+    - nohup $ANDROID_HOME/emulator/emulator -avd test_avd_$CI_NODE_INDEX -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect &
+    - $ANDROID_HOME/platform-tools/adb wait-for-device
+    - $ANDROID_HOME/platform-tools/adb shell input keyevent 82   # 解锁
+  script:
+    # Test orchestrator 启用（自动清理 app 状态 · 22 测例隔离）
+    - ./gradlew connectedAndroidTest
+        -Pandroid.testInstrumentationRunnerArguments.class=com.btsheng.erp.e2e.RoleBasedE2ETest,com.btsheng.erp.e2e.DrawPermissionE2ETest,com.btsheng.erp.e2e.ConnectedAndroidTestConfigTest
+        -Pandroid.testInstrumentationRunnerArguments.notAnnotation=android.test.suitebuilder.annotation.LargeTest
+        -Pandroid.useOrchestrator=true
+        --max-workers=4
+  artifacts:
+    when: always
+    paths:
+      - android-impl/app/build/reports/androidTests/
+      - android-impl/app/build/outputs/androidTest-results/
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+  parallel: 4
+  # 沙箱限制：本沙箱无法直接执行，委托 DevOps 张良
+  when: manual
+  allow_failure: false

@@ -1,0 +1,63 @@
+# ============================================================
+# 昆山佰泰胜 ERP · 生产环境共享配置 (profile=prod)
+# 由 erp-platform / erp-business / erp-production 共用（erp-gateway 无 DB，勿 import 本文件）
+# 各服务 application-prod.yml 通过 spring.config.import 引入本文件
+#
+# 注意：spring.datasource.url 默认库名为 cnc_business（platform/business 适用）
+# erp-production 必须在自有 application-prod.yml 中覆盖为 cnc_production，且不再配置 business 子数据源
+# ============================================================
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:prod}
+      config:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        file-extension: yaml
+        namespace: ${NACOS_NAMESPACE:prod}
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:10.100.4.10}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cnc_business}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:xm_admin}
+    password: ${MYSQL_PASSWORD:Xm@admin@123!}
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      password: ${REDIS_PASSWORD:KczJ-51St}
+      timeout: ${REDIS_TIMEOUT:3000ms}
+
+# XXL-JOB（各服务 application-prod.yml 覆盖 appname/port）
+xxl:
+  job:
+    admin:
+      addresses: ${XXL_JOB_ADMIN:http://127.0.0.1:8080/xxl-job-admin}
+    accessToken: ${XXL_JOB_TOKEN:hn08b43c9785ba2e98}
+    executor:
+      appname: ${XXL_JOB_APPNAME:xxl-job-erp}
+      port: ${XXL_JOB_EXECUTOR_PORT:9991}
+      logpath: ${XXL_JOB_LOG_PATH:/data/applogs/xxl-job}
+      logretentiondays: 30
+
+app:
+  web:
+    base-url: ${WEB_BASE_URL:https://bts.51xiaoping.com}
+    api-base-url: ${API_BASE_URL:https://bts.51xiaoping.com}
+  cors:
+    allowed-origins:
+      - https://bts.51xiaoping.com
+      - http://localhost:5173
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
+    allowed-headers: "*"
+    allow-credentials: true
+
+logging:
+  level:
+    root: INFO
+    com.btsheng.erp: INFO

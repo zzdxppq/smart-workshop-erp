@@ -1,0 +1,53 @@
+{
+  "story": "1.5",
+  "level": "Comprehensive",
+  "executed": {
+    "unit": 30,
+    "integration": 15,
+    "cross_module": 15,
+    "e2e_config": 6,
+    "perf_script": 3,
+    "security_script": 1
+  },
+  "passed": {
+    "unit": 30,
+    "integration": 15,
+    "cross_module": 15,
+    "e2e_config": 6,
+    "perf_script": 3,
+    "security_script": 1
+  },
+  "regression": {
+    "1.1": 35,
+    "1.2": 151,
+    "1.3": 19,
+    "1.4": 43,
+    "total": 248,
+    "broken": 0
+  },
+  "deploy_ready": {
+    "e2e": 6,
+    "perf": 3,
+    "security": 1
+  },
+  "p1_fixes": {
+    "count": 3,
+    "closed": 3,
+    "coverage": "100%"
+  },
+  "p2_fixes": {
+    "count": 3,
+    "included": 3,
+    "coverage": "100%"
+  },
+  "evidence_files": [
+    "docs/qa/evidence/1.5-test-execute.md",
+    "docs/qa/evidence/1.5-test-summary.json"
+  ],
+  "result": "PASS",
+  "qa_signoff": "QA 商鞅",
+  "signoff_date": "2026-06-12",
+  "status": "ACCEPTED",
+  "architect_review": "8.7/10 DEPLOYED",
+  "timestamp": "2026-06-12T18:30:00+08:00"
+}

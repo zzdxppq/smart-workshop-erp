@@ -1,0 +1,134 @@
+title: Orchestrix Core System
+description: >
+  CNC ERP Frontend Web Implementation Repository (Vue 3 + Vite + Element Plus)
+  multi-repo role: frontend
+  References product repo at ../smart-workshop-erp
+
+markdownExploder: true
+
+project:
+  name: 昆山佰泰胜专属 ERP 系统 - Web
+  mode: multi-repo
+  testCommand: 'npm run test'
+  multi_repo:
+    role: frontend
+    repository_id: smart-workshop-erp-web
+    product_repo_path: '../smart-workshop-erp'
+    auto_filter_stories: true
+    assigned_stories:
+      # 前端相关 stories（按 Epic 排序）
+      - '1.1'    # 用户/角色页面
+      - '1.2'    # 审批工作流
+      - '1.3'    # 字典/系统参数
+      - '2.1'    # 客户档案
+      - '2.2'    # 报价
+      - '2.3'    # 订单
+      - '2.4'    # 合同回款
+      - '3.1'    # 图纸上传预览
+      - '3.2'    # 工程转化
+      - '3.3'    # BOM 多级
+      - '3.4'    # 工艺库
+      - '4.1'    # 物料码
+      - '4.2'    # 扫码出入库
+      - '4.3'    # 库位批次
+      - '4.4'    # 库存预警
+      - '5.1'    # 工单
+      - '5.4'    # 工序分配（V1.3.7 关键）
+      - '5.5'    # 设备
+      - '6.1'    # 月度对账（V1.3.6/7 不含"线下"）
+      - '6.6'    # 返修预警
+      - '7.1'    # 检验
+      - '7.2'    # FA
+      - '7.4'    # 不良品
+      - '8.1'    # 询比价
+      - '8.2'    # 采购订单
+      - '9.1'    # 应收/应付
+      - '9.4'    # 利润
+      - '9.5'    # 料号成本（V1.3.4 5 Tab）
+      - '11.1'   # 生产工作台
+      - '11.2'   # 委外面板（V1.3.4）
+      - '11.5'   # 料号面板（V1.3.4）
+
+prd:
+  prdFile: ../smart-workshop-erp/docs/prd.md
+  prdSharded: true
+  prdShardedLocation: ../smart-workshop-erp/docs/prd
+
+architecture:
+  architectureFile: ./docs/architecture.md
+  architectureSharded: false
+  architectureShardedLocation: ./docs/architecture
+  storyReviewsLocation: ./docs/architecture/story-reviews
+
+customTechnicalDocuments:
+  - path: ../smart-workshop-erp/docs/architect-handoff.md
+    role: system_architecture
+  - path: ../smart-workshop-erp/backend/spec/openapi.yaml
+    role: api_contract
+  - path: ../smart-workshop-erp/docs/contract-appendix-a-prd.md
+    role: prd_excerpt
+  - path: ../smart-workshop-erp/docs/contract-appendix-b-deliverables.md
+    role: deliverables
+  - path: ../smart-workshop-erp/docs/ux-handoff.md
+    role: ux_handoff
+  - path: ../smart-workshop-erp/design/figma-library-upgrade.md
+    role: figma_lib
+
+devLoadAlwaysFiles:
+  - ./docs/architecture/*coding-standards.md
+  - ./docs/architecture/*tech-stack.md
+  - ./docs/architecture/*source-tree.md
+
+devDebugLog: .ai/debug-log.md
+devStoryLocation: ./docs/stories
+
+verticalSliceStrategy: true
+
+dev:
+  devLogLocation: ./docs/dev/logs
+  devLogEnabled: true
+
+architect:
+  storyReviewsLocation: ./docs/architecture/story-reviews
+
+qa:
+  qaLocation: ./docs/qa
+  qaReviewsLocation: ./docs/qa/reviews
+  evidenceLocation: ./docs/qa/evidence
+  testDesignThresholds:
+    simple:
+      maxComplexity: 0
+      minQualityScore: 8.5
+      securitySensitive: false
+      tasks: []
+    standard:
+      maxComplexity: 2
+      minQualityScore: 7
+      securitySensitive: false
+      tasks: [test-design]
+    comprehensive:
+      minComplexity: 3
+      securitySensitive: true
+      tasks: [test-design, risk-profile]
+
+slashPrefix: Orchestrix
+version: 15.17.0
+
+i18n:
+  default_language: zh
+  supported_languages: [en, zh]
+  fallback_to_default: true
+  file_pattern: '{name}.{lang}.{ext}'
+
+# V1.3.7 业务定制
+v137_custom:
+  - prd_version: V1.3.7
+  - contract_id: XP-ZPF202606082405
+  - tech_stack:
+      framework: Vue 3 + Vite 5 + TypeScript
+      ui: Element Plus 2.4
+      state: Pinia 2
+      router: Vue Router 4
+      api_client: openapi-typescript-codegen
+      test: Vitest + @vue/test-utils
+      e2e: Playwright

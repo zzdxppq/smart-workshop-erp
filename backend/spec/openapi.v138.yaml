@@ -1,0 +1,370 @@
+# V1.3.8 Sprint 7-10 · 14 端点 paths
+# 追加到原 openapi.yaml 的 paths 块之前
+
+  /incoming/batch-create:
+    post:
+      tags: [V138-Incoming]
+      summary: 按物料粒度批次到货（Story 3.1）
+      operationId: createIncomingBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchCreateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BatchCreateResponse'
+
+  /incoming/po-status/{poId}:
+    get:
+      tags: [V138-Incoming]
+      summary: 按物料粒度 PO 状态查询（Story 3.1）
+      operationId: getPoStatus
+      parameters:
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PoStatusResponse'
+
+  /material-barcode/generate:
+    post:
+      tags: [V138-MaterialBarcode]
+      summary: 复合物料码生成（Story 3.2）
+      operationId: generateMaterialBarcode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialBarcodeRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MaterialBarcodeResponse'
+
+  /material-barcode/parse:
+    get:
+      tags: [V138-MaterialBarcode]
+      summary: 物料码解析 APP 扫码（Story 3.2）
+      operationId: parseMaterialBarcode
+      parameters:
+        - name: barcode
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MaterialBarcodeParseResponse'
+
+  /purchase/no-order:
+    post:
+      tags: [V138-Purchase]
+      summary: 无订单采购创建 PO（Story 4.1）
+      operationId: createNoOrderPurchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoOrderPurchaseRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NoOrderPurchaseResponse'
+
+  /purchase/reasons:
+    get:
+      tags: [V138-Purchase]
+      summary: 采购理由字典查询（Story 4.1）
+      operationId: getPurchaseReasons
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PurchaseReason'
+
+  /approval/route-preview:
+    post:
+      tags: [V138-Approval]
+      summary: 审批路由预览（Story 4.2）
+      operationId: previewApprovalRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRouteRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ApprovalRouteResponse'
+
+  /roles/procurement-manager-perms:
+    get:
+      tags: [V138-Approval]
+      summary: 采购主管权限查询（Story 4.2）
+      operationId: getProcurementManagerPerms
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: string
+
+  /reports/gm-summary:
+    get:
+      tags: [V138-Report]
+      summary: 总经理汇总报表（Story 4.3）
+      operationId: getGmSummary
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [LAST_7D, LAST_30D, LAST_90D, CUSTOM]
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 成功（仅 GM + ADMIN 可见）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GmSummaryResponse'
+
+  /materials/{id}/detail:
+    get:
+      tags: [V138-Material]
+      summary: 料号详情聚合（Story 2.1 · 7 Tab）
+      operationId: getMaterialDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MaterialDetailResponse'
+
+  /materials/{id}/price-history:
+    get:
+      tags: [V138-Material]
+      summary: 价格走势（Story 2.1）
+      operationId: getPriceHistory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PriceTrendPoint'
+
+  /materials/{id}/process-route:
+    get:
+      tags: [V138-Material]
+      summary: 工艺路线（Story 2.1）
+      operationId: getProcessRoute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProcessRouteStep'
+
+  /materials/{id}/change-log:
+    get:
+      tags: [V138-Material]
+      summary: 历史变更（Story 2.1）
+      operationId: getChangeLog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ChangeLogEntry'
+
+  /workflow/events/stats:
+    get:
+      tags: [V138-Workflow]
+      summary: 审批事件统计（Story 10.3）
+      operationId: getWorkflowEventStats
+      parameters:
+        - name: workflow_code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: approver_role
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WorkflowEventStats'

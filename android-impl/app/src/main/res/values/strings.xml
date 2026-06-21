@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- V1.3.9 · Android string resources（标准 Android Studio 布局） -->
+<resources>
+    <!-- 应用名称（与 AndroidManifest.xml android:label 一致） -->
+    <string name="app_name">昆山佰泰胜 ERP</string>
+
+    <!-- 角色 7+1（8 角色 · V1.3.9 Sprint 14） -->
+    <string name="role_admin">系统管理员</string>
+    <string name="role_sales">销售</string>
+    <string name="role_engineer">工程师</string>
+    <string name="role_purchaser">采购</string>
+    <string name="role_warehouse">仓库</string>
+    <string name="role_qc">品质</string>
+    <string name="role_operator">操作工</string>
+    <string name="role_gm">总经理</string>
+
+    <!-- 5 类码体系（V1.3.5 收回区域码 · 3+1+1） -->
+    <string name="code_gd_prefix">GD-</string>
+    <string name="code_lz_prefix">LZ-</string>
+    <string name="code_sb_prefix">SB-</string>
+    <string name="code_wl_prefix">WL-</string>
+    <string name="code_ww_prefix">WW-</string>
+
+    <!-- 4 大 TAB（V1.3.5+） -->
+    <string name="tab_home">首页（扫码）</string>
+    <string name="tab_warehouse">仓储</string>
+    <string name="tab_message">消息中心</string>
+    <string name="tab_mine">我的</string>
+
+    <!-- 登录 -->
+    <string name="login_username">用户名</string>
+    <string name="login_password">密码</string>
+    <string name="login_submit">登录</string>
+    <string name="login_biometric">指纹登录</string>
+
+    <!-- 通用 -->
+    <string name="common_loading">加载中…</string>
+    <string name="common_retry">重试</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_confirm">确定</string>
+</resources>

@@ -1,0 +1,40 @@
+# 昆山佰泰胜 ERP V1.3.9 · Android 标准结构 .gitignore
+
+# ============ Android / IntelliJ ============
+.idea/
+.gradle/
+local.properties
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ============ Build 输出（每个 module 都可能产生） ============
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+build/
+
+# ============ Keystore（每个客户端单独生成 · 严禁入 git） ============
+*.jks
+*.keystore
+keystore.properties
+
+# ============ Gradle 临时 ============
+.gradle-wrapper-sha256.txt
+
+# ============ Logs ============
+*.log
+
+# ============ AI debug ============
+.ai/
+
+# ============ 历史归档（已迁移到 git 历史或死代码） ============
+.archive-v138-dead-code/

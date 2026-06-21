@@ -1,0 +1,25 @@
+epic_id: 12
+title: "委外到货与品质领料协同"
+description: |
+  WHY：V1.3.4 引入"送货员扫码到货"后，客户 2026-06-08 反馈实操更顺畅的做法是——
+           让厂内**仓库管理员**直接到货扫码，**品质员**去仓库领料后质检。
+           理由三：
+
+stories:
+  - id: "12.1"
+    title: "仓管到货扫码权限（V1.3.5 改版）"
+    estimated_complexity: low
+    priority: P0
+    repository_type: backend
+
+  - id: "12.2"
+    title: "仓管到货扫码 AC（V1.3.5 新增）"
+    estimated_complexity: medium
+    priority: P0
+    repository_type: android
+
+  - id: "12.3"
+    title: "品质去仓库领料后质检（V1.3.5 新增）"
+    estimated_complexity: low
+    priority: P0
+    repository_type: backend

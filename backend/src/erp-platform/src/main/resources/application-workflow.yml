@@ -1,0 +1,27 @@
+# V1.3.7 Story 1.2 · 工作流配置（Nacos 热更新）
+# 配置项：app.workflow.* → @RefreshScope 实时生效
+app:
+  workflow:
+    # 超时阈值（小时）
+    timeout-hours: 24
+    # 扫描 cron（XXL-JOB 调度）
+    overdue-scan-cron: "0 */30 * * * *"
+    # 默认 OR 会签（V1.3.7 P1 修补：默认 false 兼容 Story 1.1）
+    or-sign-required: false
+    # 4 通道推送
+    notify-channels:
+      - REDIS_STREAM
+      - EMAIL
+      - APP_PUSH
+      - WECHAT_WORK
+    # 失败重试
+    retry-times: 3
+    retry-backoff-ms: [1000, 2000, 4000]
+    # 分布式锁（多实例部署）
+    timeout-scan-lock-key: "app.workflow.timeout-scan-lock"
+    timeout-scan-lock-ttl: 60
+    # Service Token（architect P2 反馈 ⑤：Nacos 配置避免硬编码）
+    service-tokens:
+      erp-business: "PLACEHOLDER_ERP_BUSINESS_TOKEN"
+      erp-production: "PLACEHOLDER_ERP_PRODUCTION_TOKEN"
+      erp-finance: "PLACEHOLDER_ERP_FINANCE_TOKEN"

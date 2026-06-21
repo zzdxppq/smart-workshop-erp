@@ -1,0 +1,113 @@
+epic_id: 1
+title: "基础设施与权限"
+description: |
+  WHY：其他所有 Epic 都依赖"谁能登入、谁能操作、谁能审批"。
+           没有这套底座，每个业务模块都要重复造权限轮子，永远统一不起来。
+    what_it_is:
+
+stories:
+  - id: "1.1"
+    title: "用户与角色权限"
+    estimated_complexity: high
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/auth/login"
+      - "POST /api/v1/auth/logout"
+      - "GET  /api/v1/auth/me"
+      - "POST /api/v1/users"
+      - "GET  /api/v1/users/{id}"
+
+  - id: "1.2"
+    title: "审批工作流配置"
+    estimated_complexity: high
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/workflows"
+      - "GET  /api/v1/workflows"
+      - "PUT  /api/v1/workflows/{id}"
+      - "POST /api/v1/workflows/{id}/test"
+      - "GET  /api/v1/approvals/pending"
+
+  - id: "1.3"
+    title: "系统参数 / 数据字典 / HR Feign 真实集成 / 性能与安全闭环"
+    estimated_complexity: XL  # 5 域 (字典/参数/阈值/HR Feign/性能安全) + 7 张新表
+    priority: P0
+    repository_type: backend
+    shard_date: "2026-06-10"
+    sharded_by: "PO 范蠡"
+    source_story: "backend/docs/stories/1.3-系统参数与HR集成.md"
+    depends_on_stories: ["1.1", "1.2"]
+    provides_apis:
+      # 数据字典 (AC-1.3.1 · 5 端点)
+      - "GET  /api/v1/dicts?type={type}"            # 查询字典列表
+      - "GET  /api/v1/dicts/{id}"                  # 查询单个字典
+      - "POST /api/v1/dicts"                       # 创建字典项
+      - "PUT  /api/v1/dicts/{id}"                  # 修改字典项
+      - "DELETE /api/v1/dicts/{id}"                # 软删字典项
+      # 系统参数 (AC-1.3.2 · 4 端点)
+      - "GET  /api/v1/params?group={group}"        # 查询参数列表
+      - "GET  /api/v1/params/{key}"                # 查询单个参数
+      - "PUT  /api/v1/params/{key}"                # 修改参数 + Nacos 推送
+      - "POST /api/v1/params/refresh"              # 手动触发 Nacos 推送
+      # 金额阈值全局 (AC-1.3.3 · 1 端点)
+      - "PUT  /api/v1/thresholds"                  # 改阈值 + Nacos 推送 + sys_change_log
+      # 变更日志 (横切 1 端点)
+      - "GET  /api/v1/changelogs?entity={entity}"   # 变更日志查询
+    consumes_apis:
+      - "POST /api/v1/auth/login"  # Story 1.1
+      - "GET  /api/v1/auth/me"     # Story 1.1
+      - "GET  /api/v1/workflows/{id}"   # Story 1.2
+      - "POST /api/v1/approvals/create" # Story 1.2
+      - "stream:notify" Redis Stream   # Story 1.2
+    acceptance_criteria_count: 5
+    sub_tasks_count: 36
+    test_level: Comprehensive
+    p1_fixes: 5
+    p2_fixes: 3
+    risk_level: "🟡 Medium (3 M + 2 L)"
+    status: "Draft → Awaiting Dev *develop-story"
+
+  - id: "1.4"
+    title: "APP 端基础（登录 / 消息 / 扫码壳）"
+    estimated_complexity: L  # 跨 android-impl 仓 + 5 类扫码 + 离线 SQLite + 冲突解决
+    priority: P0
+    repository_type: android
+    shard_date: "2026-06-10"
+    sharded_by: "PO 范蠡"
+    source_story: "backend/docs/stories/1.4-APP端基础.md"
+    depends_on_stories: ["1.1", "1.2", "1.3"]
+    provides_apis:
+      # APP 端 (AC-1.4.1 · 1 端点 + AC-1.4.2 · 3 端点 + AC-1.4.3 · 1 端点)
+      - "POST /api/v1/app/login"                    # 登录（含 deviceId + platform + appVersion + loginType）
+      - "POST /api/v1/app/sync"                     # 增量同步（lastSyncTime）
+      - "GET  /api/v1/app/messages"                 # 消息列表（unreadOnly + 分页）
+      - "POST /api/v1/app/messages/{id}/read"       # 标记已读 + 跳业务页
+      - "GET  /api/v1/app/scan/route"               # 扫码路由（5 类码 prefix 解析）
+    consumes_apis:
+      - "POST /api/v1/auth/login"     # Story 1.1
+      - "POST /api/v1/auth/refresh"   # Story 1.1
+      - "GET  /api/v1/params/app.cache-ttl"  # Story 1.3
+      - "stream:notify" Redis Stream   # Story 1.2 4 通道推送之一
+    android_modules:
+      - "android-impl/app/src/main/kotlin/com/btsheng/erp/feature/auth/"      # 登录
+      - "android-impl/app/src/main/kotlin/com/btsheng/erp/feature/message/"   # 消息中心
+      - "android-impl/app/src/main/kotlin/com/btsheng/erp/feature/scan/"      # 扫码壳
+      - "android-impl/app/src/main/kotlin/com/btsheng/erp/core/network/"      # Retrofit + OkHttp
+      - "android-impl/app/src/main/kotlin/com/btsheng/erp/core/security/"     # Token + Biometric
+      - "android-impl/app/src/main/kotlin/com/btsheng/erp/core/scan/"         # QrCodeParser
+      - "android-impl/app/src/main/kotlin/com/btsheng/erp/core/sync/"         # WorkManager + 冲突解决
+    scan_codes:
+      - "GD-{yyyyMMdd}-{seq:4}  # 工单码 (Epic 5)"
+      - "WL-{materialCode}      # 物料码 (Epic 3)"
+      - "LZ-{yyyyMMdd}-{seq:4}  # 流转码 (Epic 5)"
+      - "SB-{deviceCode}        # 设备码 (Epic 5)"
+      - "WW-{yyyyMMdd}-{seq:4}  # 委外订单码 (Epic 6)"
+    acceptance_criteria_count: 4
+    sub_tasks_count: 32
+    test_level: Comprehensive
+    p1_fixes: 4
+    p2_fixes: 3
+    risk_level: "🟡 Medium (3 M + 2 L)"
+    status: "Draft → Awaiting Dev *develop-story"

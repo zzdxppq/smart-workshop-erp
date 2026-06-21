@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: erp-production
+  profiles:
+    active: ${PROFILE:dev}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+      config:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        file-extension: yaml
+        namespace: ${NACOS_NAMESPACE:dev}
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cnc_production}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:erp}
+    password: ${MYSQL_PASSWORD:erp123}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000
+      cache-null-values: false
+      use-key-prefix: true
+      key-prefix: "erp:cache:"
+
+server:
+  port: ${SERVER_PORT:9083}
+
+app:
+  v137:
+    prd_version: V1.3.7
+    contract_id: XP-ZPF202606082405
+  business:
+    url: ${BUSINESS_SERVICE_URL:http://127.0.0.1:9082}
+  internal:
+    token: ${ERP_INTERNAL_TOKEN:${APP_INTERNAL_TOKEN:}}
+  crypto:
+    dek-file: ${DEK_FILE:/etc/erp/dek.key}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-only-secret-please-replace-in-prod-2026}
+      access-ttl-seconds: 7200
+      refresh-ttl-seconds: 604800
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+      logic-delete-field: deleted
+
+logging:
+  level:
+    root: INFO
+    com.btsheng.erp: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"

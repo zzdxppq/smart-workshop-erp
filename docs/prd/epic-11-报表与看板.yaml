@@ -1,0 +1,66 @@
+epic_id: 11
+title: "报表与看板"
+description: |
+  WHY：老板要"一个界面看全公司"。V1.1 让老板/生管/业务员/HR
+           都能在各自的工作台上一眼看到自己关心的指标。
+    what_it_is:
+
+stories:
+  - id: "1.S1"
+    title: "生产工作台"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    provides_apis:
+      - "GET /api/v1/dashboard/production"
+      - "WS  /api/v1/ws/dashboard"
+      - "GET /api/v1/workorders"
+      - "GET /api/v1/machines"
+      - "GET /api/v1/employees/attendance"
+
+  - id: "1.S2"
+    title: "多维度看板"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    provides_apis:
+      - "GET /api/v1/dashboard/outsource"
+      - "GET /api/v1/dashboard/internal"
+      - "GET /api/v1/dashboard/overdue"
+      - "GET /api/v1/dashboard/delivery?customerId=&status=&deliveryFrom=&deliveryTo="
+      - "POST /api/v1/dashboard/delivery/template"
+
+  - id: "1.S3"
+    title: "销售排行与统计"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    provides_apis:
+      - "GET /api/v1/dashboard/sales-ranking"
+      - "GET /api/v1/dashboard/customer-profit"
+      - "GET /api/v1/orders"
+      - "GET /api/v1/profit/customers"
+
+  - id: "1.S4"
+    title: "PC 端委外面板（V1.3.4 新增）"
+    estimated_complexity: medium
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "GET /api/v1/dashboard/outsource/board?status=&vendorId=&dueFrom=&dueTo=&reworkMin="
+      - "GET /api/v1/dashboard/outsource/board/export?..."
+      - "WS  /api/v1/ws/dashboard/outsource"
+      - "GET /api/v1/outsource"
+      - "GET /api/v1/outsource/rework-alerts"
+
+  - id: "1.S5"
+    title: "料号价格/成本检索面板（V1.3.4 新增）"
+    estimated_complexity: high
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "GET /api/v1/cost/by-material/panel?materialNo=&tab=price|material|labor|outsource|total"
+      - "POST /api/v1/cost/by-material/export-task"
+      - "GET /api/v1/cost/by-material/export-task/{id}/status"
+      - "GET /api/v1/cost/by-material/export-task/{id}/download"
+      - "POST /api/v1/cost/by-material/share"

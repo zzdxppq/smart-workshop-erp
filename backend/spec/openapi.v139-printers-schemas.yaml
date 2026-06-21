@@ -1,0 +1,38 @@
+# V1.3.9 Sprint 12 Story 12.2 Schemas
+
+    SysPrinter:
+      type: object
+      required: [name, type]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string, minLength: 1, maxLength: 50 }
+        type: { type: string, enum: [NORMAL, LABEL] }
+        ip: { type: string, format: ipv4, nullable: true, description: "LABEL 必填" }
+        port: { type: integer, default: 9100, minimum: 1, maximum: 65535 }
+        protocol: { type: string, enum: [ZPL, TSPL, PDF_BROWSER] }
+        modelSuggestion: { type: string, enum: [DELI_DL888B, ZEBRA_ZD420, TSC_TTP244PRO, OTHER] }
+        enabled: { type: integer, enum: [0, 1], default: 1 }
+        status: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN], default: UNKNOWN }
+        failCount: { type: integer, default: 0, description: "连续失败次数 · 达 2 标 OFFLINE" }
+        lastHeartbeatAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        tenantId: { type: integer, format: int64 }
+
+    PrinterHeartbeatResult:
+      type: object
+      properties:
+        status: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN] }
+        latencyMs: { type: integer }
+        protocolDetected: { type: string, enum: [ZPL, TSPL, UNKNOWN] }
+        error: { type: string, description: "失败时填充" }
+        hint: { type: string, example: "请检查 IP/端口/网线" }
+
+    PrinterAvailableResponse:
+      type: object
+      properties:
+        printers:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/SysPrinter' }
+        count: { type: integer }

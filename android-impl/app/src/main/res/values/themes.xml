@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- V1.3.9 · Material 3 主题（与 Jetpack Compose Material 3 配合）
+     注意：Theme.Material3.DayNight.NoActionBar 需要 material 库；
+     为兼容 minSdk 26 + 资源依赖最小化，使用 Theme.AppCompat.DayNight.NoActionBar
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base 应用主题（Activity 容器） -->
+    <style name="Theme.Erp" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorPrimaryDark">@color/brand_primary_dark</item>
+        <item name="colorAccent">@color/brand_secondary</item>
+        <item name="android:colorBackground">@color/bg_background</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+    </style>
+
+    <!-- 启动闪屏（MainActivity 冷启动 · BTS Logo） -->
+    <style name="Theme.Erp.Splash" parent="Theme.Erp">
+        <item name="android:windowBackground">@drawable/ic_splash_logo</item>
+    </style>
+
+    <!-- 兼容 Activity（Sprint 8-9 v138 + Sprint 12-14 v139 共 4 个 Activity） -->
+    <style name="Theme.Erp.Activity" parent="Theme.Erp">
+        <item name="android:statusBarColor">@color/brand_primary_dark</item>
+    </style>
+
+    <!-- Fragment 容器主题 -->
+    <style name="Theme.Erp.Fragment" parent="Theme.Erp">
+        <item name="android:windowBackground">@color/bg_surface</item>
+    </style>
+</resources>

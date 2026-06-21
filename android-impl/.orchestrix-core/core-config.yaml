@@ -1,0 +1,127 @@
+title: Orchestrix Core System
+description: >
+  CNC ERP Android Mobile Implementation Repository (Kotlin + Jetpack)
+  multi-repo role: android
+  References product repo at ../smart-workshop-erp
+
+markdownExploder: true
+
+project:
+  name: 昆山佰泰胜专属 ERP 系统 - Android
+  mode: multi-repo
+  testCommand: 'gradle test'
+  multi_repo:
+    role: android
+    repository_id: smart-workshop-erp-android
+    product_repo_path: '../smart-workshop-erp'
+    auto_filter_stories: true
+    assigned_stories:
+      # Android 端相关 stories（操作工 + 仓管 + 品质 一线人员）
+      - '1.4'   # E1-S4 APP 端基础
+      - '4.1'   # 物料码
+      - '4.2'   # 扫码出入库（V1.3.5 仓管到货扫码）
+      - '5.2'   # 扫码开工/报工/过站
+      - '5.3'   # 委外下单（V1.3.7 采购视图）
+      - '5.4'   # 工序分配（V1.3.7 生管视图 - APP 辅助）
+      - '7.1'   # 检验
+      - '7.2'   # FA
+      - '7.3'   # 三次元
+      - '7.4'   # 不良品
+      - '12.1'  # 仓管到货扫码（V1.3.5）
+      - '12.2'  # 品质领料（V1.3.5）
+      - '10.1'  # 员工档案 + 考勤
+      - '10.2'  # 薪酬
+
+prd:
+  prdFile: ../smart-workshop-erp/docs/prd.md
+  prdSharded: true
+  prdShardedLocation: ../smart-workshop-erp/docs/prd
+
+architecture:
+  architectureFile: ./docs/architecture.md
+  architectureSharded: false
+  architectureShardedLocation: ./docs/architecture
+  storyReviewsLocation: ./docs/architecture/story-reviews
+
+customTechnicalDocuments:
+  - path: ../smart-workshop-erp/docs/architect-handoff.md
+    role: system_architecture
+  - path: ../smart-workshop-erp/docs/mobile-tech-stack.md
+    role: mobile_tech_stack
+  - path: ../smart-workshop-erp/backend/spec/openapi.yaml
+    role: api_contract
+  - path: ../smart-workshop-erp/docs/contract-appendix-a-prd.md
+    role: prd_excerpt
+  - path: ../smart-workshop-erp/docs/ux-handoff.md
+    role: ux_handoff
+  - path: ../smart-workshop-erp/design/figma-library-upgrade.md
+    role: figma_lib
+
+devLoadAlwaysFiles:
+  - ./docs/architecture/*coding-standards.md
+  - ./docs/architecture/*tech-stack.md
+  - ./docs/architecture/*source-tree.md
+
+devDebugLog: .ai/debug-log.md
+devStoryLocation: ./docs/stories
+
+verticalSliceStrategy: true
+
+dev:
+  devLogLocation: ./docs/dev/logs
+  devLogEnabled: true
+
+architect:
+  storyReviewsLocation: ./docs/architecture/story-reviews
+
+qa:
+  qaLocation: ./docs/qa
+  qaReviewsLocation: ./docs/qa/reviews
+  evidenceLocation: ./docs/qa/evidence
+  testDesignThresholds:
+    simple:
+      maxComplexity: 0
+      minQualityScore: 8.5
+      securitySensitive: false
+      tasks: []
+    standard:
+      maxComplexity: 2
+      minQualityScore: 7
+      securitySensitive: false
+      tasks: [test-design]
+    comprehensive:
+      minComplexity: 3
+      securitySensitive: true
+      tasks: [test-design, risk-profile]
+
+slashPrefix: Orchestrix
+version: 15.17.0
+
+i18n:
+  default_language: zh
+  supported_languages: [en, zh]
+  fallback_to_default: true
+  file_pattern: '{name}.{lang}.{ext}'
+
+# V1.3.7 业务定制
+v137_custom:
+  - prd_version: V1.3.7
+  - contract_id: XP-ZPF202606082405
+  - tech_stack:
+      language: Kotlin 1.9
+      jdk: 17
+      ui: Jetpack Compose + Material 3
+      nav: Navigation Compose
+      di: Hilt
+      async: Kotlin Coroutines + Flow
+      network: Retrofit 2 + OkHttp 4 + Moshi
+      local_db: Room 2.6 (SQLite)
+      secure_storage: EncryptedSharedPreferences (AndroidX Security)
+      scan: ZXing Android Embedded (journeyapps:zxing-android-embedded)
+      offline_sync: WorkManager
+      biometric: BiometricPrompt
+      file_upload: OkHttp Multipart
+      test: JUnit 4 + Espresso + Mockk
+      build: Gradle 8.4 + AGP 8.3
+      min_sdk: 26 (Android 8.0)
+      target_sdk: 34

@@ -1,0 +1,165 @@
+# ============================================================
+# V54 数据迁移回填率验证 · Sprint 12 委派 3
+# ============================================================
+# 工作站：QA 商鞅（沙箱外 Windows 10 + MySQL 客户端）
+# 项目：smart-workshop-erp / V1.3.8 Sprint 12
+# 范围：V54 Flyway 自动迁移 + data-migrate-drawing-link.sql
+#       5 表 JOIN 回填 crm_drawing_link
+# 期望：回填率 ≥ 99%
+# 截止：2026-06-16 18:00
+# 责任：QA 商鞅
+# 关联：12.1 dev log §3.3 数据迁移 + sprint12-integration-test-report.md §3.1 委派 3
+# ============================================================
+
+# [A] Flyway 迁移验证（自动）
+cd E:/claude/smart-workshop-erp/backend
+mvn flyway:info -B 2>&1 | tee flyway-info.log
+# 期望：V54__add_crm_drawing_link.sql applied
+
+grep -E "V54|drawing_link" flyway-info.log
+# 期望：
+# [INFO] Successfully applied 53 migrations to schema, now at version v54
+# [INFO] Schema version: 1.3.8
+# [INFO] +-----+-----------------------------------+
+# [INFO] | V54 | add crm drawing link              |
+# [INFO] +-----+-----------------------------------+
+
+# [B] 5 表数据源统计（回填前基线）
+mysql -u root -p er_platform < query-source-counts.sql
+# query-source-counts.sql 期望：
+# ------------------------------------------------------------
+# SELECT 'crm_order'         AS tbl, COUNT(*) AS cnt FROM crm_order WHERE status <> 'DELETED'
+# UNION ALL
+# SELECT 'crm_order_item'    AS tbl, COUNT(DISTINCT order_id) AS cnt FROM crm_order_item WHERE material IS NOT NULL
+# UNION ALL
+# SELECT 'crm_purchase_order' AS tbl, COUNT(*) AS cnt FROM crm_purchase_order WHERE status <> 'DELETED'
+# UNION ALL
+# SELECT 'crm_inbound'       AS tbl, COUNT(*) AS cnt FROM crm_inbound WHERE status <> 'DELETED'
+# UNION ALL
+# SELECT 'crm_workorder'     AS tbl, COUNT(*) AS cnt FROM crm_workorder WHERE status <> 'DELETED'
+# UNION ALL
+# SELECT 'crm_workorder_process' AS tbl, COUNT(*) AS cnt FROM crm_workorder_process WHERE status = 'IN_PROGRESS'
+# UNION ALL
+# SELECT 'crm_inspection'    AS tbl, COUNT(*) AS cnt FROM crm_inspection WHERE status <> 'DELETED';
+# ------------------------------------------------------------
+
+# 期望输出（基线 · 客户生产 · 昆山佰泰胜）：
+# +------------------------+--------+
+# | tbl                    | cnt    |
+# +------------------------+--------+
+# | crm_order              | _____  |
+# | crm_order_item         | _____  |
+# | crm_purchase_order     | _____  |
+# | crm_inbound            | _____  |
+# | crm_workorder          | _____  |
+# | crm_workorder_process  | _____  |
+# | crm_inspection         | _____  |
+# +------------------------+--------+
+# | TOTAL source rows      | _____  |
+# +------------------------+--------+
+
+# [C] 执行 V54 data migration SQL
+mysql -u root -p er_platform < db/migration/V54__data_migrate_drawing_link.sql
+# 期望：Query OK · 0 errors
+# 日志：Records: XXXXX  Duplicates: 0  Warnings: 0
+
+# [D] 回填后 crm_drawing_link 统计
+mysql -u root -p er_platform < query-target-counts.sql
+# query-target-counts.sql 期望：
+# ------------------------------------------------------------
+# SELECT biz_type, COUNT(*) AS cnt
+# FROM crm_drawing_link
+# WHERE created_at >= '2026-06-16'
+# GROUP BY biz_type;
+# ------------------------------------------------------------
+
+# 期望输出（按 5 业务单据类型）：
+# +-------------------+--------+
+# | biz_type          | cnt    |
+# +-------------------+--------+
+# | ORDER             | _____  |
+# | PO                | _____  |
+# | INBOUND           | _____  |
+# | WORKORDER         | _____  |
+# | INSPECTION        | _____  |
+# +-------------------+--------+
+# | TOTAL migrated     | _____  |
+# +-------------------+--------+
+
+# [E] 回填率计算
+# 公式：(migrated / source) * 100% · 按 biz_type 逐项 + 总体
+# 期望：每项 ≥ 99% · 总体 ≥ 99%
+
+# 期望回填率（实际值）：
+# ORDER     ____%
+# PO        ____%
+# INBOUND   ____%
+# WORKORDER ____%
+# INSPECTION ____%
+# -----------------------------------
+# TOTAL     ____%   ← 期望 ≥ 99%
+
+# [F] 缺失记录抽样（剩余 < 1%）
+mysql -u root -p er_platform < query-missing-sample.sql
+# 期望输出：缺失 ≤ 0.X% · 抽样 10 条逐一分析
+# 缺失原因（典型）：
+#   1. crm_order_item.material 为 NULL（占位数据）
+#   2. material_code 不在 crm_drawing 主表
+#   3. 软删除订单（status='DELETED' · 已排除）
+
+# [G] 数据完整性约束
+SELECT COUNT(*) AS dup_count
+FROM crm_drawing_link
+WHERE (biz_type, biz_id) IN (
+  SELECT biz_type, biz_id FROM crm_drawing_link
+  GROUP BY biz_type, biz_id HAVING COUNT(*) > 1
+);
+# 期望：dup_count = 0
+
+# [H] 拷贝证据归档
+cp flyway-info.log       ../docs/qa/evidence/sprint12-test-execution-2026-06-16/v54-flyway-info.log
+# source-counts.txt
+mysql -u root -p er_platform < query-source-counts.sql > source-counts.txt
+cp source-counts.txt    ../docs/qa/evidence/sprint12-test-execution-2026-06-16/v54-source-counts.txt
+# target-counts.txt
+mysql -u root -p er_platform < query-target-counts.sql > target-counts.txt
+cp target-counts.txt    ../docs/qa/evidence/sprint12-test-execution-2026-06-16/v54-target-counts.txt
+# 回填率汇总
+cat > v54-migration-rate.log << EOF
+# V54 回填率验证 · $(date '+%Y-%m-%d %H:%M')
+ORDER     = ____% (source ____ / migrated ____)
+PO        = ____% (source ____ / migrated ____)
+INBOUND   = ____% (source ____ / migrated ____)
+WORKORDER = ____% (source ____ / migrated ____)
+INSPECTION= ____% (source ____ / migrated ____)
+-----------------------------------
+TOTAL     = ____%   ← 期望 ≥ 99%
+EOF
+cp v54-migration-rate.log ../docs/qa/evidence/sprint12-test-execution-2026-06-16/v54-migration-rate.log
+
+# ============================================================
+# 失败处理（V54 回填率 < 99%）
+# ============================================================
+# 等级  | 症状                  | 根因                            | 修复路径
+# -----|----------------------|--------------------------------|--------------------------------
+# 🟡   | ORDER < 99%          | crm_order_item.material NULL   | 过滤 NULL · 重跑 SQL
+# 🟡   | PO < 99%            | crm_purchase_order 软删除状态未排除 | 加 status<>'DELETED' WHERE
+# 🟡   | WORKORDER < 99%     | 工单未挂工艺路线 · 无图纸需求     | 属正常（不补）
+# 🔴   | 总体 < 95%           | material_code 列名差异          | 改用 oi.material = d.material_code 兼容
+# 🔴   | 总体 < 90%           | 迁移 SQL 逻辑错误               | 紧急回滚 V54 · 修 SQL · 重跑
+# 升级：< 95% → 阻塞 V1.3.8 FAT · 通知 SM 萧何 + dev agent + PM 范蠡
+# ============================================================
+
+# [I] 验收清单
+# [ ] Flyway V54 applied
+# [ ] 5 表 source counts 统计完成
+# [ ] data-migrate-drawing-link.sql 跑通
+# [ ] crm_drawing_link 5 类 biz_type 全有数据
+# [ ] 总体回填率 ≥ 99%
+# [ ] 0 重复记录（(biz_type, biz_id) 唯一）
+# [ ] 归档 5 个 log
+
+# [J] 跑完签字
+# QA 商鞅：________________  时间：2026-06-16 __:__
+# DevOps 张良（Flyway 部署确认）：________________  时间：2026-06-16 __:__
+# 客户 admin（数据抽样确认）：________________  时间：2026-06-16 __:__

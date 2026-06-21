@@ -1,0 +1,119 @@
+epic_id: 3
+title: "图纸与物料"
+description: |
+  WHY：CNC 加工厂的"图纸"是核心资产。一张图错了，整批报废。
+           老师傅脑子里有 1000 张图，新人来了要跟一年。
+           本 Epic 把图号、BOM、工艺做成可复用资产。
+
+stories:
+  - id: "3.1"
+    title: "图纸与版本管理"
+    estimated_complexity: M  # 5 端点 + 3 AC + 24 checkbox + 54 测例
+    priority: P0
+    repository_type: backend
+    shard_date: "2026-06-12"
+    sharded_by: "PO 范蠡 + SM 萧何"
+    source_story: "backend/docs/stories/1.7-图纸与物料.md"
+    depends_on_stories: ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6"]
+    acceptance_criteria_count: 3
+    sub_tasks_count: 24
+    test_level: Comprehensive
+    p1_fixes: 0
+    p2_fixes: 0
+    risk_level: "🟢 Low (2 M + 1 L)"
+    status: "Sharded · ready for dev *develop-story"
+    acceptance_criteria_summary: |
+      - AC-3.1.1: 图纸CRUD(5端点) + DWG+年月日+4位流水(继承1.5 DocNoGenerator) + 字段校验 + 权限过滤
+      - AC-3.1.2: 4状态机(DRAFT→PUBLISHED→OBSOLETE→ARCHIVED) + 版本管理(V{major}.{minor}) + FA件双签 + OR会签
+      - AC-3.1.3: 列表查询(6维过滤) + 全文搜索(图号/物料/规格/客户名) + 性能P95<200ms
+    provides_apis:
+      # CRUD (AC-3.1.1)
+      - "POST /api/v1/drawings"                                 # 创建图纸
+      - "GET  /api/v1/drawings/{id}"                            # 查询详情
+      - "PUT  /api/v1/drawings/{id}"                            # 修改（仅DRAFT）
+      - "DELETE /api/v1/drawings/{id}"                          # 删除（仅DRAFT）
+      - "GET  /api/v1/drawings?page=0&size=20&keyword=&version=&category=&customerId=&isFa=&status="  # 列表
+      # 版本管理 (AC-3.1.2)
+      - "POST /api/v1/drawings/{id}/versions"                   # 新增版本
+      - "POST /api/v1/drawings/{id}/publish"                    # 发布(DRAFT→PUBLISHED)
+      - "POST /api/v1/drawing-versions/{id}/obsolete"           # 废弃旧版本
+      - "POST /api/v1/drawings/{id}/archive"                    # 归档(OBSOLETE→ARCHIVED)
+      - "GET  /api/v1/drawings/{id}/versions"                   # 版本列表
+    consumes_apis:
+      - "POST /api/v1/auth/login"             # Story 1.1
+      - "GET  /api/v1/auth/me"                # Story 1.1
+      - "GET  /api/v1/dicts?type=DRAWING_CATEGORY"  # Story 1.3 图纸分类字典
+      - "POST /api/v1/approvals/create"       # Story 1.2 触发审批
+      - "stream:notify" Redis Stream           # Story 1.2 4通道推送
+      - "POST /api/v1/orders" 引用 drawingNo  # Story 1.6 订单引用图纸
+    drawing_no_template: "DWG{yyyyMMdd}{seq:4}"  # V1.3.7 PRD FR-3-1-1
+    version_template: "V{major}.{minor}"  # V1.3.7 §附录-d 术语表
+    state_machine:  # 4 状态机
+      - "DRAFT → PUBLISHED → OBSOLETE → ARCHIVED"
+      - "驳回回退: PUBLISHED → DRAFT(唯一可回退路径)"
+    approval_routes:
+      - "is_fa=0: 总工单人审批"
+      - "is_fa=1: 总工 + 部门经理双签（V1.3.7 §附录-a）"
+    performance_baseline:
+      - "列表查询 P95<200ms"
+      - "全文搜索 P95<300ms"
+    5_ui_red_lines:
+      - "图纸分类 字典统一"
+      - "FA件双签"
+      - "版本号自动递增"
+      - "发布预览"
+      - "审计完整性"
+
+  - id: "3.2"
+    title: "工程转化"
+    estimated_complexity: M  # 3 端点 + 3 AC + 18 checkbox + 36 测例
+    priority: P0
+    repository_type: backend
+    shard_date: "2026-06-12"
+    sharded_by: "PO 范蠡 + SM 萧何"
+    source_story: "backend/docs/stories/1.8-工程转化.md"
+    depends_on_stories: ["1.1", "1.2", "1.3", "1.4", "1.7"]
+    acceptance_criteria_count: 3
+    sub_tasks_count: 18
+    test_level: Comprehensive
+    p1_fixes: 2
+    p2_fixes: 1
+    risk_level: "🟢 Low (1 M + 1 L)"
+    status: "Sharded · ready for dev *develop-story"
+    acceptance_criteria_summary: |
+      - AC-3.2.1: 图纸标注(annotations) 多类型（尺寸/公差/工艺要求/技术注释）+ 颜色分类 + 红线高亮
+      - AC-3.2.2: 工程转化(convert) 触发下游工艺库 + BOM 自动生成（5 段成本聚合）
+      - AC-3.2.3: 图纸预览水印（V1.3.7 P2 修补 3 闭环）+ PDF 加签名 + 工艺路线渲染
+    provides_apis:
+      - "POST /api/v1/drawings/{id}/annotations"     # 标注（4 类型）
+      - "GET  /api/v1/drawings/{id}/annotations"     # 标注列表
+      - "POST /api/v1/drawings/{id}/convert"         # 工程转化 → 触发 BOM
+    p1_fixes_summary:
+      - "标注必须挂载图纸版本（防 v1→v2 标注丢失）"
+      - "工程转化前必须校验图纸状态 RELEASED"
+    p2_fixes_summary:
+      - "PDF 预览水印（工程师姓名 + 时间戳 + 公司 LOGO）"
+
+  - id: "3.3"
+    title: "BOM 多级维护"
+    estimated_complexity: high
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/boms"
+      - "GET  /api/v1/boms/{id}"
+      - "GET  /api/v1/boms/{id}/tree"
+      - "POST /api/v1/boms/{id}/convert-to-production"
+      - "POST /api/v1/boms/{id}/publish"
+
+  - id: "3.4"
+    title: "工艺库与工序"
+    estimated_complexity: medium
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/processes"
+      - "GET  /api/v1/processes"
+      - "POST /api/v1/products/{id}/routes"
+      - "GET  /api/v1/products/{id}/routes"
+      - "POST /api/v1/products/{id}/routes/copy-from/{srcProductId}"

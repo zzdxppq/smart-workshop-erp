@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 昆山佰泰胜 ERP V1.3.9 · AndroidManifest.xml
+     标准 Android Studio 多模块布局 · app/src/main/
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ============ 网络权限 ============ -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- ============ 扫码（ZXing Camera） ============ -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+
+    <!-- ============ 离线同步（WorkManager 网络监听） ============ -->
+    <!-- ACCESS_NETWORK_STATE 已在 L9 声明（扫码 + 通用网络权限共享） -->
+
+    <application
+        android:name=".ErpApplication"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Erp"
+        tools:targetApi="34">
+
+        <!-- V1.3.9 · ErpApplication 实现 Configuration.Provider（Hilt + 自定义 WorkManager 工厂）
+             必须移除 androidx.startup 默认的 WorkManagerInitializer，改由 on-demand 初始化 -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <!-- V1.3.9 · 4 大 TAB 入口（MainActivity · 4 个 Fragment + BottomNavigation） -->
+        <activity
+            android:name=".feature.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Erp.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".feature.v139.DrawingPreviewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Erp.Activity" />
+
+        <activity
+            android:name=".feature.v139.WorkorderProcessScanActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Erp.Activity" />
+        <activity
+            android:name=".feature.qc.InspectionDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Erp.Activity" />
+        <activity
+            android:name=".feature.qc.ConcessionApprovalActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Erp.Activity" />
+
+        <!-- V1.3.8 Sprint 8 Story 8.5 · 3 个扫码 Activity（兼容旧版路由） -->
+        <activity
+            android:name=".feature.v138.MaterialBarcodeScanActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Erp.Activity" />
+        <activity
+            android:name=".feature.v138.NoOrderPurchaseActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Erp.Activity" />
+        <activity
+            android:name=".feature.v138.BatchIncomingScanActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Erp.Activity" />
+        <activity
+            android:name=".feature.v138.OutsourceArrivalScanActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Erp.Activity" />
+
+        <!-- V1.3.9 Sprint 12-14 · Fragment 由 FragmentManager 动态加载 -->
+
+        <!-- FileProvider（V1.3.9 Sprint 12 Story 12.4 · PDF 打印分享） -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>

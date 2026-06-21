@@ -1,0 +1,275 @@
+# docker-compose.yml - 昆山佰泰胜专属 ERP V1.3.7 本地化部署
+# Story 1.5 部署阶段：mysql → nacos → erp-platform → erp-business 健康检查 + 启动顺序
+# 启动顺序：mysql-master (health) → nacos (health) → erp-platform (health) → erp-business (health)
+version: "3.9"
+
+services:
+  # === 核心中间件 ===
+  mysql-master:
+    image: mysql:8.0
+    container_name: erp-mysql-master
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_USER: erp
+      MYSQL_PASSWORD: erp123
+      TZ: Asia/Shanghai
+    ports: ["3306:3306"]
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+      - ./db/migrations/V1__erp_business.sql:/docker-entrypoint-initdb.d/01-V1__erp_business.sql:ro
+      - ./db/migrations/V2__erp_platform.sql:/docker-entrypoint-initdb.d/02-V2__erp_platform.sql:ro
+      - ./db/migrations/V3__crm_customer.sql:/docker-entrypoint-initdb.d/03-V3__crm_customer.sql:ro
+      - ./db/migrations/V4__crm_quote.sql:/docker-entrypoint-initdb.d/04-V4__crm_quote.sql:ro
+      - ./db/migrations/V5__crm_order.sql:/docker-entrypoint-initdb.d/05-V5__crm_order.sql:ro
+      - ./db/migrations/V6__drawing.sql:/docker-entrypoint-initdb.d/06-V6__drawing.sql:ro
+      - ./db/migrations/V7-V48:/docker-entrypoint-initdb.d/  # V1.3.7 Story 1.7-1.51 迁移
+      - ./db/migrations/V49__batch.sql:/docker-entrypoint-initdb.d/49-V49__batch.sql:ro
+      - ./db/migrations/V50__material_barcode_batch.sql:/docker-entrypoint-initdb.d/50-V50__material_barcode_batch.sql:ro
+      - ./db/migrations/V51__purchase_reason.sql:/docker-entrypoint-initdb.d/51-V51__purchase_reason.sql:ro
+      - ./db/migrations/V52__procurement_manager_role.sql:/docker-entrypoint-initdb.d/52-V52__procurement_manager_role.sql:ro
+      - ./db/seed/30-customers.sql:/docker-entrypoint-initdb.d/10-30-customers.sql:ro
+      - mysql-master-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks: [erp-net]
+
+  mysql-slave:
+    image: mysql:8.0
+    container_name: erp-mysql-slave
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_USER: erp
+      MYSQL_PASSWORD: erp123
+    ports: ["3307:3306"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [erp-net]
+
+  redis:
+    image: redis:7.2
+    container_name: erp-redis
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [erp-net]
+
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: erp-nacos
+    environment:
+      MODE: standalone
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+    ports: ["8848:8848", "9848:9848"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8848/nacos/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks: [erp-net]
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: erp-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports: ["9000:9000", "9001:9001"]
+    volumes:
+      - minio-data:/data
+    networks: [erp-net]
+  # Story 1.7 · MinIO PDF 桶初始化（V1.3.7 P2 修补 1）
+  minio-init:
+    image: minio/mc:RELEASE.2024-05-10T01-41-38Z
+    container_name: erp-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb -p local/erp-drawing || true;
+      mc anonymous set download local/erp-drawing || true;
+      "
+    networks: [erp-net]
+
+  xxl-job-admin:
+    image: xuxueli/xxl-job-admin:2.4.0
+    container_name: erp-xxl-job
+    ports: ["8088:8080"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-master:3306/xxl_job?useUnicode=true&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: erp
+      SPRING_DATASOURCE_PASSWORD: erp123
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+    networks: [erp-net]
+
+  # === Backend 4 服务 ===
+  erp-platform:
+    image: openjdk:17-jdk-slim
+    container_name: erp-platform
+    working_dir: /app
+    volumes: ["./src/erp-platform:/app"]
+    command: bash -c "./mvnw spring-boot:run -pl ."
+    ports: ["8081:8081"]
+    environment:
+      NACOS_SERVER: nacos:8848
+      MYSQL_HOST: mysql-master
+      REDIS_HOST: redis
+      SERVER_PORT: 8081
+      DEK_FILE: /etc/erp/dek.key
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 180s
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    networks: [erp-net]
+
+  erp-business:
+    image: openjdk:17-jdk-slim
+    container_name: erp-business
+    working_dir: /app
+    volumes: ["./src/erp-business:/app"]
+    command: bash -c "./mvnw spring-boot:run -pl ."
+    ports: ["8082:8082"]
+    environment:
+      NACOS_SERVER: nacos:8848
+      MYSQL_HOST: mysql-master
+      REDIS_HOST: redis
+      SERVER_PORT: 8082
+      PLATFORM_SERVICE_URL: http://erp-platform:8081
+      SPRING_PROFILES_ACTIVE: dev
+      ERP_INTERNAL_TOKEN: ${ERP_INTERNAL_TOKEN:-dev-internal-token-2026}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/actuator/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 180s
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      erp-platform:
+        condition: service_healthy
+    networks: [erp-net]
+
+  erp-production:
+    image: openjdk:17-jdk-slim
+    container_name: erp-production
+    working_dir: /app
+    volumes: ["./src/erp-production:/app"]
+    command: bash -c "./mvnw spring-boot:run -pl ."
+    ports: ["8083:8083"]
+    environment:
+      NACOS_SERVER: nacos:8848
+      MYSQL_HOST: mysql-master
+      REDIS_HOST: redis
+      SERVER_PORT: 8083
+      BUSINESS_SERVICE_URL: http://erp-business:8082
+      ERP_INTERNAL_TOKEN: ${ERP_INTERNAL_TOKEN:-dev-internal-token-2026}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 180s
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      erp-business:
+        condition: service_healthy
+    networks: [erp-net]
+
+  erp-gateway:
+    image: openjdk:17-jdk-slim
+    container_name: erp-gateway
+    working_dir: /app
+    volumes: ["./src/erp-gateway:/app"]
+    command: bash -c "./mvnw spring-boot:run -pl ."
+    ports: ["8080:8080"]
+    environment:
+      NACOS_SERVER: nacos:8848
+      SERVER_PORT: 8080
+    depends_on:
+      nacos:
+        condition: service_healthy
+    networks: [erp-net]
+
+  # === 监控 ===
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    container_name: erp-prometheus
+    ports: ["9090:9090"]
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    networks: [erp-net]
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: erp-grafana
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    networks: [erp-net]
+
+  skywalking-oap:
+    image: apache/skywalking-oap-server:9.7.0
+    container_name: erp-skywalking-oap
+    ports: ["11800:11800", "12800:12800"]
+    networks: [erp-net]
+
+  skywalking-ui:
+    image: apache/skywalking-ui:9.7.0
+    container_name: erp-skywalking-ui
+    ports: ["8088:8080"]
+    environment:
+      SW_OAP_ADDRESS: skywalking-oap:12800
+    networks: [erp-net]
+
+  nginx:
+    image: nginx:1.25
+    container_name: erp-nginx
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - erp-gateway
+    networks: [erp-net]
+
+networks:
+  erp-net:
+    driver: bridge
+
+volumes:
+  mysql-master-data:
+  minio-data:

@@ -1,0 +1,378 @@
+/* CNC 工业风 · 全局组件覆写（与 tokens.css industrial 主题配合） */
+
+.erp-page-body {
+  background: var(--erp-bg-card);
+  border: 1px solid var(--erp-border);
+  box-shadow: var(--erp-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.erp-filter-bar {
+  margin-bottom: 12px;
+}
+
+.erp-toolbar {
+  margin-bottom: 12px;
+}
+
+.erp-pagination {
+  margin-top: 12px;
+}
+
+.erp-num-highlight {
+  font-weight: 700;
+  font-family: var(--erp-font-mono);
+  color: var(--erp-text-primary);
+}
+
+/* 按钮优先级 */
+.erp-btn-primary.el-button--primary {
+  --el-button-bg-color: var(--erp-color-primary);
+  --el-button-border-color: var(--erp-color-primary);
+}
+
+.erp-btn-secondary.el-button {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: var(--erp-color-primary);
+  --el-button-text-color: var(--erp-color-primary);
+}
+
+.erp-btn-success.el-button--success {
+  --el-button-bg-color: var(--erp-color-success);
+  --el-button-border-color: var(--erp-color-success);
+}
+
+.erp-btn-danger-outline.el-button {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: var(--erp-color-danger);
+  --el-button-text-color: var(--erp-color-danger);
+}
+
+.erp-btn-ghost.el-button {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: var(--erp-border);
+  --el-button-text-color: var(--erp-text-secondary);
+}
+
+/* 深色主题：Element Plus stripe 默认 --el-fill-color-lighter 为浅色，会导致白底浅字 */
+[data-theme='industrial'],
+[data-theme='dark'] {
+  --el-fill-color-lighter: #2d323f;
+
+  .el-table {
+    --el-fill-color-lighter: #2d323f;
+  }
+
+  .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+    background-color: var(--el-fill-color-lighter);
+    color: var(--erp-text-primary);
+  }
+}
+
+/* 主布局内表格默认工业风（无需每页加 class） */
+.main-layout .el-table {
+  --el-table-bg-color: var(--erp-bg-card);
+  --el-table-tr-bg-color: var(--erp-bg-card);
+  --el-table-header-bg-color: var(--erp-bg-table-head, #2d3548);
+  --el-table-header-text-color: var(--erp-text-primary);
+  --el-table-text-color: var(--erp-text-primary);
+  --el-table-border-color: var(--erp-border);
+  --el-table-row-hover-bg-color: rgba(59, 130, 246, 0.08);
+  border-radius: var(--erp-radius-md);
+  overflow: hidden;
+}
+
+.main-layout .el-table .el-table__header th {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.main-layout .el-table .el-table__body tr:hover > td {
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+.main-layout .el-pagination {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  overflow: visible;
+}
+
+.erp-pagination.el-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.main-layout .el-form--inline.erp-filter-bar,
+.main-layout .erp-filter-bar.el-form--inline {
+  margin-bottom: 12px;
+}
+
+/* 深色工业表格（显式 class，与全局一致） */
+.erp-table.el-table {
+  --el-table-bg-color: var(--erp-bg-card);
+  --el-table-tr-bg-color: var(--erp-bg-card);
+  --el-table-header-bg-color: var(--erp-bg-table-head, #2d3548);
+  --el-table-header-text-color: var(--erp-text-primary);
+  --el-table-text-color: var(--erp-text-primary);
+  --el-table-border-color: var(--erp-border);
+  --el-table-row-hover-bg-color: rgba(59, 130, 246, 0.08);
+  border-radius: var(--erp-radius-md);
+  overflow: hidden;
+}
+
+.erp-table.el-table :deep(.el-table__header th) {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.erp-table.el-table :deep(.el-table__body tr:hover > td) {
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+.erp-table.el-table :deep(.el-table__body td.is-right) {
+  font-family: var(--erp-font-mono);
+  font-weight: 600;
+}
+
+/* Element Plus 深色适配 */
+[data-theme='industrial'] {
+  .el-card {
+    --el-card-bg-color: var(--erp-bg-card);
+    border-color: var(--erp-border);
+    color: var(--erp-text-primary);
+  }
+
+  .el-card__header {
+    background-color: transparent;
+    border-bottom-color: var(--erp-border);
+    color: var(--erp-text-primary);
+  }
+
+  .el-menu {
+    --el-menu-bg-color: transparent;
+    --el-menu-text-color: var(--erp-text-secondary);
+    --el-menu-hover-bg-color: var(--erp-color-primary-light);
+    --el-menu-active-color: var(--erp-color-primary);
+  }
+
+  .el-tabs__item {
+    color: var(--erp-text-secondary);
+  }
+
+  .el-tabs__item.is-active {
+    color: var(--erp-color-primary);
+  }
+
+  .el-tabs--border-card {
+    background: var(--erp-bg-card);
+    border-color: var(--erp-border);
+  }
+
+  .el-tabs--border-card > .el-tabs__header {
+    background: var(--erp-bg-table-head, #2d3548);
+    border-bottom-color: var(--erp-border);
+  }
+
+  .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+    background: var(--erp-bg-card);
+    border-right-color: var(--erp-border);
+    border-left-color: var(--erp-border);
+  }
+
+  .el-tabs--border-card > .el-tabs__content {
+    background: var(--erp-bg-card);
+    color: var(--erp-text-primary);
+  }
+
+  .el-tabs__content {
+    color: var(--erp-text-primary);
+  }
+
+  .el-descriptions__title {
+    color: var(--erp-text-primary) !important;
+  }
+
+  .el-statistic__head,
+  .el-statistic__content {
+    color: var(--erp-text-primary);
+  }
+
+  .el-input__wrapper,
+  .el-select__wrapper {
+    background-color: rgba(15, 23, 42, 0.35);
+    box-shadow: 0 0 0 1px var(--erp-border) inset;
+  }
+
+  .el-breadcrumb__inner,
+  .el-breadcrumb__separator {
+    color: var(--erp-text-secondary);
+  }
+
+  .el-dialog {
+    --el-dialog-bg-color: var(--erp-bg-card);
+    border: 1px solid var(--erp-border);
+  }
+
+  .el-drawer {
+    --el-drawer-bg-color: var(--erp-bg-card);
+  }
+
+  .el-drawer__header {
+    margin-bottom: 0;
+    color: var(--erp-text-primary);
+  }
+
+  .el-drawer__title {
+    color: var(--erp-text-primary);
+  }
+
+  .el-alert {
+    --el-alert-bg-color: rgba(59, 130, 246, 0.08);
+  }
+
+  .el-pagination {
+    --el-pagination-bg-color: transparent;
+    --el-pagination-text-color: var(--erp-text-primary);
+    --el-pagination-button-color: var(--erp-text-primary);
+    --el-pagination-button-disabled-color: var(--erp-text-muted);
+    --el-pagination-hover-color: var(--erp-color-primary);
+  }
+
+  .el-pagination .el-pagination__total,
+  .el-pagination .el-pagination__jump,
+  .el-pagination .el-select .el-select__selected-item {
+    color: var(--erp-text-primary);
+  }
+
+  .el-input-number.is-disabled .el-input__inner,
+  .el-input.is-disabled .el-input__inner {
+    color: var(--erp-text-primary);
+    -webkit-text-fill-color: var(--erp-text-primary);
+  }
+
+  .el-page-header {
+    color: var(--erp-text-primary);
+  }
+
+  .el-page-header__content {
+    color: var(--erp-text-primary);
+  }
+
+  .el-page-header__back,
+  .el-page-header__icon {
+    color: var(--erp-text-secondary);
+  }
+
+  .el-timeline-item__timestamp {
+    color: var(--erp-text-secondary) !important;
+  }
+
+  .el-timeline-item__content {
+    color: var(--erp-text-primary);
+  }
+
+  .el-descriptions {
+    --el-descriptions-item-bordered-label-background: var(--erp-bg-table-head, #2d3548);
+  }
+
+  .el-descriptions__label,
+  .el-descriptions__content {
+    color: var(--erp-text-primary) !important;
+  }
+
+  .el-descriptions__body .el-descriptions__table.is-bordered .el-descriptions__cell {
+    border-color: var(--erp-border);
+  }
+
+  .el-input-number .el-input__wrapper {
+    background-color: rgba(15, 23, 42, 0.35);
+    box-shadow: 0 0 0 1px var(--erp-border) inset;
+  }
+
+  .el-input-number .el-input__inner {
+    color: var(--erp-text-primary);
+    -webkit-text-fill-color: var(--erp-text-primary);
+  }
+
+  .el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info):not(.is-link):not(.is-text) {
+    --el-button-bg-color: transparent;
+    --el-button-border-color: var(--erp-border);
+    --el-button-text-color: var(--erp-text-secondary);
+    --el-button-hover-bg-color: rgba(59, 130, 246, 0.08);
+    --el-button-hover-border-color: var(--erp-color-primary);
+    --el-button-hover-text-color: var(--erp-color-primary);
+  }
+
+  .el-empty__description p {
+    color: var(--erp-text-muted);
+  }
+
+  /* vxe-table 深色适配（报价录入等） */
+  .vxe-table {
+    --vxe-ui-font-color: var(--erp-text-primary);
+    --vxe-ui-layout-background-color: var(--erp-bg-card);
+    --vxe-ui-table-header-background-color: var(--erp-bg-table-head);
+    --vxe-ui-table-body-background-color: var(--erp-bg-card);
+    --vxe-ui-table-border-color: var(--erp-border);
+    --vxe-ui-table-row-hover-background-color: rgba(59, 130, 246, 0.08);
+    --vxe-ui-table-row-striped-background-color: #2d323f;
+    --vxe-ui-table-header-font-color: var(--erp-text-primary);
+  }
+
+  .vxe-table .vxe-header--column,
+  .vxe-table .vxe-body--column,
+  .vxe-table .vxe-footer--column {
+    background-image: none;
+  }
+
+  .vxe-table--render-default .vxe-table--header-wrapper,
+  .vxe-table--render-default .vxe-table--body-wrapper {
+    background-color: var(--erp-bg-card);
+  }
+
+  .vxe-table .vxe-body--row {
+    background-color: var(--erp-bg-card);
+    color: var(--erp-text-primary);
+  }
+
+  .vxe-table .vxe-body--row.row--stripe {
+    background-color: #2d323f;
+  }
+
+  .vxe-table .vxe-header--column {
+    background-color: var(--erp-bg-table-head);
+    color: var(--erp-text-primary);
+  }
+
+  .el-tag {
+    --el-tag-bg-color: rgba(148, 163, 184, 0.12);
+    --el-tag-border-color: var(--erp-border);
+    --el-tag-text-color: var(--erp-text-primary);
+  }
+
+  .el-tag.el-tag--success {
+    --el-tag-bg-color: rgba(34, 197, 94, 0.15);
+    --el-tag-text-color: #86efac;
+  }
+
+  .el-tag.el-tag--warning {
+    --el-tag-bg-color: rgba(245, 158, 11, 0.15);
+    --el-tag-text-color: #fcd34d;
+  }
+
+  .el-tag.el-tag--danger {
+    --el-tag-bg-color: rgba(239, 68, 68, 0.15);
+    --el-tag-text-color: #fca5a5;
+  }
+
+  .el-tag.el-tag--info {
+    --el-tag-bg-color: rgba(59, 130, 246, 0.12);
+    --el-tag-text-color: #93c5fd;
+  }
+}

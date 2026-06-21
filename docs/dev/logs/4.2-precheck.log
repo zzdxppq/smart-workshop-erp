@@ -1,0 +1,67 @@
+# Story 4.2 precheck 报告 · V1.3.8 Sprint 7
+# 报告人：architect 鲁班（自动 grep）
+# 日期：2026-06-13
+# 状态：🔴 假设与现状不符，已修订 V52 迁移脚本
+
+=========================================================
+1. 阈值路由实现位置（grep approver_role/threshold_type）
+=========================================================
+✅ 找到核心实现：
+   src/erp-platform/src/main/java/.../auth/workflow/router/WorkflowApprovalRouter.java
+   src/erp-platform/src/main/java/.../auth/workflow/entity/WorkflowNode.java
+
+❌ Story 4.2 假设：阈值存 sys_workflow_config 表
+   实际：阈值存 sys_workflow_node 表（sys_workflow_node.threshold BigDecimal）
+   实际：sys_workflow_config 表根本不存在（grep 0 结果）
+
+=========================================================
+2. sys_workflow_node 字段（决定 V52 INSERT 结构）
+=========================================================
+workflow_id (FK sys_workflow.id)
+node_index (1..N, 严格递增)
+node_type (START/APPROVAL/CC/END)
+role_code (引用 sys_role.role_code)
+threshold (BigDecimal, NULL=无限额兜底)  ← 关键：仅支持金额阈值
+or_sign_required (Boolean)
+extra_check_json (String)
+
+=========================================================
+3. PROCUREMENT_MANAGER 角色（grep）
+=========================================================
+❌ 当前不存在（grep PROCUREMENT 全仓 0 命中 sys_role 相关）
+✅ V52 迁移 INSERT IGNORE 新增
+
+=========================================================
+4. 4 阈值路由实际语义
+=========================================================
+WorkflowApprovalRouter.route(amount, applicantUserId, workflowCode):
+  - 按 sys_workflow_node.node_index ASC 遍历
+  - 第一个 amount.compareTo(threshold) <= 0 命中
+  - threshold=NULL 表示无限额兜底
+  - 仅支持金额阈值，**不支持品类/紧急度分支**（Story 4.2 §1.1 表格需修订）
+
+=========================================================
+5. QuoteApprovalRouter（Story 1.5 报价路由）
+=========================================================
+阈值：5万/20万
+  < 5万：SELF
+  5-20万：DEPT_MANAGER_OR_SIGN
+  > 20万：GM_FINANCE_DUAL_SIGN
+但实际路由生效的是 WorkflowApprovalRouter 读 workflow_node 链，
+QuoteApprovalRouter 仅作为老兼容路径（Story 1.1 35 测例不破）。
+
+=========================================================
+6. 修订决定
+=========================================================
+✅ V52 迁移脚本修订为扩展 sys_workflow_node（非 sys_workflow_config）
+✅ 在 PO_APPROVAL 工作流 node_index 5/6 追加 2 个 PROCUREMENT_MANAGER 节点
+✅ Story 4.2 §1.1 表格品类/紧急度分支修订：本期仅支持金额阈值
+✅ 4.2 precheck.log 归档
+
+=========================================================
+7. 风险记录
+=========================================================
+🟡 品类阈值（TOOL/CHEMICAL）V1.3.8 不支持，需走应用层 if 判断
+🟡 紧急度阈值 V1.3.8 不支持，需走应用层 if 判断
+🟡 route-preview 端点必须返回 matched_node_index 让前端理解命中位置
+🟢 PROCUREMENT_MANAGER 角色新增无冲突（grep 0 命中）

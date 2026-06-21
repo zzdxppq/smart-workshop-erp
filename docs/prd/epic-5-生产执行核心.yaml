@@ -1,0 +1,78 @@
+epic_id: 5
+title: "生产执行核心"
+description: |
+  WHY：生产车间是 ERP 的"心脏"。老师傅凭经验排产、记工时，
+           老板月底才知道哪个订单亏了。本 Epic 用扫码三码
+           把"开工→加工→报工→过站"全流程数字化。
+
+stories:
+  - id: "5.1"
+    title: "工单与排产"
+    estimated_complexity: high
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/workorders"
+      - "GET  /api/v1/workorders/{id}"
+      - "GET  /api/v1/workorders?page=0&size=20&status=&machineId="
+      - "PUT  /api/v1/workorders/{id}/schedule"
+      - "GET  /api/v1/workorders/{id}/timeline"
+
+  - id: "5.2"
+    title: "扫码开工/报工/过站"
+    estimated_complexity: high
+    priority: P0
+    repository_type: android
+    provides_apis:
+      - "POST /api/v1/app/workorders/{barcode}/start"
+      - "POST /api/v1/app/workorders/{barcode}/report"
+      - "POST /api/v1/app/transfer/{barcode}/next"
+      - "GET  /api/v1/app/workorders/pending"
+      - "GET /api/v1/workorders/{barcode}"
+
+  - id: "5.3"
+    title: "物料需求分析 MRP"
+    estimated_complexity: medium
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/mrp/run"
+      - "GET  /api/v1/mrp/results?date="
+      - "GET /api/v1/workorders"
+      - "GET /api/v1/stock"
+      - "GET /api/v1/purchase-orders"
+
+  - id: "5.4"
+    title: "委外下单基础（V1.3.7 改版：生管/采购分工严格分离）"
+    estimated_complexity: medium
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/workorders/{id}/processes/{seq}/outsource-flag"
+      - "GET  /api/v1/outsource/pending-list"
+      - "POST /api/v1/outsource"
+      - "GET  /api/v1/outsource/{id}"
+      - "POST /api/v1/outsource/{id}/submit"
+
+  - id: "5.5"
+    title: "设备与机台排产"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/machines"
+      - "GET  /api/v1/machines"
+      - "PUT  /api/v1/machines/{id}"
+      - "GET  /api/v1/machines/{id}/load?date="
+
+  - id: "5.6"
+    title: "工序委外切片（V1.3.4 新增 / V1.3.5 强化"自动接续"）"
+    estimated_complexity: medium
+    priority: P0
+    repository_type: backend
+    provides_apis:
+      - "POST /api/v1/workorders/{id}/processes/{seq}/outsource-slice"
+      - "GET  /api/v1/workorders/{id}/processes"
+      - "POST /api/v1/workorders/{id}/processes/{seq}/lock-next-machine"
+      - "GET  /api/v1/workorders/{id}/processes/{seq}/handoff"
+      - "POST /api/v1/workorders/{id}/processes/{seq}/auto-continue"

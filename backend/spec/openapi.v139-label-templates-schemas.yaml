@@ -1,0 +1,66 @@
+# V1.3.9 Sprint 12 Story 12.3 Schemas
+
+    LabelTemplate:
+      type: object
+      required: [type, colorStrip]
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        name: { type: string, maxLength: 20, example: "工单码" }
+        prefix: { type: string, maxLength: 5, example: "GD-" }
+        colorStrip: { type: string, pattern: "^#[0-9A-Fa-f]{6}$", example: "#1E40AF" }
+        reuseFrom: { type: string, nullable: true, description: "SB=GD · 其他 null", example: "null" }
+        layout: { $ref: '#/components/schemas/LabelLayout' }
+        dpi: { type: integer, enum: [203, 300], default: 300 }
+        enabled: { type: boolean, default: true }
+        qrExample: { type: string, maxLength: 100, example: "GD-260614-001" }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+
+    LabelLayout:
+      type: object
+      description: 三区坐标 + 字体 + DPI（layout_json 字段解析）
+      properties:
+        topBarH: { type: number, default: 5, description: "顶行高度 mm" }
+        qrAreaH: { type: number, default: 18, description: "中央 QR 区高度 mm" }
+        textAreaH: { type: number, default: 7, description: "下方明文区高度 mm" }
+        fontSize: { type: number, default: 8, description: "明文字号 pt" }
+        qrSizePx: { type: integer, default: 300, description: "QR 像素尺寸" }
+        qrSizeMm: { type: number, default: 12, description: "QR 物理尺寸 mm" }
+        widthMm: { type: number, default: 50, description: "标签宽度 mm" }
+        heightMm: { type: number, default: 30, description: "标签高度 mm" }
+        colorStripWidthMm: { type: number, default: 8, description: "色条宽度 mm" }
+
+    LabelTemplateListResponse:
+      type: object
+      properties:
+        templates:
+          type: array
+          items: { $ref: '#/components/schemas/LabelTemplate' }
+        companyName: { type: string, default: "昆山佰泰胜精密加工" }
+
+    LabelPreviewRequest:
+      type: object
+      required: [type, data]
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        data:
+          type: object
+          required: [qrContent]
+          properties:
+            qrContent: { type: string, maxLength: 200, description: "纯文本 · APP 扫码壳按前缀路由" }
+            lines:
+              type: array
+              maxItems: 6
+              items: { type: string, maxLength: 50 }
+            factoryName: { type: string, maxLength: 20, default: "昆山佰泰胜精密加工" }
+        format: { type: string, enum: [PNG, PDF], default: PNG }
+
+    LabelPreviewResponse:
+      type: object
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        format: { type: string, example: "PNG" }
+        base64: { type: string, description: "data:image/png;base64,..." }
+        contentType: { type: string, example: "image/png" }
+        sizeBytes: { type: integer, description: "PNG 字节数 · < 5120 (5KB)" }
+        renderedAt: { type: string, format: date-time }

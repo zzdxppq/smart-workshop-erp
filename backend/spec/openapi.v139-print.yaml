@@ -1,0 +1,165 @@
+# V1.3.9 Sprint 12 Story 12.4 · 6 端点 paths
+# 追加到 openapi.yaml 的 paths 块之前
+
+  /print/labels/zpl:
+    post:
+      tags: [E12-Print]
+      summary: 模式一 ZPL/TSPL 直连打印（Socket 9100 · 3s 硬性超时）
+      operationId: printLabelsZpl
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ZplPrintRequest' }
+      responses:
+        '200':
+          description: ZPL 发送成功 · 异步 · logNo 即时返回
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ZplPrintResult' }
+        '409':
+          description: 50201 PRINTER_OFFLINE · 50202 PROTOCOL_UNSUPPORTED
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+        '422':
+          description: 40001/40003 参数校验失败
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/labels/pdf-a4:
+    post:
+      tags: [E12-Print]
+      summary: 模式二 A4 PDF（3×9=27 标签/页 · base64 返回）
+      operationId: printLabelsPdfA4
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PdfA4PrintRequest' }
+      responses:
+        '200':
+          description: PDF 生成成功 · 含 base64 + printLogId
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printLogId: { type: integer, format: int64 }
+                          logNo: { type: string }
+                          pdfBase64: { type: string }
+                          bytes: { type: integer }
+                          contentType: { type: string }
+                          filename: { type: string }
+        '422':
+          description: items 超过 30 → 40003
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/logs:
+    get:
+      tags: [E12-Print]
+      summary: 打印历史查询（分页 + 多维过滤）
+      operationId: listPrintLogs
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: codeType,    schema: { type: string, enum: [GD, LZ, SB, WW, WL, DRAWING] } }
+        - { in: query, name: mode,        schema: { type: string, enum: [ZPL_DIRECT, PDF_BROWSER] } }
+        - { in: query, name: status,      schema: { type: string, enum: [SUCCESS, FAILED, PENDING] } }
+        - { in: query, name: operatorId,  schema: { type: integer, format: int64 } }
+        - { in: query, name: codeValue,   schema: { type: string, description: "模糊搜索" } }
+        - { in: query, name: dateFrom,    schema: { type: string, format: date } }
+        - { in: query, name: dateTo,      schema: { type: string, format: date } }
+        - { in: query, name: page,        schema: { type: integer, default: 1 } }
+        - { in: query, name: size,        schema: { type: integer, default: 20 } }
+        - { in: query, name: tenantId,    schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 历史分页
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PageResponsePrintLog' }
+
+  /print/logs/{id}:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    get:
+      tags: [E12-Print]
+      summary: 单条打印日志详情
+      operationId: getPrintLog
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 单条详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrintLogResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /print/logs/{id}/replay:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    post:
+      tags: [E12-Print]
+      summary: 补打（同模式/换模式）· 防 reference 递归
+      operationId: replayPrintLog
+      security: [{ bearerAuth: [admin] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReprintRequest' }
+      responses:
+        '200':
+          description: 补打成功 · 新 sys_print_log reference_log_id=id
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+        '409':
+          description: 40954 PRINT_REPLAY_FORBIDDEN · FAILED 不可补打 / 补打记录不可再补打
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/statistics:
+    get:
+      tags: [E12-Print]
+      summary: 打印统计（groupBy 聚合）
+      operationId: printStatistics
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: groupBy, schema: { type: string, enum: [month, day, operator_id, code_type, mode], default: month } }
+        - { in: query, name: dateFrom, schema: { type: string, format: date } }
+        - { in: query, name: dateTo,   schema: { type: string, format: date } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 聚合结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/PrintStatisticsBucket' }

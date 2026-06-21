@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: erp-platform
+  profiles:
+    active: ${PROFILE:dev}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+      config:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        file-extension: yaml
+        namespace: ${NACOS_NAMESPACE:dev}
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/cnc_platform?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USER:erp}
+    password: ${MYSQL_PASSWORD:erp123}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+
+server:
+  port: 8081
+
+# V1.3.7 应用配置（架构 §3.5 + §15.2）
+app:
+  v137:
+    prd_version: V1.3.7
+    contract_id: XP-ZPF202606082405
+  crypto:
+    # DEK 文件路径：甲方 IT 独立保管，chmod 600（V1.3.6 数据安全红线）
+    dek-file: ${DEK_FILE:/etc/erp/dek.key}
+    # dev 兜底：仅 dev profile 生效，nacos app.crypto.dek-dev 配置
+    dek-dev: ${DEK_DEV:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-only-secret-please-replace-in-prod-2026}
+      access-ttl-seconds: 7200
+      refresh-ttl-seconds: 604800
+    login-fail-window-seconds: 1800
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
+    access-key: ${MINIO_ACCESS_KEY:minio}
+    secret-key: ${MINIO_SECRET_KEY:minio123}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+      logic-delete-field: deleted
+  # 注册 AES-256-GCM TypeHandler
+  type-handlers-package: com.btsheng.erp.core.common.security
+
+logging:
+  level:
+    root: INFO
+    com.btsheng.erp: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"

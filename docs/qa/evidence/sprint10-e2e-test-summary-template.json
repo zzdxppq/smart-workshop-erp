@@ -1,0 +1,175 @@
+{
+  "story": "10.2",
+  "title": "Sprint 10 Playwright E2E 14 端点 + 9.2 4 happy path 回归",
+  "sprint": "V1.3.8 S10",
+  "level": "Comprehensive",
+  "scope": {
+    "e2e_sprint10": {
+      "total": 14,
+      "domains": {
+        "A_auth_approval": 4,
+        "B_order_profit": 4,
+        "C_outsource_rework": 4,
+        "D_stock_report": 2
+      },
+      "files": [
+        "e2e/sprint10/tc-10.2-a1-login.spec.ts",
+        "e2e/sprint10/tc-10.2-a2-quote-submit.spec.ts",
+        "e2e/sprint10/tc-10.2-a3-quote-approve.spec.ts",
+        "e2e/sprint10/tc-10.2-a4-quote-to-order.spec.ts",
+        "e2e/sprint10/tc-10.2-b1-order-list.spec.ts",
+        "e2e/sprint10/tc-10.2-b2-order-approve.spec.ts",
+        "e2e/sprint10/tc-10.2-b3-order-to-production.spec.ts",
+        "e2e/sprint10/tc-10.2-b4-order-profit.spec.ts",
+        "e2e/sprint10/tc-10.2-c1-outsource-create.spec.ts",
+        "e2e/sprint10/tc-10.2-c2-outsource-advance.spec.ts",
+        "e2e/sprint10/tc-10.2-c3-rework-create.spec.ts",
+        "e2e/sprint10/tc-10.2-c4-rework-finish.spec.ts",
+        "e2e/sprint10/tc-10.2-d1-stock-in.spec.ts",
+        "e2e/sprint10/tc-10.2-d2-kanban.spec.ts"
+      ]
+    },
+    "e2e_regression_9_2": {
+      "total": 4,
+      "files": [
+        "e2e/dashboard-production.spec.ts",
+        "e2e/salesperson-order-crud.spec.ts",
+        "e2e/salesperson-quote-crud.spec.ts",
+        "e2e/salesperson-50k-order-approve.spec.ts"
+      ]
+    }
+  },
+  "executed": {
+    "e2e_sprint10": 14,
+    "e2e_regression_9_2": 4
+  },
+  "passed": {
+    "e2e_sprint10": 0,
+    "e2e_regression_9_2": 0
+  },
+  "failed": {
+    "e2e_sprint10": 0,
+    "e2e_regression_9_2": 0
+  },
+  "flake": {
+    "e2e_sprint10": 0,
+    "e2e_regression_9_2": 0
+  },
+  "performance": {
+    "full_runtime_sec_target": 120,
+    "full_runtime_sec_tolerance": 180,
+    "full_runtime_sec_actual": 0,
+    "single_max_sec_target": 5,
+    "single_max_sec_tolerance": 8,
+    "single_max_sec_actual": 0,
+    "kanban_d2_sec_actual": 0,
+    "high_amount_dialog_sec_actual": 0,
+    "workers": 4,
+    "baseline_met": false
+  },
+  "per_tc_results": {
+    "TC-10.2.A1": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /auth/login", "trace": null },
+    "TC-10.2.A2": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /quotes + /submit", "trace": null },
+    "TC-10.2.A3": { "status": "PENDING", "duration_sec": 0, "endpoint": "GET /approvals/pending + POST /approve", "trace": null },
+    "TC-10.2.A4": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /convert-to-order", "trace": null },
+    "TC-10.2.B1": { "status": "PENDING", "duration_sec": 0, "endpoint": "GET /orders (3 roles)", "trace": null },
+    "TC-10.2.B2": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /orders/{id}/approve", "trace": null },
+    "TC-10.2.B3": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /convert-to-production", "trace": null },
+    "TC-10.2.B4": { "status": "PENDING", "duration_sec": 0, "endpoint": "GET /orders/{id}/profit", "trace": null },
+    "TC-10.2.C1": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /convert-to-outsource", "trace": null },
+    "TC-10.2.C2": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /outsource-states/advance", "trace": null },
+    "TC-10.2.C3": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /reworks", "trace": null },
+    "TC-10.2.C4": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /reworks/{id}/finish", "trace": null },
+    "TC-10.2.D1": { "status": "PENDING", "duration_sec": 0, "endpoint": "POST /stock/in", "trace": null },
+    "TC-10.2.D2": { "status": "PENDING", "duration_sec": 0, "endpoint": "GET /reports/kanban", "trace": null },
+    "REG-9.2-DASHBOARD": { "status": "PENDING", "duration_sec": 0, "endpoint": null, "trace": null },
+    "REG-9.2-ORDER-CRUD": { "status": "PENDING", "duration_sec": 0, "endpoint": null, "trace": null },
+    "REG-9.2-QUOTE-CRUD": { "status": "PENDING", "duration_sec": 0, "endpoint": null, "trace": null },
+    "REG-9.2-50K-APPROVE": { "status": "PENDING", "duration_sec": 0, "endpoint": null, "trace": null }
+  },
+  "failure_archive": {
+    "traces": [],
+    "screenshots": [],
+    "videos": [],
+    "junit_xml": "web-impl/junit.xml",
+    "html_report": "web-impl/playwright-report/index.html",
+    "ci_artifact_expire_days": 30
+  },
+  "failure_analysis": {
+    "type_A_helper_wait": 0,
+    "type_B_db_pollution": 0,
+    "type_C_api_drift": 0,
+    "type_D_codegen_mismatch": 0
+  },
+  "preflight": {
+    "web_impl_git_remote": "PENDING",
+    "backend_health": "PENDING",
+    "seed_loaded": "PENDING",
+    "node_version": null,
+    "playwright_version": null,
+    "generated_dir_present": false,
+    "typecheck_ci_passed": false
+  },
+  "data_requirements": {
+    "seed_mock_ids_required": {
+      "quote_id_100": "PENDING",
+      "order_id_200": "PENDING",
+      "outsource_ww_20260613_0001": "PENDING",
+      "rework_id_200": "PENDING",
+      "material_mat_20260613_0001": "PENDING"
+    },
+    "reset_db_endpoint": "PENDING",
+    "all_seven_roles_seeded": false
+  },
+  "regression_impact": {
+    "9_2_36_spec_unaffected": true,
+    "9_2_4_happy_path_preserved": true,
+    "playwright_config_project_isolation": true
+  },
+  "result": "PENDING",
+  "judge_basis": {
+    "pass": "14/14 + 9.2 4/4 + 0 fail + 0 flake + full_runtime<=120s",
+    "conditional_pass": "14/14 + 9.2 4/4 + 1-2 flake recorded + full_runtime<=180s",
+    "fail": "any hard fail OR > 2 flake OR full_runtime>240s"
+  },
+  "qa_signoff": "QA 商鞅",
+  "signoff_date": null,
+  "status": "PENDING",
+  "executor": null,
+  "executor_environment": {
+    "os": null,
+    "node": null,
+    "npm": null,
+    "playwright": null,
+    "chromium": null
+  },
+  "execution_window": {
+    "start_at": null,
+    "end_at": null
+  },
+  "evidence_files": [
+    "docs/qa/evidence/sprint10-e2e-test-execute-plan.md",
+    "docs/qa/evidence/sprint10-e2e-test-summary.json",
+    "web-impl/playwright-report/index.html",
+    "web-impl/junit.xml"
+  ],
+  "related_artifacts": {
+    "dev_log": "docs/dev/logs/10.2-dev-log.md",
+    "qa_review": "docs/qa/reviews/10.2-playwright-e2e.md",
+    "integration_e_report": "docs/qa/evidence/sprint10-integration-test-report.md",
+    "1_5_template": "docs/qa/evidence/1.5-test-execute.md",
+    "1_5_summary_template": "docs/qa/evidence/1.5-test-summary.json"
+  },
+  "delegation_context": {
+    "delegation_id": "Sprint 10 集成 E 验证委派#1",
+    "delegation_source": "SM 萧何 · sprint10-integration-test-report.md §3.1",
+    "delegation_deadline": "2026-06-15",
+    "preconditions": [
+      "PM 决策#1 web-impl git remote 接入完成",
+      "PM 决策#3 7 状态机 enum drift 修复完成（10.5 dev 修 4 typecheck 错误）",
+      "DevOps .gitlab-ci.yml 接入 GitLab repo + Nexus 镜像确认",
+      "V1.3.7 seed 数据一致性验证（含 14 spec 所需 mock id）"
+    ]
+  },
+  "timestamp": null
+}

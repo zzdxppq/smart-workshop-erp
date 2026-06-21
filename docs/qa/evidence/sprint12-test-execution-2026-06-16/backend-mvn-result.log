@@ -1,0 +1,84 @@
+# ============================================================
+# Backend mvn test-execute · Sprint 12 CONDITIONAL GO 委派#1
+# ============================================================
+# 工作站：QA 商鞅（沙箱外 Windows 10 / Git Bash）
+# 项目：smart-workshop-erp / V1.3.8 Sprint 12
+# 范围：86 测例 + risk-profile 8 项 + 12.3 14 测例 + 12.4 32 测例
+#       + Sprint 7-9 回归 1408 测例 + 12.1 24 测例 = ~1570 测例
+# 期望：er-platform / er-business / er-production 3/7 模块 SUCCESS
+# 截止：2026-06-16 18:00
+# 责任：QA 商鞅
+# 关联：sprint12-integration-test-report.md §3.1 委派 1
+# ============================================================
+
+# [A] 环境准备（工作站必跑）
+cd E:/claude/smart-workshop-erp
+git status                                       # 期望：clean working tree
+git log --oneline -5                             # 期望：HEAD 指向 12.x commit
+java -version                                    # 期望：17.0.x（Temurin 17 LTS）
+mvn -version                                     # 期望：Apache Maven 3.9.x
+
+# [B] 执行 86 测例 + 12.3 14 测例 + 12.4 32 测例 + 1408 回归
+cd backend
+mvn clean install -B \
+  -Dtest='!AuthFlowE2ETest' \
+  -DfailIfNoTests=false \
+  -Dsurefire.failIfNoSpecifiedTests=false \
+  2>&1 | tee mvn-sprint12-test-execute.log
+
+# [C] 关键断言（grep 期望）
+grep -E "Tests run: [0-9]+, Failures: [0-9]+, Errors: [0-9]+, Skipped: [0-9]+" \
+     mvn-sprint12-test-execute.log | tail -50
+
+# 期望尾部出现：
+# [INFO] Results:
+# [INFO] Tests run: 1570, Failures: 0, Errors: 0, Skipped: 0
+# [INFO] BUILD SUCCESS
+
+# [D] 模块 SUCCESS 断言
+grep -E "BUILD SUCCESS|BUILD FAILURE" mvn-sprint12-test-execute.log
+# 期望：3/7 模块 SUCCESS · 0 BUILD FAILURE
+# 模块清单：er-platform / er-business / er-production
+#           er-crm / er-scm / er-finance / er-workflow（既有回归基线）
+
+# [E] 拷贝证据归档
+cp mvn-sprint12-test-execute.log \
+   ../docs/qa/evidence/sprint12-test-execution-2026-06-16/backend-mvn-result.log
+
+# [F] 测例分布（手工填写 · 跑完后回填）
+# ------------------------------------------------------------
+# Story    期望    实际 PASS  实际 FAIL  备注
+# ------------------------------------------------------------
+# 12.1     24      ___        ___        8 单元 + 6 集成 + 3 迁移 + 3 性能 + 3 灰度 + 1 E2E（2 E2E 跳过）
+# 12.2     16      ___        ___        5 CRUD + 4 心跳 + 3 available + 2 admin UI + 2 边界
+# 12.3     14      ___        ___        4 单元 + 4 集成 + 2 QR 路由 + 2 跨仓 + 2 边界
+# 12.4     32+8    ___        ___        8 模式一 + 6 模式二 + 6 留痕 + 2 聚合 + 6 跨仓 E2E + 4 错误码性能
+# 7-9 回归 1408    ___        ___        Sprint 7 IMPL + 集成 + Sprint 8 优化 + Sprint 9 JWT
+# ------------------------------------------------------------
+# 合计     ~1570   ___        ___        0 flake · 0 BUILD FAILURE
+# ============================================================
+
+# ============================================================
+# 4 类型失败处理矩阵（mvn 后端）
+# ============================================================
+# 类型 | 症状                              | 根因                 | 修复责任     | 修复路径
+# -----|-----------------------------------|----------------------|--------------|-------------------------
+# A    | 偶发 transient test 失败          | 瞬断/网络/容器未就绪 | dev agent    | 重跑 1 次 · 仍 FAIL → 升级
+# B    | 测例间数据串扰（FK 冲突/库存预扣） | DB 污染/事务未回滚   | dev agent    | 加 @Transactional + TestContainers 重置
+# C    | 404/500/字段缺失/JSON 解析失败    | 后端 API 漂移        | dev+architect| git log 7 天 diff · 修测例或回滚
+# D    | codegen 漂移 / typecheck 错        | PM 决策#1 修复不全   | dev          | npm run gen:api · 比对 openapi.yaml
+#
+# 升级：仍 FAIL → 通知 SM 萧何 → 评估是否推迟 V1.3.8 FAT
+# SLA：A 类 < 30min · B 类 < 1h · C 类 < 2h · D 类 < 1h
+# ============================================================
+
+# [G] 失败测例登记（FAIL 时填写）
+# -----------------------------------------------------------------
+# 测例 ID    类型  根因摘要         通知对象        修复状态   时间
+# -----------------------------------------------------------------
+# TC-___    _     ______________   ____________   ________  _______
+# -----------------------------------------------------------------
+
+# [H] 跑完签字
+# QA 商鞅：________________  时间：2026-06-16 __:__
+# 复核 SM 萧何：________________  时间：2026-06-16 __:__

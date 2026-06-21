@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PPT 演讲者备注 · CNC 加工厂 ERP 系统方案</title>
+<style>
+:root{
+  --c-bg:#ffffff;--c-bg-soft:#f7f8fa;--c-bg-code:#0d1117;--c-fg:#1f2328;--c-fg-soft:#57606a;
+  --c-border:#d0d7de;--c-border-soft:#eaeef2;--c-accent:#0969da;--c-accent-soft:#ddf4ff;
+  --c-success:#1a7f37;--c-warn:#9a6700;--c-danger:#cf222e;--c-tag:#8250df;
+  --c-paper:#f6f8fa;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",
+              "Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono","SF Mono",Menlo,Consolas,"Courier New",monospace;
+  --shadow:0 1px 3px rgba(31,35,40,.12);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font-sans);color:var(--c-fg);background:var(--c-bg);
+     line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased}
+a{color:var(--c-accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--font-mono);font-size:90%;background:var(--c-bg-soft);
+     padding:2px 6px;border-radius:4px;color:#cf222e}
+pre code{background:transparent;color:#e6edf3;padding:0;font-size:13px}
+pre{background:var(--c-bg-code);color:#e6edf3;padding:16px 18px;border-radius:8px;
+    overflow-x:auto;line-height:1.5;box-shadow:var(--shadow);margin:14px 0}
+pre::-webkit-scrollbar{height:8px}
+pre::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+th,td{border:1px solid var(--c-border);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--c-bg-soft);font-weight:600}
+tr:nth-child(even) td{background:#fafbfc}
+blockquote{margin:14px 0;padding:8px 16px;border-left:4px solid var(--c-accent);
+           background:var(--c-accent-soft);color:var(--c-fg-soft);border-radius:0 4px 4px 0}
+blockquote p{margin:4px 0}
+hr{border:0;border-top:1px solid var(--c-border-soft);margin:32px 0}
+h1,h2,h3,h4,h5,h6{font-weight:600;line-height:1.3;margin-top:28px;margin-bottom:12px}
+h1{font-size:30px;padding-bottom:10px;border-bottom:2px solid var(--c-border)}
+h2{font-size:24px;padding-bottom:8px;border-bottom:1px solid var(--c-border-soft)}
+h3{font-size:20px}
+h4{font-size:17px;color:var(--c-fg-soft)}
+h5{font-size:15px}
+h6{font-size:14px;color:var(--c-fg-soft)}
+ul,ol{padding-left:24px;margin:10px 0}
+li{margin:4px 0}
+img{max-width:100%;border-radius:6px;box-shadow:var(--shadow)}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+aside.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+         background:var(--c-bg-soft);border-right:1px solid var(--c-border-soft);
+         padding:24px 20px;font-size:13px}
+aside.toc h2{font-size:14px;margin:0 0 12px 0;padding:0;border:0;color:var(--c-fg-soft);
+             text-transform:uppercase;letter-spacing:.5px}
+aside.toc ul{list-style:none;padding:0;margin:0}
+aside.toc li{margin:2px 0}
+aside.toc a{color:var(--c-fg-soft);display:block;padding:3px 8px;border-radius:4px;
+            line-height:1.4}
+aside.toc a:hover{background:var(--c-accent-soft);color:var(--c-accent);
+                  text-decoration:none}
+aside.toc .lvl-3{padding-left:20px;font-size:12px}
+aside.toc .lvl-4{padding-left:32px;font-size:12px}
+main.content{max-width:980px;padding:32px 48px 96px;margin:0 auto;width:100%}
+
+/* Header */
+.doc-header{padding:24px 32px;background:linear-gradient(135deg,#0969da 0%,#218bff 100%);
+            color:#fff;border-radius:12px;margin-bottom:24px;box-shadow:var(--shadow)}
+.doc-header h1{margin:0 0 8px 0;padding:0;border:0;color:#fff;font-size:26px}
+.doc-header .meta{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;opacity:.92}
+.doc-header .meta span{display:inline-flex;align-items:center;gap:6px}
+
+/* Sticker */
+.soul-sticker{background:linear-gradient(135deg,#fff5e6 0%,#ffe4b3 100%);
+               border:1px solid #f0c674;border-left:6px solid #d97706;
+               border-radius:8px;padding:18px 22px;margin:20px 0;
+               box-shadow:var(--shadow)}
+.soul-sticker .title{font-weight:700;font-size:18px;color:#7a4a00;margin-bottom:6px}
+.soul-sticker .desc{color:#5a3500;line-height:1.7;font-size:14px}
+
+/* Tag pills */
+.pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:10px;
+      font-weight:600;letter-spacing:.2px;line-height:18px}
+.pill-p0{background:#ffe0e0;color:#a40000;border:1px solid #ffb3b3}
+.pill-p1{background:#fff4d6;color:#7a5800;border:1px solid #ffd97d}
+.pill-p2{background:#e0eaff;color:#1e3a8a;border:1px solid #b3c7ff}
+.pill-epic{background:#e6f4ff;color:#0a4a7a;border:1px solid #99d4ff}
+.pill-ac{background:#f3e8ff;color:#5b21b6;border:1px solid #d8b4fe}
+.pill-q{background:#e0f5ec;color:#0a6b3a;border:1px solid #95e0bd}
+.pill-a{background:#fde8e8;color:#8a1a1a;border:1px solid #f5b3b3}
+.pill-do{background:#fff0d6;color:#7a4a00;border:1px solid #f0c674}
+.pill-warn{background:#fde8e8;color:#8a1a1a;border:1px solid #f5b3b3}
+.pill-ok{background:#e0f5ec;color:#0a6b3a;border:1px solid #95e0bd}
+
+/* Back to top */
+#back-to-top{position:fixed;bottom:32px;right:32px;width:44px;height:44px;
+             background:var(--c-accent);color:#fff;border-radius:50%;display:none;
+             align-items:center;justify-content:center;cursor:pointer;border:0;
+             box-shadow:0 4px 12px rgba(9,105,218,.4);font-size:20px;z-index:99}
+#back-to-top:hover{background:#0860c7}
+
+/* Speaker-tip blockquote */
+blockquote.speaker-tip{
+  background:var(--c-bg-soft);
+  border-left:4px solid var(--c-success);
+  color:var(--c-fg);
+  font-size:14.5px;
+  line-height:1.75;
+}
+blockquote.speaker-tip p{margin:2px 0}
+blockquote.action{
+  background:#fff8c5;
+  border-left:4px solid #d4a017;
+  color:#5a4400;
+  font-size:14px;
+  font-style:italic;
+}
+blockquote.key{
+  background:linear-gradient(135deg,#ddf4ff 0%,#cde8ff 100%);
+  border-left:4px solid var(--c-accent);
+  color:var(--c-fg);
+  font-weight:500;
+  font-size:14.5px;
+}
+
+/* Code language label */
+pre[data-lang]::before{content:attr(data-lang);position:sticky;display:block;
+                       text-align:right;color:#7d8590;font-size:11px;
+                       text-transform:uppercase;letter-spacing:.5px;margin:-16px -18px 8px;
+                       padding:0 18px;top:0}
+
+/* Print */
+@media print{
+  aside.toc,#back-to-top{display:none}
+  .layout{grid-template-columns:1fr}
+  main.content{max-width:100%;padding:0}
+  pre{background:#f5f5f5;color:#1f2328;box-shadow:none}
+  a{color:#1f2328;text-decoration:underline}
+  blockquote.speaker-tip,blockquote.action,blockquote.key{
+    background:#f6f8fa !important;border-left:3px solid #888 !important;
+    color:#1f2328 !important;
+  }
+}
+
+/* Responsive */
+@media (max-width:1024px){
+  .layout{grid-template-columns:1fr}
+  aside.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--c-border-soft)}
+  main.content{padding:20px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc">
+    <h2>目录 · Outline</h2>
+    <ul id="toc-list"></ul>
+    <p style="margin-top:24px;font-size:11px;color:var(--c-fg-soft);line-height:1.5">
+      对应 PPT: V1.3.2 · 16 张<br>
+      时长: 45-60 分钟<br>
+      风格: 范蠡 · 灵魂八字体
+    </p>
+  </aside>
+  <main class="content">
+    <h1 id="smart-workshop-erp">演讲者备注 · Smart Workshop ERP 客户评审</h1>
+<blockquote>
+<p><strong>场合</strong>：客户内部评审会 · 客户为 CNC 加工行业资深从业者<br>
+<strong>时长</strong>：45-60 分钟（每页 2-4 分钟，留 10-15 分钟答疑）<br>
+<strong>核心命题</strong>：外行 ≠ 不专业。系统设计的真功夫是"翻译"——把客户脑子里的隐性知识挖出来变成显性规则。</p>
+</blockquote>
+<hr>
+<h2 id="_1">总策略</h2>
+<h3 id="_2">心态</h3>
+<ul>
+<li><strong>不装内行</strong>。直接说"我们不是 CNC 从业者"，反而赢得尊重。</li>
+<li><strong>承认无知是优势</strong>。外行会问"为什么"、会问"这一步是干什么"——内行会跳过这些细节，结果做出来的东西客户用不顺手。</li>
+<li><strong>反复强调"专业软件交付能力"定位</strong>。这是整个提案的定海神针——我们不是外行，我们具备把业务知识铸成系统规则的工程化能力。</li>
+</ul>
+<h3 id="_3">语言风格</h3>
+<ul>
+<li>简洁、不堆术语。客户是工程出身，对"赋能、闭环、抓手"这种黑话免疫。</li>
+<li>用业务语言，不用技术语言。<strong>别说"微服务"，说"3 个服务、1 台机器扛住"</strong>。</li>
+<li>多用类比。"系统像老师傅的活地图"、"计件公式像算盘珠子"。</li>
+</ul>
+<h3 id="_4">节奏</h3>
+<ul>
+<li><strong>前 5 分钟</strong>最关键：赢得客户"愿意听下去"的耐心。</li>
+<li><strong>中段 30 分钟</strong>：用具体例子证明"我们懂系统设计"（扫码三码、计件公式、状态机）。</li>
+<li><strong>最后 10 分钟</strong>：风险与承诺，<strong>主动暴露弱点</strong>反而加分。</li>
+</ul>
+<h3 id="_5">预案（客户可能的质疑）</h3>
+<table>
+<thead>
+<tr>
+<th>客户可能说</th>
+<th>怎么接</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"你们没做过 CNC，怎么知道我们这行的痛？"</td>
+<td>"正因为外行，我们问得比内行多 3 倍。PRD 里 11 个 Epic 全部从您们的真实场景反推，不是从通用模板套。"</td>
+</tr>
+<tr>
+<td>"扫码三码听起来简单，但工人都不会用。"</td>
+<td>"所以我们用码前缀自动识别（GD/LZ/SB）——工人不需要选场景，扫到哪个前缀就进哪个流程。培训成本：0 分钟。"</td>
+</tr>
+<tr>
+<td>"3 服务架构够用吗？以后并发上来怎么办？"</td>
+<td>"我们给您留了 1.5 倍容量余量。如果您真上 500 人，第二阶段我们改 6 服务、加 K8s 集群——但那是您 1 年后才需要考虑的事。"</td>
+</tr>
+<tr>
+<td>"RabbitMQ 不用真的好吗？"</td>
+<td>"CNC 单机部署场景，Redis 已经在用，Stream 消费者组能力足够。我们少一个进程、少一份内存、少一份故障——不是省成本，是少风险。"</td>
+</tr>
+<tr>
+<td>"我们想用友/金蝶那种成熟产品。"</td>
+<td>"完全可以选。但通用 ERP 上线后，CNC 特有的扫码三码、计件公式、扫码过站——还是要二次开发。我们做的就是把这部分从'通用 ERP+二开'变成'开箱即用'。"</td>
+</tr>
+<tr>
+<td>"你们的价格？"</td>
+<td><strong>不直接回答</strong>。"今天我们只对方案。价格等您认可方案后我们做实施报价，但我可以告诉您量级：V1.0 试点 5 个 Epic 是我们服务的核心，按阶段交付，预算量级在 X 万区间。"</td>
+</tr>
+<tr>
+<td>"实施要多久？"</td>
+<td>"节奏是 3 步走、3 个月——S1 试点车间跑通 5 个 Epic、S2 全面推广 + V1.1 深化、S3 报表 + 持续优化。我们不画大饼——每个 Epic 都做穿，月底向您演示'从询价到入库'的全流程。"</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="_6">逐页备注</h2>
+<h3 id="01-30">01 · 封面（30 秒）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "各位老板好。今天的方案不花哨、不堆术语。我们要讲清楚一件事：<em>我们具备行业专业软件的完整交付能力，懂得把您的业务工作流转为系统设计</em>。"</blockquote>
+
+<p><strong>强调产品精神标语</strong>（关键 8 秒）：</p>
+<blockquote>
+<p>"在讲方案之前，我想先讲八个字——<em>一码到底，一数到底</em>。"<br>
+"一码：工单码、流转码、设备码贯穿车间，物物可追。一数：数据从源头一次录入，财务报表、车间看板、老板驾驶舱共用同一份数。"<br>
+"<strong>这八个字是这套系统的灵魂。</strong>后面的每张幻灯片，您都可以用这八个字来检验。"</p>
+</blockquote>
+<p><strong>动作</strong>：<br>
+- 停顿 2 秒，等目光聚焦。<br>
+- 念标语时，手指 PPT 封面相应位置。</p>
+<hr>
+<h3 id="02-2">02 · 开场：老板的真实一天（2 分钟）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "我想先回到一个真实问题。各位每天早上 9 点到办公室，最想问什么？"
+> 
+> "今天还有多少单逾期？哪些车间在偷懒？这单做完我能赚多少？外协厂商那边到底发出去多少、回来了多少？"
+> 
+> "我们走访了 30 多家 CNC 加工厂——老板们都说，<em>通用 ERP 解决不了这些问题</em>。它是按通用流程设计的：进销存、财务、人事模块拼起来，就是 ERP。但 CNC 加工的图号怎么跟、工时怎么算、首件谁签、外协怎么对账——通用系统一片空白。"</blockquote>
+
+<p><strong>关键点</strong>：<br>
+- 共情开场。让客户觉得"你懂我"。<br>
+- 暗合"行业 ERP 缺失"——这是客户自己在用的通用 ERP 的痛点。</p>
+<p><strong>互动</strong>：观察客户反应。如果有人点头，可补一句"王总（如果知道名字）你们现在用 X 系统，是不是也有这个痛？"</p>
+<hr>
+<h3 id="03-3">03 · 方法论：外行的价值（3 分钟 · 关键页）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "所以我先说清楚我们的身份：<em>我们不装内行</em>。"
+> 
+> "做了 15 年 CNC 的老师傅，脑子里有一张活地图——这张图号什么时候做、哪台机台能跑、谁干得快、外协老王靠不靠谱。这张地图不在电脑里，在老师傅的脑子里。"
+>
+> "<em>我们的工作，是把您脑子里的活地图，铸成新人也能 5 分钟读懂的明规则</em>。经过多家 CNC 加工厂业务对接、200+ 页行业资料梳理、80+ 项行业功能对照，我们对 CNC 行业的理解，能落到具体的系统流程。"</blockquote>
+
+<p><strong>展示右侧 callout</strong>：</p>
+<blockquote>
+<p>"举个小例子。客户说'这单急，先插一下'——表面看是请求，业务规则数字化就是一段清晰的逻辑：IF 优先级=URGENT THEN 重新排产+通知车间主管。"</p>
+</blockquote>
+<p><strong>关键点</strong>：<br>
+- 这一页是<strong>整个提案的灵魂</strong>。重点不是"我们懂 CNC"，而是"我们具备把业务知识铸成系统规则的<strong>工程化能力</strong>"。<br>
+- 不要解释太多概念，让客户消化"行业专业软件交付"这个定位。</p>
+<p><strong>互动</strong>：可以问"您们车间里老师傅带新人，是不是一般要跟一年？"——客户答"是"——再接"我们的系统目标，就是把这'一年'缩短到一个月。"</p>
+<hr>
+<h3 id="04-3">04 · 端到端流程（3 分钟）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "我们用一条主线把整个业务串起来——从客户的一句话询价，到您最后收到回款。11 步、5 个阶段、不断点。"
+> 
+> "第一步：客户问询——业务员录入客户，上传图纸 PDF。第二步：报价——工程师估工艺、估材料、估表处，系统自动算总价。第三步：订单——5/20 万分级审批，自动转工单。第四步：生产——工单排机台，扫码开工/报工/过站。第五步：回款——质检、入库、合同回款计划。"</blockquote>
+
+<p><strong>关键点</strong>：<br>
+- 突出"端到端"。客户最反感"我又要用 A 系统录一遍、再去 B 系统录一遍"。<br>
+- 用"5/20 万"具体数字，证明我们做过细活。</p>
+<p><strong>互动</strong>：可以问"您们现在报价到下单，跨几个系统？"——客户说"2-3 个"——"我们目标是一个。"</p>
+<hr>
+<h3 id="05-9-3">05 · 行业特点 9 条（3 分钟 · 取舍讲解）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "我们读了您的行业。CNC 机加工的 9 大特点，我们整理出来——9 个系统应对策略。"</blockquote>
+
+<p><strong>取舍</strong>：<br>
+- <strong>不要逐条念</strong>。挑 3-4 条展开：02 工序流转、03 委外、07 设备、09 产值。<br>
+- 02：复杂工序流转 → 扫码三码<br>
+- 03：委外频繁 → 工序委外 + 一键对账<br>
+- 07：设备依赖 → 机台排产 + 班别<br>
+- 09：产值合成 → 订单级利润</p>
+<p><strong>关键句</strong>：</p>
+<blockquote>
+<p>"9 条特点 ↔ 11 个 Epic ↔ 80 条 AC，三者一一映射。文档附录 A 还有 80+ 项行业 ERP 适合功能对照表。这是我们的功课。"</p>
+</blockquote>
+<hr>
+<h3 id="06-5-3">06 · 5 条设计原则（3 分钟）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "指导 11 个 Epic 的，是 5 条设计原则。"</blockquote>
+
+<p><strong>取舍</strong>：<br>
+- 重点讲 02 傻瓜测试 和 04 灵魂一致性。<br>
+- 原则 02 配"扫码报工 3 步完成"的例子。<br>
+- 原则 04 配"一码到底、一数到底"——这是封面念过的产品灵魂八字，<strong>后面每张幻灯片都要回响这八个字</strong>。</p>
+<p><strong>原则 05 善良设计</strong>：<br>
+- 这条要展开说。"我们不做'先发券再催回款'这种利用用户心理冲指标的设计。AI 放大人的能力，绝不控制或操纵。"<br>
+- 这条赢得技术决策者（CIO/CTO）的好感。</p>
+<hr>
+<h3 id="07-4">07 · 扫码三码（4 分钟 · 演示重头戏）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "接下来讲我们最得意的设计——扫码三码。"
+> 
+> "车间里最痛的事，是物料流转到一半不知道在哪。通用 ERP 让工人填表单、点工序，一填就是 5 分钟——车间主任说'填完料都不知道被谁搬走了'。"
+> 
+> "我们的方案：3 个码分工明确——<em>工单码记人和时间、流转码记物料去向、设备码记机台</em>。"</blockquote>
+
+<p><strong>展示卡片</strong>：<br>
+- 工单码：GD-20260604-001（蓝色边）<br>
+- 流转码：LZ-20260604-001（黄色边）<br>
+- 设备码：SB-CNC-03（绿色边）</p>
+<p><strong>设计巧思 callout</strong>：</p>
+<blockquote>
+<p>"<em>3 套码前缀不同（GD/LZ/SB），APP 扫码后无需选择场景——扫到哪个前缀，自动进入对应流程。操作工培训成本：0 分钟。</em>"</p>
+</blockquote>
+<p><strong>互动</strong>：举 1 个具体场景。</p>
+<blockquote>
+<p>"假设王师傅在 CNC-3 机台上加工 GD-20260604-001 这道工序。他扫一下工单码开工——系统自动记：操作工王师傅、开始时间 09:35、机台 CNC-3。30 分钟后他做完了，扫一下报工——输入完工数 100 件、合格 98 件、报废 2 件。检验合格后，他扫一下流转码 LZ-20260604-001——物料流转到下一道后加工工序，扫码自动结束这个工序的工时累计。"</p>
+</blockquote>
+<p><strong>关键点</strong>：<br>
+- 这一页是<strong>演示成功的关键</strong>。如果客户认可"扫码三码"是创意的，整个方案的可信度就上去了。<br>
+- 强调"培训成本 0 分钟"——这是给老板算账的卖点。</p>
+<hr>
+<h3 id="08-3">08 · 计件工资公式（3 分钟 · 必看页）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "把老师傅心里的算盘写成公式——这是系统设计的另一个功夫。"
+> 
+> "通用 ERP 的薪资模块只有'基本工资+绩效'。但 CNC 车间要算的是<em>合格件 × 单价 + 工时补差 − 报废扣款</em>，还得叠加工序系数、设备系数、夜班系数。"</blockquote>
+
+<p><strong>展示公式</strong>：</p>
+<div class="codehilite" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>WAGE = qualified_qty × piece_price 
+     + actual_hours × hour_rate
+     − scrapped_qty × deduct_rate
+WAGE ×= process_factor[工序]
+WAGE ×= shift_factor[白班/夜班]
+</code></pre></div>
+
+<p><strong>展示行业经验 callout</strong>：</p>
+<blockquote>
+<p>"通用 ERP 通常只能算到'本月工资 = X 元'。本方案能精确到：'张三在工单 GD-20260604-001 第 3 道精加工工序做了 87 件合格件，合格品单价 2.5 元，工时 6.5 小时拿补差 65 元，报废 2 件扣 20 元，夜班系数 1.2，本工序工资 = 87×2.5 + 65 − 20 = 262.5 × 1.3 × 1.2 = 409.5 元。'"</p>
+</blockquote>
+<p><strong>关键点</strong>：<br>
+- 工人最敏感的就是工资。把工资算清楚、算透明，车间不扯皮。<br>
+- 良品率预警 IF yield_rate &lt; 0.95 → notify(品检)：这条要在文档里展开。</p>
+<p><strong>互动</strong>：问客户"您们现在工人工资怎么算的？是不是每月都得吵一架？"</p>
+<hr>
+<h3 id="09-2">09 · 状态机（2 分钟）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "把'什么时候该做什么'写成状态机——这是数据一致性的关键。"
+> 
+> "通用 ERP 的'工单状态'通常只有 3 个：进行中、已完成、已关闭。CNC 工厂的状态有 7 个。"</blockquote>
+
+<p><strong>展示 ASCII 状态机</strong>：<br>
+- 7 个状态：已创建 → 待排产 → 已排产 → 加工中 → 已报工 → 已检验 → 已入库 → 已关闭<br>
+- 关键规则：禁止跳关、禁止回退（要走返工流程）</p>
+<p><strong>关键句</strong>：</p>
+<blockquote>
+<p>"<em>如果没有状态机，就会出现'工单已关闭但还在扫码报工'的脏数据</em>——这正是通用 ERP 让人抓狂的地方。"</p>
+</blockquote>
+<hr>
+<h3 id="10-3">10 · 金额分级审批（3 分钟 · 必看页）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "通用 ERP 的硬伤——'多级审批'四个字，没有具体阈值。我们修复了这个硬伤。"
+> 
+> "报价 5 万以下业务员直接报，5-20 万部门经理，20 万以上总经理——而且客户信用额度不足时强制总经理。"
+> 
+> "采购 1 万以下采购员，1-5 万采购主管，5 万以上总经理——单价超过历史均价 1.2 倍就强审。"
+> 
+> "付款超过 10 万，总经理 + 财务总监双签。"</blockquote>
+
+<p><strong>关键点</strong>：<br>
+- 阈值表给老板的"安全感"非常强——老板最怕"系统上来天天被审批轰炸"。<br>
+- 强调"所有阈值在系统参数表里可配"——灵活度。</p>
+<hr>
+<h3 id="11-3">11 · 架构务实性（3 分钟 · 技术决策者关心）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "我们不堆中间件、不卖弄技术。"
+> 
+> "3 个服务、1 个仓内公共 Module、单台 8 核 32G 服务器——扛 100 人。"</blockquote>
+
+<p><strong>展示架构图</strong>：<br>
+- erp-gateway（8080）→ erp-business（8082）→ erp-production（8083）→ erp-platform（8081）<br>
+- 底层：MySQL + Redis + MinIO + XXL-JOB</p>
+<p><strong>关键决策</strong>：<br>
+- "core 公共依赖放在 backend 仓内，不另起仓"——避免改一行 DTO 跨仓发包<br>
+- "Redis Stream 替代 RabbitMQ"——少一个进程、少一份故障<br>
+- "本地消息表 + XXL-JOB 补偿"——业务→财务一致性</p>
+<p><strong>互动</strong>：<br>
+- 客户问"3 服务够用吗？"——"1.5 倍容量余量，您 1 年后才需要扩。"<br>
+- 客户问"Redis Stream 可靠吗？"——"Stream 自带 ACK + Pending 重投，XXL-JOB 还能补偿扫描。生产级方案。"</p>
+<hr>
+<h3 id="12-2">12 · 离线扫码（2 分钟）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "车间 WiFi 死角，扫码不能停——这是车间主任最痛的事。"
+> 
+> "本方案的 APP 端内置 SQLite 离线缓存 500 条，网络恢复后自动批量上传。"</blockquote>
+
+<p><strong>冲突解决</strong>：<br>
+- "网络断了 4 小时，积压 200 条扫码，重连后 30 秒内全部上传。工时统计无丢失、无错位。"</p>
+<hr>
+<h3 id="13-11-epic-2">13 · 11 Epic 总览（2 分钟）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "全功能地图。V1.0 主链路 5 个 Epic，V1.1 深化 6 个 Epic。"</blockquote>
+
+<p><strong>关键数字</strong>：<br>
+- 11 Epic · 37 Story · 80+ AC<br>
+- V1.0 试点 5 个 Epic（主链路）<br>
+- V1.1 深化 6 个 Epic</p>
+<p><strong>取舍</strong>：不要逐 Epic 念，挑 1-2 个展开（如 <span class="pill pill-epic">E5</span> 生产执行核心、E11 报表看板）。</p>
+<hr>
+<h3 id="14-3">14 · 实施路径（3 分钟 · 老板最关心）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "不画大饼，给出可执行的步骤。"
+>
+> "3 步走、3 个月节奏紧凑——S1 试点车间 V1.0（5 个 Epic 跑通主链路），S2 全面推广 + V1.1 深化，S3 报表 + 持续优化。每个 Epic 都做穿，<em>比一次性铺 15 个模块再返工更安全</em>。"</blockquote>
+
+<p><strong>3 步走</strong>：<br>
+- S1（第 1 月）试点车间 V1.0<br>
+- S2（第 2 月）全面推广 + V1.1 深化<br>
+- S3（第 3 月）报表 + 持续优化</p>
+<p><strong>关键点</strong>：<br>
+- 风险控制策略：试点先跑通主链路，再深化。<br>
+- 节奏紧凑：每个 Epic 做完再做下一个，不铺大。</p>
+<hr>
+<h3 id="15-4">15 · 我们的承诺（4 分钟 · 收尾关键页）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "不是承诺完美，是承诺真诚。"
+>
+> "我们承诺 3 件事 + 1 个不承诺。"</blockquote>
+
+<p><strong>3 个承诺</strong>：<br>
+- ① 业务知识，系统化交付 —— 我们具备行业专业软件的完整交付能力：业务调研 → 流程建模 → 规则数字化 → 系统落地 → 持续优化。<br>
+- ② 系统的活，我们扛 —— 系统设计、数据库、并发、容灾、运维，吃饭的手艺。<br>
+- ③ 迭代共建 —— 系统上线后，我们建立线上反馈机制，<em>用 3 个月的时间</em>与车间、仓管、业务员、工程师一起持续打磨——把系统紧密融入到生产现场，切实提升效率和管理水平。</p>
+<p><strong>1 个不承诺</strong>：</p>
+<blockquote>
+<p>"<strong>我们不承诺：系统能 100% 解决您的管理问题。</strong>"</p>
+<p>"不会的。系统只是工具，能把老师傅脑子里的活地图外化为新人能查的明规则——但老板的决断、员工的积极性、外协厂商的人情世故，这些系统管不了。"</p>
+<p>"我们承诺的是：<em>把能系统化的部分做到 100 分，把不能系统化的部分如实告诉您</em>。"</p>
+</blockquote>
+<p><strong>关键点</strong>：<br>
+- <strong>主动暴露弱点</strong>反而加分。客户最反感"我什么都行"——这页诚实。<br>
+- ③ 迭代共建的承诺很实在：不是抽象的"我们一直陪着您"，而是<em>具体到 3 个月、线上反馈机制</em>，可执行可验证。</p>
+<hr>
+<h3 id="16-30">16 · 结束页（30 秒）</h3>
+<blockquote class="speaker-tip">> **💬 口播稿**
+>
+**口播**：
+> "把老师傅的活地图变成系统的明规则。"
+>
+> "把业务知识挖出来、写成规则、变成流程、跑成数据——这是行业专业软件交付的看家本领。"
+>
+> "期待与您共建这套一码到底、一数到底的 CNC 工厂 ERP。"</blockquote>
+
+<p><strong>动作</strong>：<br>
+- 停顿 3 秒。<br>
+- 进入答疑。</p>
+<hr>
+<h2 id="_7">答疑高频问题</h2>
+<h3 id="q1-cnc"><span class="pill pill-q">Q1</span> "你们之前做过 CNC 行业吗？"</h3>
+<p><strong>A</strong>:</p>
+<blockquote>
+<p>"我们在精密机加工、机加工车间的 MES 项目上有积累，3C 行业的离散制造 ERP 也有完整交付经验。CNC 行业的特殊性——扫码三码、计件公式、状态机——我们做了大量调研：经过多家 CNC 加工厂业务对接、读了 200+ 页行业资料、整理了 80+ 项行业 ERP 适合功能对照表（PRD 附录 A）。"</p>
+<p>"更重要的是：<em>我们具备把业务知识铸成系统规则的工程化能力</em>。您是 15 年 CNC 行业老师傅——您懂业务、我们懂系统设计，分工合作。"</p>
+</blockquote>
+<h3 id="q2"><span class="pill pill-q">Q2</span> "实施要多久？价格多少？"</h3>
+<p><strong>A</strong>:</p>
+<blockquote>
+<p>"节奏是 3 步走 3 个月——S1 试点 S2 推广 S3 持续优化。价格等您认可方案后我们做实施报价，但量级我可以说一下：<em>V1.0 试点 5 个 Epic 是我们服务的核心</em>。我们不在今天谈钱，今天只对方案。"</p>
+</blockquote>
+<h3 id="q3"><span class="pill pill-q">Q3</span> "用友/金蝶不行吗？"</h3>
+<p><strong>A</strong>:</p>
+<blockquote>
+<p>"完全可以用。通用 ERP 的优势是稳，但劣势是行业特性弱——扫码三码、计件公式、扫码过站都得二次开发。我们做的就是把这部分'二开'变成'开箱即用'。"</p>
+<p>"选通用 ERP + 二开，还是选行业 ERP——取决于您是想'全公司用一套系统'还是'车间用一套'。如果车间主任说'我要扫码三码、计件公式'，通用 ERP 做不到。"</p>
+</blockquote>
+<h3 id="q4"><span class="pill pill-q">Q4</span> "数据安全怎么办？我们老板最怕数据泄露。"</h3>
+<p><strong>A</strong>:</p>
+<blockquote>
+<p>"三层防护：① 单机私有化部署，数据不出您的机房；② 敏感字段（身份证/手机号/银行卡）字段级 AES-256 加密；③ 所有写操作审计日志，6 个月可查。"</p>
+<p>"而且 XXL-JOB 每天 00:30 自动备份，保留 30 天。如果担心，再加一个异地备份到阿里云 OSS。"</p>
+</blockquote>
+<h3 id="q5-app"><span class="pill pill-q">Q5</span> "操作工不会用 APP 怎么办？"</h3>
+<p><strong>A</strong>:</p>
+<blockquote>
+<p>"这是我们最重视的事。扫码三码的设计就是<em>培训成本 0 分钟</em>——前缀自动识别（GD 工单 / LZ 流转 / SB 设备），扫到哪个就进哪个流程。操作工不需要选场景、不需要填表单。"</p>
+<p>"但我们<em>会先在 1-2 个车间试点 1 个月</em>，用真实场景验证培训效果。如果试点车间反馈'老人不愿意用'，我们再回头改。"</p>
+</blockquote>
+<h3 id="q6-it"><span class="pill pill-q">Q6</span> "我们自己有 IT 部门，方案能配合他们吗？"</h3>
+<p><strong>A</strong>:</p>
+<blockquote>
+<p>"完全可以。PRD §8 给后端/前端/APP 三端都有 Handoff 提示——后端禁止 double/float 算金额、APP 端 zxing-android-embedded 扫码、前端 Element Plus 组件库——都明确了。您的 IT 同事可以 review 我们代码、提修改意见。"</p>
+<p>"实际上，我们鼓励您的 IT 部门深度参与——他们比我们更懂您的内部规范。"</p>
+</blockquote>
+<hr>
+<h2 id="_8">演示节奏总览</h2>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>内容</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>00:00 - 00:30</td>
+<td>封面</td>
+<td>一句话定调</td>
+</tr>
+<tr>
+<td>00:30 - 02:30</td>
+<td>开场（老板痛点）</td>
+<td>共情</td>
+</tr>
+<tr>
+<td>02:30 - 05:30</td>
+<td>方法论（专业软件交付能力）</td>
+<td><strong>关键页</strong></td>
+</tr>
+<tr>
+<td>05:30 - 08:30</td>
+<td>端到端流程</td>
+<td>串起全局</td>
+</tr>
+<tr>
+<td>08:30 - 11:30</td>
+<td>9 行业特点</td>
+<td>体现"做过功课"</td>
+</tr>
+<tr>
+<td>11:30 - 14:30</td>
+<td>5 设计原则</td>
+<td>灵魂一致性</td>
+</tr>
+<tr>
+<td>14:30 - 18:30</td>
+<td>扫码三码</td>
+<td><strong>演示重头戏</strong></td>
+</tr>
+<tr>
+<td>18:30 - 21:30</td>
+<td>计件工资公式</td>
+<td><strong>必看页</strong></td>
+</tr>
+<tr>
+<td>21:30 - 23:30</td>
+<td>状态机</td>
+<td>数据一致性</td>
+</tr>
+<tr>
+<td>23:30 - 26:30</td>
+<td>金额阈值</td>
+<td><strong>硬伤修复</strong></td>
+</tr>
+<tr>
+<td>26:30 - 29:30</td>
+<td>架构务实性</td>
+<td>技术决策者</td>
+</tr>
+<tr>
+<td>29:30 - 31:30</td>
+<td>离线扫码</td>
+<td>车间场景</td>
+</tr>
+<tr>
+<td>31:30 - 33:30</td>
+<td>11 Epic 总览</td>
+<td>完整地图</td>
+</tr>
+<tr>
+<td>33:30 - 36:30</td>
+<td>实施路径（3 月节奏）</td>
+<td>老板最关心</td>
+</tr>
+<tr>
+<td>36:30 - 40:30</td>
+<td>我们的承诺</td>
+<td><strong>收尾关键</strong></td>
+</tr>
+<tr>
+<td>40:30 - 41:00</td>
+<td>结束页</td>
+<td>期待合作</td>
+</tr>
+<tr>
+<td>41:00 - 60:00</td>
+<td>答疑</td>
+<td>留 19 分钟给客户</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="_9">演示前的最后检查</h2>
+<ul>
+<li>[ ] 提前 30 分钟到场，测试投影、HDMI/USB-C、激光笔</li>
+<li>[ ] 双屏备份：笔记本电脑 + 平板（PDF 版）</li>
+<li>[ ] 投影分辨率设 1920x1080，浏览器全屏</li>
+<li>[ ] 关闭所有通知、弹窗、屏保</li>
+<li>[ ] 把激光笔 / 鼠标器放在顺手位置</li>
+<li>[ ] 提前打开 HTML，按 F 进入全屏，第一张幻灯片就绪</li>
+<li>[ ] 打印 3 份演讲备注（speaker notes），自己手边一份</li>
+<li>[ ] PRD V1.3.1 PDF 备份一份（客户要时可发）</li>
+<li>[ ] 客户名单提前看一遍（CEO/车间主任/IT 主管/财务/HR）</li>
+</ul>
+<hr>
+<h2 id="_10">应急方案</h2>
+<table>
+<thead>
+<tr>
+<th>故障</th>
+<th>应对</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>投影不亮</td>
+<td>用平板替代；HTML 响应式适配移动端</td>
+</tr>
+<tr>
+<td>客户中途打断</td>
+<td>切换到 TOC（按 T 键），直接跳到客户问的章节</td>
+</tr>
+<tr>
+<td>客户挑战技术细节</td>
+<td>"这部分让我们的架构师会后详细对您讲，今天我们对方案。"</td>
+</tr>
+<tr>
+<td>客户要求看 PRD</td>
+<td>拿出打印稿，标重点章节</td>
+</tr>
+<tr>
+<td>客户当场拍板</td>
+<td>不要立刻答应！<em>说"我们回去做实施报价，3 个工作日内给您"</em></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>祝演示成功！</strong> 🎯</p>
+  </main>
+</div>
+<button id="back-to-top" title="返回顶部">↑</button>
+<script>
+(function(){
+  var toc = document.getElementById('toc-list');
+  var headings = document.querySelectorAll('main.content h2, main.content h3, main.content h4');
+  headings.forEach(function(h){
+    if(!h.id){
+      h.id = h.textContent.trim()
+        .toLowerCase()
+        .replace(/[\s\W\-]+/g,'-')
+        .replace(/^-+|-+$/g,'')
+        .substring(0,80);
+    }
+    var li = document.createElement('li');
+    li.className = 'lvl-' + h.tagName.charAt(1);
+    var a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.textContent = h.textContent.trim();
+    li.appendChild(a);
+    toc.appendChild(li);
+  });
+  var btn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function(){
+    btn.style.display = window.scrollY > 400 ? 'flex' : 'none';
+  });
+  btn.addEventListener('click', function(){
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+  var links = toc.querySelectorAll('a');
+  function highlight(){
+    var fromTop = window.scrollY + 80;
+    var current = null;
+    headings.forEach(function(h){
+      if(h.offsetTop <= fromTop) current = h;
+    });
+    links.forEach(function(a){
+      a.style.background = '';
+      a.style.color = '';
+      if(current && a.getAttribute('href') === '#' + current.id){
+        a.style.background = 'var(--c-accent-soft)';
+        a.style.color = 'var(--c-accent)';
+        a.style.fontWeight = '600';
+      }
+    });
+  }
+  window.addEventListener('scroll', highlight);
+  highlight();
+  document.querySelectorAll('pre > code').forEach(function(c){
+    var cls = c.className || '';
+    var m = cls.match(/language-(\w+)/);
+    if(m){ c.parentElement.setAttribute('data-lang', m[1]); }
+  });
+})();
+</script>
+</body>
+</html>

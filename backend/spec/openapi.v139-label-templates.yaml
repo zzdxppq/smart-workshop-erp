@@ -1,0 +1,63 @@
+# V1.3.9 Sprint 12 Story 12.3 · 2 端点 paths
+# 追加到 openapi.yaml 的 paths 块之前
+
+  /label-templates:
+    get:
+      tags: [E12-Label]
+      summary: 查标签模板元数据（type 可选 · 不传返回 5 种）
+      operationId: listLabelTemplates
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: type,    schema: { type: string, enum: [GD, LZ, SB, WW, WL] } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 模板列表（GD/LZ/SB/WW/WL · SB 由代码层 fallback 注入）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LabelTemplateListResponse' }
+        '400':
+          description: type 不支持（40002）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+
+  /label-templates/preview:
+    post:
+      tags: [E12-Label]
+      summary: 生成标签预览 PNG base64（ZXing + 三区布局）
+      operationId: previewLabel
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LabelPreviewRequest' }
+      responses:
+        '200':
+          description: 预览生成成功（base64 PNG）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LabelPreviewResponse' }
+        '400':
+          description: 参数无效（40001 · lines 超 6 / qr_content 空）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '422':
+          description: qr_content 超 200 字符 · factory_name 超 20 字符（42201）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }

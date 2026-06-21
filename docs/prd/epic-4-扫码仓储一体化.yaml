@@ -1,0 +1,31 @@
+epic_id: 4
+title: "扫码仓储一体化"
+description: |
+  WHY：仓管员每天花在"找料、记账、对数"上 3 小时以上。
+           APP 扫码让"扫一下、按一下"就能完成出入库；
+           老师傅不用教，新人 10 分钟上手。
+
+stories:
+  - id: "4.1"
+    title: "物料条码生成"
+    estimated_complexity: medium
+    priority: P0
+    repository_type: backend
+
+  - id: "4.2"
+    title: "APP 扫码出入库"
+    estimated_complexity: high
+    priority: P0
+    repository_type: android
+
+  - id: "4.3"
+    title: "库位批次与多仓库"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+
+  - id: "4.4"
+    title: "安全库存与预警"
+    estimated_complexity: low
+    priority: P1
+    repository_type: backend

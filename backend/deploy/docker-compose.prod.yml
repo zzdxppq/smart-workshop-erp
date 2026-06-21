@@ -1,0 +1,161 @@
+# 生产 Docker Compose（服务器 /opt/deploy · 拉取远程镜像 + env.prod 运行）
+# 本地构建推送：deploy/push-images.ps1
+# 服务器启动：  /opt/deploy/run-prod.sh start
+#
+# 端口：gateway 9080 · platform 9081 · business 9082 · production 9083
+#       redis 6379（仅容器内网，不映射宿主机）
+#       minio API 9000 · 控制台 9001（宿主机 http://10.100.6.14:9001）
+# MinIO 默认 Docker Hub；桶由 run-prod.sh 启动后 curl 创建（不依赖 minio/mc）
+
+services:
+  redis:
+    image: ${REDIS_IMAGE:-redis:7.2}
+    container_name: erp-redis
+    env_file:
+      - env.prod
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - ${REDIS_MAXMEMORY:-1gb}
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2024-05-10T01-41-38Z}
+    container_name: erp-minio
+    env_file:
+      - env.prod
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT}:${MINIO_API_PORT}"
+      - "${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_PORT}"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+  erp-gateway:
+    image: ${ERP_IMAGE_REGISTRY}/erp-gateway:${ERP_IMAGE_TAG}
+    container_name: erp-gateway
+    env_file:
+      - env.prod
+    environment:
+      PROFILE: prod
+      SERVER_PORT: ${ERP_GATEWAY_PORT}
+    ports:
+      - "${ERP_GATEWAY_PORT}:${ERP_GATEWAY_PORT}"
+    depends_on:
+      - erp-platform
+      - erp-business
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  erp-platform:
+    image: ${ERP_IMAGE_REGISTRY}/erp-platform:${ERP_IMAGE_TAG}
+    container_name: erp-platform
+    env_file:
+      - env.prod
+    environment:
+      PROFILE: prod
+      SERVER_PORT: ${ERP_PLATFORM_PORT}
+      MYSQL_DATABASE: cnc_platform
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DATABASE: ${REDIS_DATABASE:-0}
+      XXL_JOB_ADMIN: ${XXL_JOB_ADMIN}
+      XXL_JOB_APPNAME: ${XXL_JOB_APPNAME_PLATFORM}
+      XXL_JOB_EXECUTOR_PORT: ${XXL_JOB_PORT_PLATFORM}
+    ports:
+      - "${ERP_PLATFORM_PORT}:${ERP_PLATFORM_PORT}"
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  erp-business:
+    image: ${ERP_IMAGE_REGISTRY}/erp-business:${ERP_IMAGE_TAG}
+    container_name: erp-business
+    env_file:
+      - env.prod
+    environment:
+      PROFILE: prod
+      SERVER_PORT: ${ERP_BUSINESS_PORT}
+      MYSQL_DATABASE: cnc_business
+      MYSQL_PRODUCTION_DATABASE: cnc_production
+      PRODUCTION_SERVICE_URL: http://erp-production:${ERP_PRODUCTION_PORT:-9083}
+      PLATFORM_SERVICE_URL: http://erp-platform:${ERP_PLATFORM_PORT:-9081}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DATABASE: ${REDIS_DATABASE:-0}
+      XXL_JOB_ADMIN: ${XXL_JOB_ADMIN}
+      XXL_JOB_APPNAME: ${XXL_JOB_APPNAME_BUSINESS}
+      XXL_JOB_EXECUTOR_PORT: ${XXL_JOB_PORT_BUSINESS}
+      ERP_INTERNAL_TOKEN: ${ERP_INTERNAL_TOKEN}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_DRAWING: ${MINIO_BUCKET_DRAWING}
+    ports:
+      - "${ERP_BUSINESS_PORT}:${ERP_BUSINESS_PORT}"
+    depends_on:
+      redis:
+        condition: service_healthy
+      erp-platform:
+        condition: service_started
+      minio:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  erp-production:
+    image: ${ERP_IMAGE_REGISTRY}/erp-production:${ERP_IMAGE_TAG}
+    container_name: erp-production
+    env_file:
+      - env.prod
+    environment:
+      PROFILE: prod
+      SERVER_PORT: ${ERP_PRODUCTION_PORT}
+      MYSQL_DATABASE: cnc_production
+      BUSINESS_SERVICE_URL: http://erp-business:${ERP_BUSINESS_PORT:-9082}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DATABASE: ${REDIS_DATABASE:-0}
+      XXL_JOB_ADMIN: ${XXL_JOB_ADMIN}
+      XXL_JOB_APPNAME: ${XXL_JOB_APPNAME_PRODUCTION}
+      XXL_JOB_EXECUTOR_PORT: ${XXL_JOB_PORT_PRODUCTION}
+      ERP_INTERNAL_TOKEN: ${ERP_INTERNAL_TOKEN}
+    ports:
+      - "${ERP_PRODUCTION_PORT}:${ERP_PRODUCTION_PORT}"
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  minio-data:

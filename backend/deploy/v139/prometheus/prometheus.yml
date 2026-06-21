@@ -1,0 +1,66 @@
+# prometheus/prometheus.yml - 昆山佰泰胜 ERP V1.3.9 Prometheus 配置
+# 配套 docker-compose.{cloud,local}.yml · scrape 9 个目标
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    cluster: erp-v139
+    env: production
+
+# 告警路由（Alertmanager 暂未部署 · 保留 hook）
+# route:
+#   receiver: 'erp-default'
+#   group_by: ['alertname', 'service']
+#   group_wait: 30s
+#   group_interval: 5m
+#   repeat_interval: 1h
+
+scrape_configs:
+  # Prometheus 自身
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ERP 业务服务（Spring Boot Actuator /actuator/prometheus）
+  - job_name: 'erp-platform'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['erp-platform:8081']
+        labels: { service: 'erp-platform', tier: 'backend' }
+
+  - job_name: 'erp-business'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['erp-business:8082']
+        labels: { service: 'erp-business', tier: 'backend' }
+
+  - job_name: 'erp-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['erp-gateway:8080']
+        labels: { service: 'erp-gateway', tier: 'gateway' }
+
+  # MySQL（mysqld_exporter · 本期不部署 · 预留）
+  # - job_name: 'mysql'
+  #   static_configs:
+  #     - targets: ['mysql-exporter:9104']
+
+  # Redis（redis_exporter · 本期不部署 · 预留）
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # Nacos
+  - job_name: 'nacos'
+    metrics_path: '/nacos/actuator/prometheus'
+    static_configs:
+      - targets: ['nacos:8848']
+        labels: { service: 'nacos', tier: 'registry' }
+
+  # SkyWalking OAP 自带 metrics
+  - job_name: 'skywalking-oap'
+    static_configs:
+      - targets: ['skywalking-oap:1234']
+        labels: { service: 'skywalking-oap', tier: 'apm' }

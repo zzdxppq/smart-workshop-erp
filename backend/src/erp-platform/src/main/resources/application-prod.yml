@@ -1,0 +1,11 @@
+spring:
+  config:
+    import: optional:classpath:application-shared-prod.yml
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:10.100.4.10}:${MYSQL_PORT:3306}/cnc_platform?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+
+xxl:
+  job:
+    executor:
+      appname: ${XXL_JOB_APPNAME:xxl-job-erp-platform}
+      port: ${XXL_JOB_EXECUTOR_PORT:9991}

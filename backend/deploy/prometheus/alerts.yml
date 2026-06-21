@@ -1,0 +1,23 @@
+groups:
+- name: erp-alerts
+  rules:
+  - alert: HighErrorRate
+    expr: rate(http_server_requests_seconds_count{status=~"5.."}[5m]) > 0.1
+    for: 5m
+    labels: { severity: critical }
+    annotations: { summary: "Backend 5xx 错误率 > 10%" }
+  - alert: OutsubOverdue
+    expr: outsub_overdue_count > 5
+    for: 30m
+    labels: { severity: warning }
+    annotations: { summary: "委外逾期单数 > 5" }
+  - alert: EmailQuotaWarning
+    expr: email_quota_used / email_quota_total > 0.8
+    for: 1h
+    labels: { severity: warning }
+    annotations: { summary: "163 邮箱额度使用 > 80%" }
+  - alert: DEKFileMissing
+    expr: up{job="dek-file-watch"} == 0
+    for: 5m
+    labels: { severity: critical }
+    annotations: { summary: "DEK 文件丢失 · V1.3.6 fail-fast" }

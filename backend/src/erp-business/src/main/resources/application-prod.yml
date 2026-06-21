@@ -1,0 +1,21 @@
+spring:
+  config:
+    import: optional:classpath:application-shared-prod.yml
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:10.100.4.10}:${MYSQL_PORT:3306}/cnc_business?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+
+app:
+  production:
+    url: ${PRODUCTION_SERVICE_URL:http://erp-production:9083}
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://minio:9000}
+    access-key: ${MINIO_ACCESS_KEY:erp-minio}
+    secret-key: ${MINIO_SECRET_KEY:Mc8kczjMinio2026Xp9Q}
+    bucket-drawing: ${MINIO_BUCKET_DRAWING:erp-drawing}
+    use-local-fallback: false
+
+xxl:
+  job:
+    executor:
+      appname: ${XXL_JOB_APPNAME:xxl-job-erp-business}
+      port: ${XXL_JOB_EXECUTOR_PORT:9992}

@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CNC 加工厂 ERP 系统设计方案 | 客户评审</title>
+<style>
+/* ============================================
+   Design tokens — 冷静、工程感、低饱和
+   ============================================ */
+:root{
+  --c-bg: #fafbfc;
+  --c-bg-deep: #ffffff;
+  --c-fg: #1f2328;
+  --c-fg-mid: #57606a;
+  --c-fg-soft: #8b949e;
+  --c-border: #d0d7de;
+  --c-border-soft: #eaeef2;
+  --c-accent: #0969da;
+  --c-accent-deep: #0550ae;
+  --c-accent-soft: #ddf4ff;
+  --c-warn: #bf8700;
+  --c-warn-soft: #fff8c5;
+  --c-danger: #cf222e;
+  --c-success: #1a7f37;
+  --c-tag: #8250df;
+  --c-paper: #f6f8fa;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC",
+               "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", Menlo, Consolas,
+               "Source Han Mono SC", "Microsoft YaHei Mono", monospace;
+
+  --shadow-sm: 0 1px 2px rgba(31,35,40,.06);
+  --shadow-md: 0 3px 12px rgba(31,35,40,.08);
+  --shadow-lg: 0 8px 28px rgba(31,35,40,.12);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;width:100%}
+body{
+  font-family:var(--font-sans);
+  background:#0d1117;
+  color:var(--c-fg);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* ============================================
+   Stage — deck canvas (auto-fit to viewport)
+   ============================================
+   设计：所有内边距、字号、间距用 vmin 缩放，
+   任何屏幕（13 寸 1280x800 起、外接 4K）都能完整呈现。
+   ============================================ */
+.stage{
+  position:relative;
+  width:100vw;height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at top, #1c2128 0%, #0d1117 60%);
+  overflow:hidden;
+}
+
+/* 用 vmin 缩放，1600 基准 = 16:9 的 1600x900 */
+.deck{
+  position:relative;
+  /* 高度 = 100vh - 安全边距 40px；宽度 = 高度 × 16/9 */
+  width:min(calc((100vh - 40px) * 16 / 9), 100vw);
+  height:calc(min(calc((100vh - 40px) * 16 / 9), 100vw) * 9 / 16);
+  background:var(--c-bg);
+  border-radius:8px;
+  box-shadow:var(--shadow-lg);
+  overflow:hidden;
+}
+
+.slide{
+  position:absolute;inset:0;
+  /* 用 vmin 缩放内边距：基准 900px → 6.4vmin 约等于 58px */
+  padding:4.4vmin 7.2vmin 5.6vmin;
+  background:var(--c-bg);
+  display:flex;flex-direction:column;
+  opacity:0;
+  transform:translateX(2.5vmin);
+  transition:opacity .45s ease, transform .5s cubic-bezier(.2,.8,.2,1);
+  pointer-events:none;
+  overflow:hidden;
+}
+.slide.active{
+  opacity:1;transform:translateX(0);
+  pointer-events:auto;
+}
+.slide.prev{transform:translateX(-2.5vmin)}
+
+/* Header / Footer chrome */
+.slide-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:1.2vmin;margin-bottom:2.2vmin;
+  border-bottom:1px solid var(--c-border-soft);
+  font-size:1.3vmin;letter-spacing:.3px;
+  color:var(--c-fg-soft);
+  flex-shrink:0;
+}
+.slide-header .brand{
+  font-weight:600;color:var(--c-fg-mid);
+  display:flex;align-items:center;gap:.7vmin;
+}
+.slide-header .brand .dot{
+  width:.6vmin;height:.6vmin;border-radius:50%;
+  background:var(--c-accent);
+  box-shadow:0 0 0 .3vmin var(--c-accent-soft);
+}
+.slide-header .section{font-family:var(--font-mono);text-transform:uppercase}
+
+.slide-footer{
+  position:absolute;left:7.2vmin;right:7.2vmin;bottom:2.2vmin;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:1.2vmin;color:var(--c-fg-soft);
+  font-family:var(--font-mono);
+}
+.slide-footer .num{color:var(--c-accent);font-weight:600}
+
+/* Page title */
+h1.title{
+  font-size:3.6vmin;line-height:1.15;font-weight:700;
+  color:var(--c-fg);letter-spacing:-.04vmin;
+  margin-bottom:.8vmin;
+}
+h2.title{
+  font-size:2.6vmin;line-height:1.2;font-weight:600;
+  color:var(--c-fg);letter-spacing:-.025vmin;
+  margin-bottom:1.4vmin;
+}
+.kicker{
+  font-family:var(--font-mono);
+  font-size:1.4vmin;letter-spacing:.15vmin;
+  color:var(--c-accent);text-transform:uppercase;
+  margin-bottom:1.2vmin;display:flex;align-items:center;gap:.7vmin;
+}
+.kicker::before{
+  content:"";display:inline-block;width:2.4vmin;height:.2vmin;
+  background:var(--c-accent);
+}
+.subtitle{font-size:1.8vmin;color:var(--c-fg-mid);line-height:1.6;max-width:78vmin}
+
+.lead{font-size:2vmin;color:var(--c-fg);line-height:1.7;max-width:88vmin}
+.lead em{font-style:normal;color:var(--c-accent);font-weight:600}
+.lead strong{color:var(--c-fg);font-weight:600;border-bottom:.2vmin solid var(--c-warn)}
+
+.divider{
+  width:4.8vmin;height:.3vmin;background:var(--c-accent);
+  margin:1.8vmin 0;
+}
+
+/* ============================================
+   Content cards & grids
+   ============================================ */
+.cards{display:grid;gap:1.4vmin}
+.cards.c2{grid-template-columns:1fr 1fr}
+.cards.c3{grid-template-columns:repeat(3, 1fr)}
+.cards.c4{grid-template-columns:repeat(4, 1fr)}
+
+.card{
+  background:var(--c-bg-deep);
+  border:1px solid var(--c-border);
+  border-radius:.6vmin;
+  padding:1.8vmin 2vmin;
+  position:relative;
+  transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.card:hover{
+  transform:translateY(-.2vmin);
+  box-shadow:var(--shadow-md);
+  border-color:var(--c-accent);
+}
+.card .icon{
+  width:2.8vmin;height:2.8vmin;border-radius:.6vmin;
+  background:var(--c-accent-soft);color:var(--c-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-weight:700;font-size:1.4vmin;
+  margin-bottom:1.2vmin;
+}
+.card h3{font-size:1.55vmin;font-weight:600;color:var(--c-fg);margin-bottom:.6vmin}
+.card p{font-size:1.3vmin;color:var(--c-fg-mid);line-height:1.6}
+.card .num{
+  position:absolute;top:1.4vmin;right:1.6vmin;
+  font-family:var(--font-mono);font-size:1.1vmin;color:var(--c-fg-soft);
+  letter-spacing:.1vmin;
+}
+
+/* Process flow */
+.flow{
+  display:flex;align-items:stretch;gap:0;
+  margin:1.4vmin 0;
+  flex-wrap:wrap;
+}
+.flow .step{
+  flex:1 1 0;min-width:0;background:var(--c-bg-deep);
+  border:1px solid var(--c-border);
+  border-radius:.6vmin;padding:1.4vmin 1.6vmin;
+  position:relative;
+  min-height:8vmin;
+}
+.flow .arrow{
+  align-self:center;
+  color:var(--c-fg-soft);font-size:1.8vmin;padding:0 .6vmin;
+  font-family:var(--font-mono);
+}
+.flow .step .badge{
+  display:inline-block;font-family:var(--font-mono);font-size:1.05vmin;
+  color:var(--c-accent);background:var(--c-accent-soft);
+  padding:.15vmin .6vmin;border-radius:.8vmin;margin-bottom:.6vmin;
+  letter-spacing:.05vmin;
+}
+.flow .step h4{font-size:1.4vmin;font-weight:600;margin-bottom:.4vmin}
+.flow .step p{font-size:1.2vmin;color:var(--c-fg-mid);line-height:1.45}
+
+/* Tables */
+table.t{
+  width:100%;border-collapse:collapse;
+  background:var(--c-bg-deep);
+  border:1px solid var(--c-border);border-radius:.6vmin;overflow:hidden;
+  font-size:1.3vmin;
+}
+table.t th, table.t td{
+  padding:.9vmin 1.2vmin;text-align:left;border-bottom:1px solid var(--c-border-soft);
+  vertical-align:top;
+}
+table.t th{
+  background:var(--c-paper);font-weight:600;color:var(--c-fg);
+  font-size:1.2vmin;letter-spacing:.03vmin;
+}
+table.t tr:last-child td{border-bottom:0}
+table.t tr:hover td{background:var(--c-paper)}
+table.t td.mono{font-family:var(--font-mono);font-size:1.2vmin;color:var(--c-accent-deep)}
+table.t td.check{color:var(--c-success);font-weight:600}
+
+/* Quote / callout */
+.callout{
+  background:var(--c-paper);
+  border-left:.4vmin solid var(--c-accent);
+  padding:1.4vmin 1.8vmin;border-radius:0 .5vmin .5vmin 0;
+  font-size:1.4vmin;color:var(--c-fg);line-height:1.7;
+  margin:1.4vmin 0;
+}
+.callout.warn{border-left-color:var(--c-warn);background:var(--c-warn-soft)}
+.callout .who{
+  display:block;font-size:1.1vmin;color:var(--c-fg-soft);
+  font-family:var(--font-mono);margin-bottom:.5vmin;letter-spacing:.05vmin;
+}
+
+/* Code / formula block */
+pre.formula{
+  background:var(--c-bg-deep);
+  border:1px solid var(--c-border);
+  border-radius:.6vmin;
+  padding:1.4vmin 1.8vmin;
+  font-family:var(--font-mono);font-size:1.3vmin;
+  color:var(--c-fg);
+  position:relative;overflow:auto;
+  line-height:1.55;
+}
+pre.formula .comment{color:var(--c-fg-soft);font-style:italic}
+pre.formula .key{color:var(--c-accent);font-weight:600}
+pre.formula .var{color:var(--c-tag)}
+
+/* ASCII art box */
+pre.ascii{
+  background:#0d1117;color:#c9d1d9;
+  border-radius:.6vmin;padding:1.6vmin 2vmin;
+  font-family:var(--font-mono);font-size:1.15vmin;line-height:1.5;
+  overflow:auto;box-shadow:var(--shadow-md);
+}
+pre.ascii .c1{color:#79c0ff}   /* accent */
+pre.ascii .c2{color:#a5d6ff}   /* accent-soft */
+pre.ascii .c3{color:#7ee787}   /* success */
+pre.ascii .c4{color:#d2a8ff}   /* tag */
+pre.ascii .c5{color:#ffa657}   /* warn */
+pre.ascii .c6{color:#f85149}   /* danger */
+
+/* Two column */
+.two-col{display:grid;grid-template-columns:1.1fr 1fr;gap:2.4vmin;flex:1;align-items:start;min-height:0}
+
+/* Quote — boss voice */
+.boss-voice{
+  background:linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  color:#c9d1d9;border-radius:1vmin;padding:2.4vmin 2.8vmin;
+  font-size:1.7vmin;line-height:1.7;
+  position:relative;
+  box-shadow:var(--shadow-md);
+}
+.boss-voice::before{
+  content:"\201C";position:absolute;top:-.8vmin;left:1.4vmin;
+  font-size:8vmin;color:#58a6ff;opacity:.4;
+  font-family:Georgia,serif;line-height:1;
+}
+.boss-voice .who{
+  display:block;margin-top:1.4vmin;
+  font-family:var(--font-mono);font-size:1.1vmin;
+  color:#8b949e;letter-spacing:.08vmin;
+}
+
+/* Tags */
+.tags{display:flex;flex-wrap:wrap;gap:.4vmin;margin-top:.8vmin}
+.tag{
+  display:inline-block;font-family:var(--font-mono);font-size:1.05vmin;
+  padding:.15vmin .6vmin;border-radius:.3vmin;
+  background:var(--c-paper);color:var(--c-fg-mid);
+  border:1px solid var(--c-border-soft);
+}
+.tag.p0{background:#ffe0e0;color:#a40000;border-color:#ffb3b3}
+.tag.p1{background:#fff4d6;color:#7a5800;border-color:#ffd97d}
+.tag.epic{background:var(--c-accent-soft);color:var(--c-accent-deep);border-color:#99d4ff}
+
+/* Stat grid */
+.stats{display:grid;grid-template-columns:repeat(3, 1fr);gap:1.4vmin;margin-top:.6vmin}
+.stat{
+  background:var(--c-bg-deep);border:1px solid var(--c-border);
+  border-radius:.6vmin;padding:1.5vmin 1.7vmin;
+}
+.stat .v{
+  font-family:var(--font-mono);font-size:3.4vmin;font-weight:600;
+  color:var(--c-accent);line-height:1;margin-bottom:.5vmin;
+  letter-spacing:-.05vmin;
+}
+.stat .l{font-size:1.25vmin;color:var(--c-fg-mid);line-height:1.4}
+.stat .d{font-size:1.05vmin;color:var(--c-fg-soft);margin-top:.4vmin;font-family:var(--font-mono)}
+
+/* ============================================
+   Controls / chrome
+   ============================================ */
+.controls{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:12px;
+  background:rgba(13,17,23,.85);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;padding:8px 16px;
+  font-family:var(--font-mono);font-size:12px;color:#c9d1d9;
+  box-shadow:var(--shadow-md);
+  z-index:10;
+}
+.controls button{
+  background:transparent;border:0;color:#c9d1d9;cursor:pointer;
+  font-size:14px;padding:4px 10px;border-radius:6px;
+  transition:background .15s;
+}
+.controls button:hover{background:rgba(255,255,255,.08)}
+.controls .counter{color:#79c0ff;font-weight:600;padding:0 8px;min-width:60px;text-align:center}
+
+.progress{
+  position:fixed;top:0;left:0;height:3px;background:var(--c-accent);
+  width:0;transition:width .4s ease;z-index:10;
+  box-shadow:0 0 8px var(--c-accent);
+}
+
+.help{
+  position:fixed;bottom:18px;right:18px;
+  font-family:var(--font-mono);font-size:11px;
+  color:rgba(255,255,255,.4);z-index:10;
+  background:rgba(13,17,23,.5);padding:6px 12px;border-radius:6px;
+}
+
+/* Outline */
+.toc-drawer{
+  position:fixed;top:0;right:0;bottom:0;width:320px;
+  background:rgba(22,27,34,.98);backdrop-filter:blur(12px);
+  border-left:1px solid rgba(255,255,255,.08);
+  transform:translateX(100%);transition:transform .3s ease;
+  padding:60px 24px 24px;overflow-y:auto;z-index:20;
+}
+.toc-drawer.open{transform:translateX(0)}
+.toc-drawer h3{
+  font-family:var(--font-mono);font-size:12px;color:#8b949e;
+  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:20px;
+}
+.toc-drawer ol{list-style:none;counter-reset:toc}
+.toc-drawer li{
+  counter-increment:toc;font-size:14px;line-height:1.5;
+  margin-bottom:8px;padding:8px 10px;border-radius:6px;
+  cursor:pointer;transition:background .15s;color:#c9d1d9;
+}
+.toc-drawer li::before{
+  content:counter(toc,decimal-leading-zero) " ";
+  color:#58a6ff;font-family:var(--font-mono);font-size:11px;
+  margin-right:8px;
+}
+.toc-drawer li:hover{background:rgba(255,255,255,.06)}
+.toc-drawer li.current{background:rgba(88,166,255,.15);color:#fff}
+
+/* Page-specific */
+.big-number{
+  font-family:var(--font-mono);font-size:9vmin;font-weight:700;
+  color:var(--c-accent);line-height:1;letter-spacing:-.3vmin;
+  display:inline-block;margin-right:1.6vmin;
+}
+.principle{
+  font-size:2vmin;color:var(--c-fg);line-height:1.5;margin-bottom:1.8vmin;
+  font-weight:500;
+}
+.principle::before{
+  content:"";display:block;width:2.4vmin;height:.25vmin;
+  background:var(--c-warn);margin-bottom:1vmin;
+}
+
+/* End slide */
+.end{
+  background:linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  color:#fff;display:flex;flex-direction:column;justify-content:center;
+  padding:6vmin 7.2vmin;
+  text-align:left;
+}
+.end h2{font-size:4vmin;color:#fff;font-weight:700;letter-spacing:-.07vmin;margin-bottom:1.8vmin}
+.end h2 .accent{color:#58a6ff}
+.end .sub{font-size:1.9vmin;color:rgba(255,255,255,.7);line-height:1.6;max-width:62vmin;margin-bottom:3.4vmin}
+.end .contact{
+  display:flex;gap:3.4vmin;padding-top:2.4vmin;
+  border-top:1px solid rgba(255,255,255,.1);
+  font-size:1.3vmin;color:rgba(255,255,255,.55);
+}
+.end .contact b{display:block;color:#fff;font-size:1.5vmin;margin-bottom:.3vmin;font-weight:500}
+
+/* Print */
+@media print{
+  .controls,.help,.progress,.toc-drawer{display:none !important}
+  .stage{background:#fff;display:block}
+  .deck{box-shadow:none;width:100%;aspect-ratio:auto;height:auto}
+  .slide{position:relative;opacity:1 !important;transform:none !important;
+         page-break-after:always;height:100vh;width:100vw;inset:0}
+  .slide.prev{transform:none}
+}
+
+/* Responsive — 极小屏才用 */
+@media (max-width:700px){
+  .cards.c2,.cards.c3,.cards.c4,.stats,.two-col{grid-template-columns:1fr;gap:1.4vmin}
+  .flow{flex-direction:column}
+  .flow .arrow{transform:rotate(90deg);text-align:center}
+  .cover .meta-grid{grid-template-columns:repeat(2, 1fr)}
+  .cover .industry-grid{grid-template-columns:repeat(2, 1fr)}
+}
+
+/* ============================================
+   Cover slide
+   ============================================ */
+.cover{
+  background:linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  color:#fff;padding:0;
+}
+.cover .inner{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:6vmin 7.2vmin;
+  position:relative;overflow:hidden;
+}
+.cover .bg-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size:3.4vmin 3.4vmin;
+  mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+  pointer-events:none;
+}
+.cover .label{
+  font-family:var(--font-mono);
+  color:#79c0ff;letter-spacing:.18vmin;font-size:1.4vmin;
+  margin-bottom:2vmin;display:flex;align-items:center;gap:1vmin;
+  position:relative;z-index:1;
+}
+.cover .label::before{
+  content:"";display:inline-block;width:2.4vmin;height:.1vmin;background:#79c0ff;
+}
+.cover h1{
+  font-size:4.6vmin;line-height:1.1;font-weight:700;
+  letter-spacing:-.1vmin;margin-bottom:2vmin;
+  position:relative;z-index:1;
+}
+.cover h1 .accent{color:#58a6ff}
+
+/* 自我介绍页 */
+.cover .name-line{
+  font-size:5.2vmin;line-height:1.05;font-weight:700;
+  letter-spacing:-.08vmin;margin-bottom:1.2vmin;
+  position:relative;z-index:1;
+}
+.cover .name-line .accent{color:#58a6ff}
+.cover .name-sub{
+  font-size:1.6vmin;color:rgba(255,255,255,.7);
+  font-weight:400;margin-left:.8vmin;letter-spacing:0;
+}
+.cover .intro-kicker{
+  font-family:var(--font-mono);font-size:1.15vmin;
+  letter-spacing:.12vmin;color:#79c0ff;
+  text-transform:uppercase;margin:.8vmin 0 .8vmin;
+  display:flex;align-items:center;gap:.6vmin;
+  position:relative;z-index:1;
+}
+.cover .intro-kicker::before{
+  content:"";display:inline-block;width:2vmin;height:.1vmin;background:#79c0ff;
+}
+.cover .industry-grid{
+  display:grid;grid-template-columns:repeat(4, 1fr);
+  gap:.6vmin;position:relative;z-index:1;
+}
+.cover .industry-item{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:.4vmin;padding:.9vmin 1.1vmin;
+  transition:border-color .2s, background .2s;
+}
+.cover .industry-item:hover{
+  border-color:#58a6ff;background:rgba(88,166,255,.08);
+}
+.cover .industry-item .ind-num{
+  font-family:var(--font-mono);font-size:1vmin;
+  color:#79c0ff;letter-spacing:.05vmin;margin-bottom:.3vmin;
+  display:block;
+}
+.cover .industry-item .ind-name{
+  font-size:1.3vmin;color:#fff;font-weight:600;
+  display:block;margin-bottom:.15vmin;line-height:1.25;
+}
+.cover .industry-item .ind-desc{
+  font-size:1.05vmin;color:rgba(255,255,255,.6);
+  display:block;line-height:1.3;
+}
+
+/* Spirit slogan block */
+.cover .spirit{
+  margin:1.2vmin 0 2vmin;
+  padding:1.6vmin 2vmin 1.6vmin 2.4vmin;
+  background:linear-gradient(135deg, rgba(88,166,255,.08) 0%, rgba(125,211,252,.04) 100%);
+  border-left:.4vmin solid #58a6ff;
+  border-radius:0 .6vmin .6vmin 0;
+  position:relative;z-index:1;
+  max-width:78vmin;
+}
+.cover .spirit-title{
+  font-family:var(--font-mono);
+  font-size:1.2vmin;letter-spacing:.2vmin;
+  color:#79c0ff;text-transform:uppercase;
+  margin-bottom:.6vmin;
+}
+.cover .spirit-line{
+  font-size:3.4vmin;font-weight:700;line-height:1.1;
+  color:#fff;letter-spacing:-.05vmin;
+  margin-bottom:1.2vmin;
+}
+.cover .spirit-line .accent{color:#58a6ff}
+.cover .spirit-desc{
+  font-size:1.4vmin;line-height:1.7;
+  color:rgba(255,255,255,.7);
+}
+.cover .spirit-pill{
+  display:inline-block;font-family:var(--font-mono);
+  font-size:1.15vmin;font-weight:600;
+  color:#0d1117;background:#79c0ff;
+  padding:.15vmin .8vmin;border-radius:.4vmin;
+  margin-right:.6vmin;vertical-align:1px;
+  letter-spacing:.05vmin;
+}
+
+.cover .tag{
+  font-size:1.8vmin;color:rgba(255,255,255,.7);line-height:1.6;
+  max-width:60vmin;margin-bottom:3.4vmin;position:relative;z-index:1;
+}
+.cover .meta-grid{
+  display:grid;grid-template-columns:repeat(4, 1fr);
+  gap:2vmin;padding-top:2.4vmin;
+  border-top:1px solid rgba(255,255,255,.1);
+  position:relative;z-index:1;
+}
+.cover .meta-grid div{font-size:1.2vmin;color:rgba(255,255,255,.55)}
+.cover .meta-grid b{
+  display:block;color:#fff;font-size:1.6vmin;font-weight:500;
+  font-family:var(--font-mono);margin-bottom:.3vmin;
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="stage">
+  <div class="deck" id="deck">
+
+    <!-- ============================================
+         SLIDE 01 — 自我介绍
+         ============================================ -->
+    <section class="slide cover active" data-section="自我介绍">
+      <div class="bg-grid"></div>
+      <div class="inner">
+        <div class="label">ABOUT ME · 自我介绍</div>
+        <h1 class="name-line"><span class="accent">潘 强</span><span class="name-sub">Pan Qiang · 行业信息化软件服务开发者</span></h1>
+
+        <div class="spirit">
+          <div class="spirit-title">// 14 年行业沉淀</div>
+          <div class="spirit-line">做过 <span class="accent">10+</span> 行业软件 · 具备行业专业软件<span class="accent">完整交付能力</span></div>
+          <div class="spirit-desc">
+            从政府机关到精密制造，从单点系统到端到端 ERP——<br>
+            我做的不是"通用软件"，而是<em>把每个行业的隐性规则，铸成显性的系统流程</em>。
+          </div>
+        </div>
+
+        <div class="intro-kicker">// 代表性交付项目</div>
+        <div class="industry-grid">
+          <div class="industry-item">
+            <span class="ind-num">01 · 央企</span>
+            <span class="ind-name">中移动铁塔公司</span>
+            <span class="ind-desc">监理巡检系统</span>
+          </div>
+          <div class="industry-item">
+            <span class="ind-num">02 · 供应链</span>
+            <span class="ind-name">供应链管理系统</span>
+            <span class="ind-desc">端到端业务平台</span>
+          </div>
+          <div class="industry-item">
+            <span class="ind-num">03 · 离散制造</span>
+            <span class="ind-name">CNC 加工厂 ERP</span>
+            <span class="ind-desc">本方案对应系统</span>
+          </div>
+          <div class="industry-item">
+            <span class="ind-num">04 · 政务</span>
+            <span class="ind-name">教育局 OA 系统</span>
+            <span class="ind-desc">协同办公平台</span>
+          </div>
+          <div class="industry-item">
+            <span class="ind-num">05 · 政务</span>
+            <span class="ind-name">省公安厅网站群</span>
+            <span class="ind-desc">多站点统一管理</span>
+          </div>
+          <div class="industry-item">
+            <span class="ind-num">06 · 抗疫</span>
+            <span class="ind-name">平顶山疫码</span>
+            <span class="ind-desc">智能上报系统</span>
+          </div>
+          <div class="industry-item">
+            <span class="ind-num">07 · 教育</span>
+            <span class="ind-name">河南省中小学</span>
+            <span class="ind-desc">学业质量监测系统</span>
+          </div>
+          <div class="industry-item">
+            <span class="ind-num">+ 更多</span>
+            <span class="ind-name">10+ 行业经验</span>
+            <span class="ind-desc">持续交付中</span>
+          </div>
+        </div>
+
+        <p class="tag" style="position:relative;z-index:1;margin-top:1.4vmin">
+          <span class="spirit-pill" style="font-size:1.2vmin">交付观</span>
+          <span style="color:rgba(255,255,255,.8)">业务调研 → 流程建模 → 规则数字化 → 系统落地 → 持续优化，每一步都有标准动作和验收点。</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 02 — COVER (原首页后移)
+         ============================================ -->
+    <section class="slide cover" data-section="封面">
+      <div class="bg-grid"></div>
+      <div class="inner">
+        <div class="label">CNC WORKSHOP · ERP SYSTEM · V1.3.2</div>
+        <h1>把老师傅脑子里的<span class="accent">活地图</span><br>变成系统里的<span class="accent">明规则</span></h1>
+
+        <div class="spirit">
+          <div class="spirit-title">产品精神标语</div>
+          <div class="spirit-line">一码到底，<span class="accent">一数到底</span></div>
+          <div class="spirit-desc">
+            <span class="spirit-pill">一码</span>工单码、流转码、设备码贯穿车间，物物可追
+            <br>
+            <span class="spirit-pill">一数</span>数据从业务源头一次录入，财务报表、车间看板、老板驾驶舱共用同一份数
+          </div>
+        </div>
+
+        <p class="subtitle">一套贴合 CNC 离散制造行业特点的 ERP 系统设计方案 —— 从询价到回款、从图纸到入库、从自加工到委外，让 100 人左右的加工厂在 5 秒内回答"今天挣没挣钱"。</p>
+        <div class="meta-grid">
+          <div><b>客户</b>XXX 精密机械</div>
+          <div><b>方案</b>Smart Workshop ERP</div>
+          <div><b>版本</b>V1.3.2 · 2026-06</div>
+          <div><b>类型</b>系统设计 · 客户评审</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 02 — 开场：客户视角
+         ============================================ -->
+    <section class="slide" data-section="开场">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">02 · OPENING</div>
+      </div>
+      <div class="kicker">先回到一个真实问题</div>
+      <h1 class="title">每天早上 9 点，老板最想问什么？</h1>
+      <div class="divider"></div>
+
+      <div class="boss-voice">
+        今天还有多少单逾期？哪些车间在偷懒？这单做完我能赚多少？<br>外协厂商那边到底发出去多少、回来了多少？<br>小张又报错了——系统为什么不能像他脑子里的那张"单子"一样好使？
+        <span class="who">— 老板的真实一天 · 我们在调研中反复听到的声音</span>
+      </div>
+
+      <p class="lead" style="margin-top:28px">
+        <strong>通用 ERP</strong> 解决不了这些问题。它是按"通用流程"设计的——进销存、财务、人事模块拼起来，就是 ERP。但 CNC 加工的<em>图号怎么跟、工时怎么算、首件谁签、外协怎么对账</em>，通用系统一片空白。
+      </p>
+    </section>
+
+    <!-- ============================================
+         SLIDE 03 — 方法论：专业软件交付能力
+         ============================================ -->
+    <section class="slide" data-section="方法论">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">03 · METHODOLOGY</div>
+      </div>
+      <div class="kicker">专业软件交付能力</div>
+      <h1 class="title">把<em style="color:var(--c-accent)">业务知识</em>，铸成<em style="color:var(--c-accent)">系统规则</em></h1>
+      <div class="divider"></div>
+
+      <div class="two-col">
+        <div>
+          <p class="lead">
+            做了 15 年 CNC 的老师傅，脑子里有一张<strong>活地图</strong>——这张图号什么时候做、哪台机台能跑、谁干得快、外协老王靠不靠谱。
+            <br><br>
+            <em>我们的团队具备行业专业软件的完整交付能力：业务调研 → 流程建模 → 规则数字化 → 系统落地 → 持续优化</em>。经过多家 CNC 加工厂业务对接、200+ 页行业资料梳理、80+ 项行业功能对照，我们把老师傅的活地图，<strong>翻译</strong>成新人也能 5 分钟读懂的明规则。
+          </p>
+          <p class="lead" style="margin-top:18px;color:var(--c-fg-mid)">
+            这套方法不是单点技巧，而是一支<strong>可复用的工程化能力</strong>——从行业调研到上线运维，每一步都有标准动作、交付物、验收点。
+          </p>
+        </div>
+        <div>
+          <div class="callout">
+            <span class="who">// 业务规则数字化示例</span>
+            业务场景："这单急，先插一下。"<br><br>
+            <span style="color:var(--c-fg-soft)">→ 数字化为系统规则：</span><br>
+            <span class="mono" style="font-family:var(--font-mono);font-size:14px;color:var(--c-accent)">
+            IF workorder.priority = 'URGENT'<br>
+            &nbsp;&nbsp;THEN reschedule.workload(<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;target=&lt;this&gt;,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;preempt=low_priority_orders,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;notify=workshop_lead<br>
+            &nbsp;&nbsp;)
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 04 — 业务流程：询价→回款 端到端
+         ============================================ -->
+    <section class="slide" data-section="端到端流程">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">04 · END-TO-END</div>
+      </div>
+      <div class="kicker">从一句话询价到一笔回款</div>
+      <h1 class="title">一条主线，11 步，无断点</h1>
+      <div class="divider"></div>
+
+      <div class="flow" style="flex-wrap:wrap;gap:0">
+        <div class="step" style="flex:0 0 calc(20% - 8px);margin-right:8px;margin-bottom:8px">
+          <span class="badge">01 · CRM</span>
+          <h4>客户问询</h4>
+          <p>业务员录入客户，<br>上传图纸 PDF，<br>设保护期</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="step" style="flex:0 0 calc(20% - 8px);margin-right:8px;margin-bottom:8px">
+          <span class="badge">02 · 报价</span>
+          <h4>工艺 + 成本估算</h4>
+          <p>工程师估工艺、<br>材料、表处、<br>自动算总价</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="step" style="flex:0 0 calc(20% - 8px);margin-right:8px;margin-bottom:8px">
+          <span class="badge">03 · 订单</span>
+          <h4>审批 + 下发</h4>
+          <p>5/20 万分级审批，<br>自动转工单</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="step" style="flex:0 0 calc(20% - 8px);margin-right:8px;margin-bottom:8px">
+          <span class="badge">04 · 生产</span>
+          <h4>排产 + 扫码</h4>
+          <p>工单排机台，<br>扫码开工/报工/过站</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="step" style="flex:0 0 calc(20% - 8px);margin-bottom:8px">
+          <span class="badge">05 · 回款</span>
+          <h4>质检 + 入库 + 收款</h4>
+          <p>FA / 三次元 /<br>批次入库 /<br>合同回款计划</p>
+        </div>
+      </div>
+
+      <p class="lead" style="margin-top:24px;font-size:17px">
+        通用 ERP 往往在"<strong>工单 → 车间</strong>"或"<strong>订单 → 财务</strong>"这两个环节断掉。本方案通过 <em>扫码三码（工单码 / 流转码 / 设备码）</em> + <em>本地消息表 + XXL-JOB 补偿</em> 把所有断点焊死。
+      </p>
+    </section>
+
+    <!-- ============================================
+         SLIDE 05 — 行业特点 9 条
+         ============================================ -->
+    <section class="slide" data-section="行业特点">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">05 · INDUSTRY</div>
+      </div>
+      <div class="kicker">我们读了您的行业</div>
+      <h1 class="title">CNC 机加工的 9 大特点 → 9 个系统应对</h1>
+      <div class="divider"></div>
+
+      <table class="t">
+        <thead>
+          <tr><th style="width:5%">#</th><th style="width:35%">行业特点</th><th>系统应对策略</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">01</td><td>离散型制造，非标定制件多</td><td>图号 + 图纸版本管理 + 多级 BOM</td></tr>
+          <tr><td class="mono">02</td><td>工序流转复杂（车床→CNC→后加工→表处→质检→入库）</td><td>工序路线 + 扫码三码 + 流转追溯</td></tr>
+          <tr><td class="mono">03</td><td>委外加工频繁（氧化/电镀/喷涂/热处理/三次元）</td><td>工序委外 + 整单委外 + 历史价 + 一键对账</td></tr>
+          <tr><td class="mono">04</td><td>图纸管理是核心资产</td><td>客户图纸→厂内图纸转化 + 版本追溯 + 权限</td></tr>
+          <tr><td class="mono">05</td><td>编程管理（新件必编，历史件可复用）</td><td>编程任务 + 历史工艺库 + 自动匹配</td></tr>
+          <tr><td class="mono">06</td><td>材料按料号+尺寸，下料损耗追踪</td><td>物料编码规则 + 损耗系数 + 实测对比</td></tr>
+          <tr><td class="mono">07</td><td>产能依赖设备（机台号、状态、班别）</td><td>设备台账 + 机台排产 + 班别日历</td></tr>
+          <tr><td class="mono">08</td><td>品质检测（FA 首件 + 三次元）</td><td>检验方案 + 检测报告 + 首件签字</td></tr>
+          <tr><td class="mono">09</td><td>产值计算（自制 + 外协）</td><td>工时统计 + 产值汇总 + 订单级利润</td></tr>
+        </tbody>
+      </table>
+      <p class="lead" style="margin-top:18px;font-size:15px;color:var(--c-fg-mid)">
+        <span class="tag epic">设计原则</span> 行业特点是 PRD 的<strong>第一性输入</strong>——9 条特点 ↔ 11 个 Epic ↔ 80 条 AC，三者一一映射、互不漂移。
+      </p>
+    </section>
+
+    <!-- ============================================
+         SLIDE 06 — 设计原则 5 条
+         ============================================ -->
+    <section class="slide" data-section="设计原则">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">06 · PRINCIPLES</div>
+      </div>
+      <div class="kicker">指导 11 个 Epic 的 5 条设计原则</div>
+      <h1 class="title">我们做事的姿势</h1>
+      <div class="divider"></div>
+
+      <div class="cards c2" style="flex:1;align-content:start">
+        <div class="card">
+          <div class="icon">01</div>
+          <span class="num">WHY</span>
+          <h3>WHY 先于 WHAT</h3>
+          <p>不直接接受需求——追溯它背后的人性动机。"客户要扫码"是表面，<em>"客户要减少 3 道手工录入"</em>才是真相。</p>
+        </div>
+        <div class="card">
+          <div class="icon">02</div>
+          <span class="num">FOOL</span>
+          <h3>傻瓜测试</h3>
+          <p>任何功能定稿前，把自己变成最天真的用户。扫码报工<em>必须 3 步内完成</em>，否则就是太复杂。</p>
+        </div>
+        <div class="card">
+          <div class="icon">03</div>
+          <span class="num">LESS</span>
+          <h3>做多源于不自信</h3>
+          <p>15 个模块砍到 11 个；伪需求（GPS 打卡、物流跟踪、多币种）一律延后或舍弃。</p>
+        </div>
+        <div class="card">
+          <div class="icon">04</div>
+          <span class="num">SOUL</span>
+          <h3>灵魂一致性</h3>
+          <p>一切围绕"一码到底、一数到底"。扫码三码贯穿车间；数据从源头一次录入，多端共用同一份数。</p>
+        </div>
+        <div class="card" style="grid-column:span 2;display:flex;gap:24px;align-items:center">
+          <div class="icon" style="margin-bottom:0;flex-shrink:0">05</div>
+          <div>
+            <h3>善良设计</h3>
+            <p>不做"先发券再催回款"这种利用用户心理冲指标的设计。逾期提醒用于辅助排产，不用于施压客户。AI 放大人的能力，绝不控制或操纵。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 07 — 扫码三码（核心演示点）
+         ============================================ -->
+    <section class="slide" data-section="扫码三码">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">07 · CORE INNOVATION</div>
+      </div>
+      <div class="kicker">系统设计功夫的代表作</div>
+      <h1 class="title">扫码三码：3 个码、3 步、可追溯</h1>
+      <div class="divider"></div>
+
+      <p class="lead" style="margin-bottom:18px;font-size:15px">
+        车间里最痛的事是"物料流转到一半不知道在哪"。三套码分工明确：<em>工单码记人和时间、流转码记物料去向、设备码记机台</em>——前缀自动识别，操作工不用想该扫哪个。
+      </p>
+
+      <div class="cards c3" style="flex:1;align-content:start">
+        <div class="card" style="border-top:3px solid var(--c-accent)">
+          <div class="icon">GD</div>
+          <span class="num">工单码</span>
+          <h3>扫码开工 / 报工</h3>
+          <p><strong>记录：</strong>加工人、时间、机台号<br><strong>贴法：</strong>工单卡上<br><strong>示例：</strong><span class="mono" style="font-family:var(--font-mono);color:var(--c-accent)">GD-20260604-001</span></p>
+          <div class="tags">
+            <span class="tag p0">P0</span>
+            <span class="tag epic">E5-S2</span>
+          </div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--c-warn)">
+          <div class="icon">LZ</div>
+          <span class="num">流转码</span>
+          <h3>扫码过站</h3>
+          <p><strong>记录：</strong>物料去向、交接数量、交接人<br><strong>贴法：</strong>随物料外包装或流转单<br><strong>示例：</strong><span class="mono" style="font-family:var(--font-mono);color:var(--c-warn)">LZ-20260604-001</span></p>
+          <div class="tags">
+            <span class="tag p0">P0</span>
+            <span class="tag epic">E5-S2</span>
+          </div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--c-success)">
+          <div class="icon">SB</div>
+          <span class="num">设备码</span>
+          <h3>快速选机台</h3>
+          <p><strong>记录：</strong>设备 ID、机台号<br><strong>贴法：</strong>设备显眼位置<br><strong>示例：</strong><span class="mono" style="font-family:var(--font-mono);color:var(--c-success)">SB-CNC-03</span></p>
+          <div class="tags">
+            <span class="tag p1">P1</span>
+            <span class="tag epic">E4-S1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:8px">
+        <span class="who">// 设计巧思</span>
+        3 套码<strong>前缀不同（GD/LZ/SB）</strong>，APP 扫码后无需选择场景——<em>扫到哪个前缀，自动进入对应流程</em>。操作工培训成本：<strong>0 分钟</strong>。
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 08 — 业务规则精细化（计件工资）
+         ============================================ -->
+    <section class="slide" data-section="业务规则">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">08 · BUSINESS RULES</div>
+      </div>
+      <div class="kicker">把"老师傅心里的算盘"写成公式</div>
+      <h1 class="title">计件工资：3 行公式胜过 30 页文档</h1>
+      <div class="divider"></div>
+
+      <p class="lead" style="margin-bottom:18px;font-size:15px">
+        通用 ERP 的薪资模块只有"基本工资+绩效"。CNC 车间要算的是<em>合格件 × 单价 + 工时补差 − 报废扣款</em>，还得叠加工序系数、设备系数、夜班系数。把这些规则白纸黑字写进系统，是车间不扯皮的关键。
+      </p>
+
+      <div class="two-col">
+        <pre class="formula">
+<span class="comment">// 计件工资 = 合格件 × 单价 + 工时补差 − 报废扣款</span>
+<span class="key">WAGE</span> =
+    <span class="var">qualified_qty</span> × <span class="var">piece_price</span>
+    + <span class="var">actual_hours</span> × <span class="var">hour_rate</span>
+    − <span class="var">scrapped_qty</span> × <span class="var">deduct_rate</span>
+
+<span class="comment">// 工序系数：粗加工 1.0 / 精加工 1.3 / 钳工 1.5</span>
+<span class="key">WAGE</span> ×= <span class="var">process_factor</span>[workorder.process]
+
+<span class="comment">// 夜班系数：白班 1.0 / 夜班 1.2</span>
+<span class="key">WAGE</span> ×= <span class="var">shift_factor</span>[shift]
+
+<span class="comment">// 良品率预警：< 95% 自动报品检介入</span>
+IF <span class="var">yield_rate</span> &lt; 0.95
+    THEN notify(<span class="var">quality_inspector</span>)</pre>
+
+        <div>
+          <div class="callout warn">
+            <span class="who">// 行业经验</span>
+            通用 ERP 通常只能算到"<em>本月工资 = X 元</em>"。<br><br>
+            本方案能精确到：<strong>"张三在工单 GD-20260604-001 第 3 道精加工工序做了 87 件合格件，合格品单价 2.5 元，工时 6.5 小时拿补差 65 元，报废 2 件扣 20 元，夜班系数 1.2，本工序工资 = 87×2.5 + 65 − 20 = 262.5 × 1.3 × 1.2 = 409.5 元。"</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 09 — 状态机
+         ============================================ -->
+    <section class="slide" data-section="状态机">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">09 · STATE MACHINES</div>
+      </div>
+      <div class="kicker">把"什么时候该做什么"写成状态机</div>
+      <h1 class="title">工单的 7 态生命周期</h1>
+      <div class="divider"></div>
+
+      <p class="lead" style="margin-bottom:18px;font-size:15px">
+        通用 ERP 的"工单状态"通常只有 3 个：进行中、已完成、已关闭。CNC 工厂的状态有 7 个——这 7 个状态之间的<em>允许转换</em>、<em>触发动作</em>、<em>回退条件</em>都必须严格定义，否则就会出现"工单已关闭但还在扫码报工"的脏数据。
+      </p>
+
+      <pre class="ascii" style="font-size:13px">
+<span class="c1">[已创建]</span> ──创建工单──▶ <span class="c1">[待排产]</span>
+                          │
+                          │ 生管分配机台
+                          ▼
+                      <span class="c5">[已排产]</span> ──操作工扫码──▶ <span class="c5">[加工中]</span>
+                                                       │
+                                                       │ 扫码报工
+                                                       ▼
+                                                <span class="c3">[已报工]</span> ──品检通过──▶ <span class="c3">[已检验]</span>
+                                                                       │
+                                                                       │ 扫码过站 → 末道 → 入库
+                                                                       ▼
+                                                                <span class="c2">[已入库]</span> ──发货完成──▶ <span class="c2">[已关闭]</span>
+
+<span class="comment"># 关键规则：</span>
+<span class="c6">✗</span> 加工中 <span class="c6">→</span> 已关闭     <span class="comment"># 禁止跳关（强制走"已入库"）</span>
+<span class="c6">✗</span> 已报工 <span class="c6">→</span> 加工中       <span class="comment"># 禁止回退（需走返工流程，建新工单）</span>
+<span class="c3">✓</span> 加工中 <span class="c3">→</span> 加工中       <span class="comment"># 允许切换工序（生成新扫码记录）</span>
+<span class="c3">✓</span> 已报工 <span class="c3">→</span> 已报工       <span class="comment"># 允许追加报工（数量合并，自动校验合格+报废=完工）</span></pre>
+
+      <p class="lead" style="margin-top:18px;font-size:15px;color:var(--c-fg-mid)">
+        <span class="tag epic">附录 B</span> 文档附录 B 完整列出了 <strong>工单 / 订单 / 报价 / 采购 / 委外 / 检验 6 套状态机</strong>，每一套都带状态转换矩阵。
+      </p>
+    </section>
+
+    <!-- ============================================
+         SLIDE 10 — 金额阈值（硬伤修复）
+         ============================================ -->
+    <section class="slide" data-section="金额阈值">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">10 · APPROVAL</div>
+      </div>
+      <div class="kicker">通用 ERP 的硬伤，本方案已修复</div>
+      <h1 class="title">金额分级审批：4 档阈值，1 张表</h1>
+      <div class="divider"></div>
+
+      <table class="t">
+        <thead>
+          <tr><th>单据类型</th><th>金额阈值</th><th>审批人</th><th>特殊规则</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="3"><strong>报价 / 订单</strong></td>
+            <td class="mono">&lt; 5 万</td>
+            <td>业务员</td>
+            <td>直接报，无审批</td>
+          </tr>
+          <tr>
+            <td class="mono">5 ~ 20 万</td>
+            <td>部门经理</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td class="mono">&gt; 20 万</td>
+            <td>总经理</td>
+            <td class="check">⚡ 客户信用额度不足 → 强制总经理</td>
+          </tr>
+          <tr>
+            <td rowspan="3"><strong>采购</strong></td>
+            <td class="mono">&lt; 1 万</td>
+            <td>采购员</td>
+            <td>直接下</td>
+          </tr>
+          <tr>
+            <td class="mono">1 ~ 5 万</td>
+            <td>采购主管</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td class="mono">&gt; 5 万</td>
+            <td>总经理</td>
+            <td class="check">⚡ 单价 &gt; 历史均价 1.2 倍 → 强审</td>
+          </tr>
+          <tr>
+            <td><strong>付款</strong></td>
+            <td class="mono">&gt; 10 万</td>
+            <td>总经理 + 财务总监</td>
+            <td class="check">⚡ 双签制</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="lead" style="margin-top:18px;font-size:15px">
+        <span class="tag epic">灵魂细节</span> 所有阈值都<em>在系统参数表里可配</em>（无需改代码）；不同角色可覆盖（财务总监能临时下调付款阈值）。
+      </p>
+    </section>
+
+    <!-- ============================================
+         SLIDE 11 — 架构务实性
+         ============================================ -->
+    <section class="slide" data-section="架构">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">11 · ARCHITECTURE</div>
+      </div>
+      <div class="kicker">不堆中间件、不卖弄技术</div>
+      <h1 class="title">3 服务 + 1 仓，单机扛住 100 人</h1>
+      <div class="divider"></div>
+
+      <pre class="ascii">
+<span class="c1">                        Nginx (负载均衡 + 静态资源)</span>
+                                       ↓
+<span class="c2">              erp-gateway  (Spring Cloud Gateway · 8080)</span>
+<span class="c2">              JWT 鉴权 · 限流 · 路由 · 日志 · 灰度</span>
+                                       ↓
+       ┌──────────────────┬──────────────────┬──────────────────┐
+       │ <span class="c3">erp-business</span>   │ <span class="c5">erp-production</span> │ <span class="c4">erp-platform</span>   │
+       │ (业务聚合)         │ (车间执行)         │ (基础能力)         │
+       │ 8082 · 2 实例      │ 8083 · 2 实例      │ 8081 · 1 实例      │
+       │                  │                  │                  │
+       │ · 客户 / 报价      │ · 工单 / 工序      │ · 用户 / 角色      │
+       │ · 订单 / 合同      │ · 扫码 / 报工      │ · 审批 / 字典      │
+       │ · 采购 / 仓储      │ · 委外 / 设备      │ · 文件 / 系统      │
+       │ · 品质 / 财务      │ · MRP / 排产      │                  │
+       └────────┬─────────┴────────┬─────────┴────────┬─────────┘
+                ↓                  ↓                  ↓
+                └──────────────────┬──────────────────┘
+                                   ↓
+<span class="c2">       MySQL 8.0 (主从) + Redis 7 (Stream+缓存+锁) + MinIO + XXL-JOB</span>
+
+<span class="comment"># 关键决策</span>
+<span class="c3">✓</span> backend 仓内 1 个 core Module（公共 DTO/Util/异常），不另起仓 —— 避免"改一行 DTO 跨仓发包"
+<span class="c3">✓</span> Redis Stream 替代 RabbitMQ —— CNC 单机部署，少一个中间件、少一份故障域
+<span class="c3">✓</span> 本地消息表 + XXL-JOB 补偿 替代分布式事务 —— 业务→财务一致性
+<span class="c6">✗</span> 11 个微服务、6 个中间件、4 台 K8s 节点 —— 我们不做这种过度设计</pre>
+    </section>
+
+    <!-- ============================================
+         SLIDE 12 — 离线扫码
+         ============================================ -->
+    <section class="slide" data-section="离线扫码">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">12 · OFFLINE-FIRST</div>
+      </div>
+      <div class="kicker">车间 WiFi 死角，扫码不能停</div>
+      <h1 class="title">离线扫码：500 条缓存 + 自动重试</h1>
+      <div class="divider"></div>
+
+      <div class="two-col">
+        <div>
+          <p class="lead" style="font-size:15px">
+            CNC 车间普遍存在 <em>WiFi 死角</em>（大型车间、设备屏蔽、油污环境）。网络断了，扫码不能断。
+            <br><br>
+            本方案的 APP 端内置 <strong>SQLite 离线缓存 500 条</strong>，网络恢复后自动批量上传。
+          </p>
+
+          <div class="callout warn" style="margin-top:18px">
+            <span class="who">// 冲突解决策略</span>
+            <strong>本地时间戳 → 服务端校验</strong><br>
+            · 服务端为准（扫码时间的"真相"在系统）<br>
+            · 用户可选择"覆盖"或"合并"<br>
+            · 重复扫码：去重 + 提示
+          </div>
+        </div>
+
+        <pre class="ascii" style="font-size:12px">
+<span class="c1">扫码客户端 (Android)</span>
+       ↓
+<span class="c1">[本地 SQLite · max 500 条]</span>
+       ↓
+<span class="comment"># 网络判断</span>
+IF wifi.connected:
+    <span class="c3">→ 批量上传 /api/v1/scan/batch</span>
+    <span class="c3">→ 接收 ack，删除本地</span>
+ELSE:
+    <span class="c5">→ 顶部橙色横幅：离线模式 X 条</span>
+    <span class="c5">→ 扫码继续写本地队列</span>
+
+<span class="comment"># 重连后冲突</span>
+<span class="c6">CONFLICT</span> detected:
+    <span class="c3">→ 弹对话框给操作工</span>
+    <span class="c3">→ [1] 覆盖本地    [2] 合并 [3] 取消</span>
+    <span class="c3">→ 默认操作：服务端为准</span>
+
+<span class="comment"># 异常恢复</span>
+<span class="c4">网络断了 4 小时</span>，积压 200 条扫码
+<span class="c4">→ 重连后 30 秒内全部上传</span>
+<span class="c4">→ 工时统计无丢失、无错位</span></pre>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 13 — 11 Epic 总览
+         ============================================ -->
+    <section class="slide" data-section="Epic 总览">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">13 · EPIC MAP</div>
+      </div>
+      <div class="kicker">11 个 Epic，2 个阶段</div>
+      <h1 class="title">全功能地图：V1.0 主链路，V1.1 深化</h1>
+      <div class="divider"></div>
+
+      <div class="stats" style="margin-bottom:18px">
+        <div class="stat">
+          <div class="v">11</div>
+          <div class="l">Epic 业务模块</div>
+          <div class="d">V1.0 = 5 + V1.1 = 6</div>
+        </div>
+        <div class="stat">
+          <div class="v">37</div>
+          <div class="l">可执行 Story</div>
+          <div class="d">2-4 小时/Story</div>
+        </div>
+        <div class="stat">
+          <div class="v">80+</div>
+          <div class="l">验收标准（AC）</div>
+          <div class="d">GIVEN/WHEN/THEN 格式</div>
+        </div>
+      </div>
+
+      <div class="two-col" style="gap:24px">
+        <div>
+          <h3 style="font-size:18px;margin-bottom:12px;color:var(--c-accent-deep)">
+            <span class="tag p0">V1.0</span> 主链路（5 Epic）
+          </h3>
+          <div class="cards c2" style="gap:10px">
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E1 基础设施与权限</h3>
+              <p style="font-size:12px">用户/角色/审批/字典/APP 壳</p>
+            </div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E2 客户与销售</h3>
+              <p style="font-size:12px">CRM + 报价 + 订单 + 合同</p>
+            </div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E3 图纸与物料</h3>
+              <p style="font-size:12px">图号 + BOM + 工艺库</p>
+            </div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E4 扫码仓储</h3>
+              <p style="font-size:12px">APP 出入库 + 多仓库</p>
+            </div>
+            <div class="card" style="padding:14px 16px;grid-column:span 2">
+              <h3 style="font-size:14px;margin-bottom:4px">E5 生产执行核心</h3>
+              <p style="font-size:12px">工单 + 排产 + 扫码三码 + 委外下单</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 style="font-size:18px;margin-bottom:12px;color:var(--c-fg-mid)">
+            <span class="tag p1">V1.1</span> 深化（6 Epic）
+          </h3>
+          <div class="cards c2" style="gap:10px">
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E6 委外深化</h3>
+              <p style="font-size:12px">对账 + 自动历史价</p>
+            </div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E7 品质管控</h3>
+              <p style="font-size:12px">三次元 + FA + 不良品</p>
+            </div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E8 采购管理</h3>
+              <p style="font-size:12px">询比价 + 到货 + 质检</p>
+            </div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E9 财务与成本</h3>
+              <p style="font-size:12px">应收应付 + 利润分析</p>
+            </div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:14px;margin-bottom:4px">E10 人事</h3>
+              <p style="font-size:12px">考勤 + 薪酬 + 绩效</p>
+            </div>
+            <div class="card" style="padding:14px 16px">
+              <h3 style="font-size:11px;margin-bottom:4px">E11 报表看板</h3>
+              <p style="font-size:12px">生产工作台 + 销售排行</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 14 — 实施路径
+         ============================================ -->
+    <section class="slide" data-section="实施路径">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">14 · ROADMAP</div>
+      </div>
+      <div class="kicker">不画大饼，给出可执行的步骤</div>
+      <h1 class="title">3 步走：先主链、再深化、最后锦上添花</h1>
+      <div class="divider"></div>
+
+      <div class="cards c3" style="flex:1;align-content:start">
+        <div class="card" style="border-top:3px solid var(--c-accent)">
+          <div class="icon">S1</div>
+          <span class="num">第 1 月</span>
+          <h3>试点车间 V1.0</h3>
+          <p><strong>范围：</strong>E1 + E2 + E3 + E4 + E5<br><strong>试点：</strong>选 1-2 个车间试运行扫码三码<br><strong>交付：</strong>业务员/工程师/生管/操作工 4 类角色全流程跑通<br><strong>里程碑：</strong>月底向客户演示"从询价到入库"主链路</p>
+        </div>
+        <div class="card" style="border-top:3px solid var(--c-warn)">
+          <div class="icon">S2</div>
+          <span class="num">第 2 月</span>
+          <h3>全面推广 + V1.1 深化</h3>
+          <p><strong>范围：</strong>E6 委外 + E7 品质 + E8 采购 + E9 财务 + E10 人事<br><strong>并行：</strong>V1.0 推广到全厂 + 深化模块迭代<br><strong>里程碑：</strong>老板驾驶舱上线（5 秒看到当天产值/逾期/异常）</p>
+        </div>
+        <div class="card" style="border-top:3px solid var(--c-success)">
+          <div class="icon">S3</div>
+          <span class="num">第 3 月</span>
+          <h3>报表 + 持续优化</h3>
+          <p><strong>范围：</strong>E11 报表 + 多维度看板<br><strong>同步：</strong>UAT 验收、运维 SLA 启动、培训体系建立<br><strong>目标：</strong>全员上线，系统替代 Excel</p>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:8px">
+        <span class="who">// 风险控制</span>
+        V1.0 试点 1 个月、5 个 Epic，节奏紧凑——但<em>每个 Epic 都做穿</em>，比一次性铺 15 个模块再返工更安全。<strong>宁可慢一点，不返工一周。</strong>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 15 — 我们的承诺
+         ============================================ -->
+    <section class="slide" data-section="我们的承诺">
+      <div class="slide-header">
+        <div class="brand"><span class="dot"></span>CNC WORKSHOP · ERP</div>
+        <div class="section">15 · PROMISE</div>
+      </div>
+      <div class="kicker">不是承诺完美，是承诺真诚</div>
+      <h1 class="title">我们承诺的 3 件事 + 1 个不承诺</h1>
+      <div class="divider"></div>
+
+      <div class="two-col">
+        <div>
+          <div class="principle">
+            <strong>① 业务知识，系统化交付</strong><br>
+            <span style="color:var(--c-fg-mid);font-size:16px;font-weight:400">
+            我们具备<em>行业专业软件的完整交付能力</em>：业务调研 → 流程建模 → 规则数字化 → 系统落地 → 持续优化。经过多家 CNC 加工厂业务对接、200+ 页行业资料梳理、80+ 项行业功能对照——把 CNC 行业的隐性知识，<strong>铸成显性规则</strong>。
+            </span>
+          </div>
+          <div class="principle">
+            <strong>② 系统的活，我们扛</strong><br>
+            <span style="color:var(--c-fg-mid);font-size:16px;font-weight:400">
+            系统设计、数据库、并发、容灾、运维——这些是吃饭的手艺。我们扛到底，<em>不会让老师傅再追着问 IT 同事"为什么又卡了"</em>。
+            </span>
+          </div>
+          <div class="principle">
+            <strong>③ 迭代共建</strong><br>
+            <span style="color:var(--c-fg-mid);font-size:16px;font-weight:400">
+            系统上线后，<em>我们建立线上反馈机制</em>，用 <strong>3 个月的时间</strong> 与车间、仓管、业务员、工程师一起持续打磨——把系统紧密融入到生产现场，<strong>切实提升效率和管理水平</strong>。
+            </span>
+          </div>
+        </div>
+        <div>
+          <div class="callout warn" style="height:100%;display:flex;flex-direction:column;justify-content:center">
+            <span class="who">// 我们不承诺的 1 件事</span>
+            <div style="font-size:22px;color:var(--c-fg);line-height:1.6;margin-top:8px">
+              "<strong>系统能 100% 解决您的管理问题。</strong>"
+            </div>
+            <p style="font-size:15px;color:var(--c-fg-mid);line-height:1.7;margin-top:18px">
+              不会的。<br><br>
+              系统只是工具，能把<em>老师傅脑子里的活地图</em>外化为<em>新人能查的明规则</em>——但老板的决断、员工的积极性、外协厂商的人情世故，这些系统管不了。
+            </p>
+            <p style="font-size:15px;color:var(--c-fg);line-height:1.7;margin-top:12px">
+              <strong>我们承诺的是：把能系统化的部分做到 100 分，把不能系统化的部分如实告诉您。</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         SLIDE 16 — 结束页
+         ============================================ -->
+    <section class="slide end" data-section="END">
+      <h2>把<span class="accent">老师傅</span>的活地图<br>变成<span class="accent">系统</span>的明规则</h2>
+      <p class="sub">
+        把业务知识挖出来、写成规则、变成流程、跑成数据 —— 这是行业专业软件交付的看家本领。
+        <br><br>
+        期待与您共建这套<em>一码到底、一数到底</em>的 CNC 工厂 ERP。
+      </p>
+      <div class="contact">
+        <div><b>下一步</b>V1.0 试点车间确认<br>里程碑付款方案沟通</div>
+        <div><b>文档交付</b>PRD V1.3.1（120 页）<br>UX / Architect Handoff</div>
+        <div><b>响应</b>试点期间快速响应<br>每周 1 次需求评审</div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button id="prev" title="上一页 (←)">←</button>
+  <span class="counter" id="counter">01 / 17</span>
+  <button id="next" title="下一页 (→)">→</button>
+  <button id="toc-btn" title="目录 (T)">☰</button>
+  <button id="fs-btn" title="全屏 (F)">⛶</button>
+</div>
+
+<div class="help">← → 翻页 · T 目录 · F 全屏 · Home/End 首末页</div>
+
+<div class="toc-drawer" id="toc-drawer">
+  <h3>目录 · Outline</h3>
+  <ol id="toc-list"></ol>
+</div>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  const tocBtn = document.getElementById('toc-btn');
+  const tocDrawer = document.getElementById('toc-drawer');
+  const tocList = document.getElementById('toc-list');
+  const fsBtn = document.getElementById('fs-btn');
+  let current = 0;
+  let tocOpen = false;
+
+  // Build TOC
+  slides.forEach((s, i) => {
+    const section = s.dataset.section || ('Slide ' + (i+1));
+    const li = document.createElement('li');
+    li.textContent = section;
+    li.dataset.idx = i;
+    if (i === 0) li.classList.add('current');
+    li.addEventListener('click', () => {
+      goTo(i);
+      toggleToc(false);
+    });
+    tocList.appendChild(li);
+  });
+
+  function goTo(idx){
+    if (idx < 0 || idx >= total) return;
+    slides[current].classList.remove('active');
+    if (idx > current) slides[current].classList.add('prev');
+    else slides[current].classList.remove('prev');
+    current = idx;
+    slides[current].classList.remove('prev');
+    slides[current].classList.add('active');
+    counter.textContent = String(current+1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+    progress.style.width = ((current+1)/total*100) + '%';
+    // Update TOC
+    tocList.querySelectorAll('li').forEach((li, i) => {
+      li.classList.toggle('current', i === current);
+    });
+  }
+
+  function next(){ if (current < total-1) goTo(current+1); }
+  function prev(){ if (current > 0) goTo(current-1); }
+
+  function toggleToc(force){
+    tocOpen = (force === undefined) ? !tocOpen : force;
+    tocDrawer.classList.toggle('open', tocOpen);
+  }
+
+  function toggleFs(){
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  tocBtn.addEventListener('click', () => toggleToc());
+  fsBtn.addEventListener('click', toggleFs);
+
+  document.addEventListener('keydown', e => {
+    switch(e.key){
+      case 'ArrowRight': case 'PageDown': case ' ': next(); e.preventDefault(); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); prev(); break;
+      case 'Home': goTo(0); e.preventDefault(); break;
+      case 'End': goTo(total-1); e.preventDefault(); break;
+      case 't': case 'T': case 'o': case 'O': toggleToc(); break;
+      case 'f': case 'F': toggleFs(); break;
+      case 'Escape': if (tocOpen) toggleToc(false); break;
+    }
+  });
+
+  // Click slide to next
+  document.getElementById('deck').addEventListener('click', e => {
+    if (e.target.closest('button, a, pre, table, .toc-drawer')) return;
+    // Click right half = next, left half = prev
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if (x > rect.width * 0.6) next();
+    else if (x < rect.width * 0.4) prev();
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) (dx < 0 ? next : prev)();
+  });
+
+  // Init
+  progress.style.width = (1/total*100) + '%';
+})();
+</script>
+</body>
+</html>

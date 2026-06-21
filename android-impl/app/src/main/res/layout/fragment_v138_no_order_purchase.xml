@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- V1.3.8 Sprint 8 Story 8.5 · 无订单采购 Fragment layout -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="无订单采购（V1.3.8 · Story 4.1）"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingBottom="16dp" />
+
+    <Spinner
+        android:id="@+id/spinnerReason"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="8dp" />
+
+    <EditText
+        android:id="@+id/etSupplierId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="供应商 ID"
+        android:inputType="number"
+        android:paddingBottom="8dp" />
+
+    <EditText
+        android:id="@+id/etMaterialList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="物料清单 (5001,50,80)"
+        android:paddingBottom="8dp" />
+
+    <EditText
+        android:id="@+id/etRemark"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="备注"
+        android:paddingBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnSubmit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="提交无订单 PO" />
+
+</LinearLayout>

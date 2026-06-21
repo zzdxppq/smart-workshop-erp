@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: erp-business
+  profiles:
+    active: ${PROFILE:dev}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+      config:
+        server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        file-extension: yaml
+        namespace: ${NACOS_NAMESPACE:dev}
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/cnc_business?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USER:erp}
+    password: ${MYSQL_PASSWORD:erp123}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+  # V1.3.8 Sprint 7 集成 A：Spring Cache 抽象 + Redis（Story 2.1 + 4.3）
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000   # 默认 5min TTL（Story 2.1 AC-2.1.3 / 4.3 AC-4.3.2）
+      cache-null-values: false
+      use-key-prefix: true
+      key-prefix: "erp:cache:"
+
+server:
+  port: ${SERVER_PORT:9082}
+
+app:
+  v137:
+    prd_version: V1.3.7
+    contract_id: XP-ZPF202606082405
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket-drawing: ${MINIO_BUCKET_DRAWING:erp-drawing}
+    local-fallback-dir: ${MINIO_LOCAL_FALLBACK:./data/drawing-files}
+    use-local-fallback: ${MINIO_USE_LOCAL_FALLBACK:true}
+  production:
+    url: ${PRODUCTION_SERVICE_URL:http://127.0.0.1:9083}
+  platform:
+    url: ${PLATFORM_SERVICE_URL:http://127.0.0.1:9081}
+  integration:
+    poll-ms: ${INTEGRATION_POLL_MS:3000}
+  internal:
+    token: ${ERP_INTERNAL_TOKEN:${APP_INTERNAL_TOKEN:}}
+  crypto:
+    dek-file: ${DEK_FILE:/etc/erp/dek.key}
+    # 开发/演示环境兜底（32 字节 Base64）；生产请使用 /etc/erp/dek.key
+    dek-dev: ${DEK_DEV:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-only-secret-please-replace-in-prod-2026}
+      access-ttl-seconds: 7200
+      refresh-ttl-seconds: 604800
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+      logic-delete-field: deleted
+
+logging:
+  level:
+    root: INFO
+    com.btsheng.erp: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"

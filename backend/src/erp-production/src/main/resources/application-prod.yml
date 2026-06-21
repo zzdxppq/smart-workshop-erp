@@ -1,0 +1,18 @@
+spring:
+  config:
+    import: optional:classpath:application-shared-prod.yml
+  datasource:
+    # erp-production 仅连接 cnc_production；cnc_business 经 Feign 调 erp-business
+    url: jdbc:mysql://${MYSQL_HOST:10.100.4.10}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cnc_production}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:xm_admin}
+    password: ${MYSQL_PASSWORD:Xm@admin@123!}
+
+app:
+  business:
+    url: ${BUSINESS_SERVICE_URL:http://erp-business:9082}
+
+xxl:
+  job:
+    executor:
+      appname: ${XXL_JOB_APPNAME:xxl-job-erp-production}
+      port: ${XXL_JOB_EXECUTOR_PORT:9993}

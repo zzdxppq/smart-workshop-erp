@@ -1,0 +1,58 @@
+epic_id: 8
+title: "采购管理"
+description: |
+  WHY：采购成本占 CNC 加工厂 60% 以上。采购员"拍脑袋定价"是行业常态。
+       V1.1 让询价、比价、限价、对账全流程透明。
+
+stories:
+  - id: "8.1"
+    title: "询价比价"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 1
+    acceptance_criteria_summary: |
+      - AC-8.1.1: ?
+    provides_apis:
+      - "POST /api/v1/rfqs"
+      - "GET  /api/v1/rfqs/{id}"
+      - "POST /api/v1/rfqs/{id}/quotes"
+      - "GET  /api/v1/rfqs/{id}/compare"
+
+  - id: "8.2"
+    title: "价格控制"
+    estimated_complexity: low
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 2
+    acceptance_criteria_summary: |
+      - AC-8.2.1: ?
+      - AC-8.2.2: ?
+    provides_apis:
+      - "PUT  /api/v1/materials/{id}/price-limit"
+      - "POST /api/v1/purchase-orders"
+      - "POST /api/v1/purchase-orders/{id}/submit"
+
+  - id: "8.3"
+    title: "到货提醒"
+    estimated_complexity: low
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 1
+    acceptance_criteria_summary: |
+      - AC-8.3.1: ?
+    provides_apis:
+      - "GET /api/v1/purchase-orders/incoming"
+      - "GET /api/v1/purchase-orders/overdue"
+
+  - id: "8.4"
+    title: "来料质检"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 1
+    acceptance_criteria_summary: |
+      - AC-8.4.1: ?
+    provides_apis:
+      - "POST /api/v1/inspections/incoming"
+      - "GET  /api/v1/inspections/incoming/{id}"

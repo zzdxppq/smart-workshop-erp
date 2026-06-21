@@ -1,0 +1,56 @@
+epic_id: 10
+title: "人事管理"
+description: |
+  WHY：HR 每月花在考勤统计、工资条制作上 5 天以上。
+       V1.1 让考勤自动算工资，HR 从 Excel 中解放。
+
+stories:
+  - id: "10.1"
+    title: "员工档案与考勤"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 3
+    acceptance_criteria_summary: |
+      - AC-10.1.1: ?
+      - AC-10.1.2: ?
+      - AC-10.1.3: ?
+    provides_apis:
+      - "POST /api/v1/employees"
+      - "GET  /api/v1/employees/{id}"
+      - "GET  /api/v1/employees"
+      - "POST /api/v1/attendance"
+      - "POST /api/v1/attendance/leave"
+      - "POST /api/v1/attendance/overtime"
+      - "GET  /api/v1/attendance/{employeeId}?month="
+
+  - id: "10.2"
+    title: "薪酬自动核算"
+    estimated_complexity: high
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 2
+    acceptance_criteria_summary: |
+      - AC-10.2.1: ?
+      - AC-10.2.2: ?
+    provides_apis:
+      - "POST /api/v1/salary/calculate"
+      - "GET  /api/v1/salary/{employeeId}?month="
+      - "GET  /api/v1/salary/{employeeId}/payslip"
+      - "GET  /api/v1/salary-sets"
+      - "POST /api/v1/salary-sets"
+
+  - id: "10.3"
+    title: "绩效与招聘"
+    estimated_complexity: medium
+    priority: P1
+    repository_type: backend
+    acceptance_criteria_count: 2
+    acceptance_criteria_summary: |
+      - AC-10.3.1: ?
+      - AC-10.3.2: ?
+    provides_apis:
+      - "POST /api/v1/performance"
+      - "GET  /api/v1/performance/{employeeId}?month="
+      - "POST /api/v1/recruitment/plans"
+      - "POST /api/v1/recruitment/resumes"

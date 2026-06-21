@@ -1,0 +1,5473 @@
+openapi: 3.0.3
+info:
+  title: 昆山佰泰胜专属 ERP 系统 API
+  description: |
+    V1.3.7 完整契约 · 13 Epic / 220+ 端点
+
+    **升级要点**（vs V1.3.1）：
+    - 工序分配职责严格分离生管 vs 采购（AD-1）
+    - 月度对账不含"线下"动作（AD-2）
+    - 单一 163 邮箱通知渠道（AD-3）
+    - 委外 7 状态机 + 返修闭环 + 历史交期预估（V1.3.4）
+    - 料号 5 段成本聚合（V1.3.4）
+    - 签字扫描件 AES-256-GCM 加密（V1.3.6）
+
+    **配套文档**：
+    - `docs/prd.md` V1.3.7
+    - `docs/architect-handoff.md` V1.1
+    - `docs/ux-handoff.md` V1.1
+    - `backend/spec/openapi.yaml`（本文件）
+  version: 1.3.7
+  contact:
+    name: 河南晓评信息科技有限公司
+    email: panqiang@yourcompany.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://erp.yourcompany.local
+    description: 生产环境（甲方内网）
+  - url: http://localhost:8080
+    description: 本地开发（通过 erp-gateway 8080）
+
+tags:
+  - name: E1-Auth
+    description: 认证 / 用户 / 角色（E1-S1）
+  - name: E1-Workflow
+    description: 审批工作流（E1-S2）
+  - name: E1-Dict
+    description: 字典 / 系统参数（E1-S3）
+  - name: E1-App
+    description: APP 同步 / 消息（E1-S4）
+  - name: E1-Email
+    description: 邮件配置 / 163 邮箱（V1.3.7 新增）
+  - name: E2-CRM
+    description: 客户档案（E2-S1）
+  - name: E2-Sales
+    description: 报价 / 订单 / 合同回款（E2-S2/S3/S4）
+  - name: E3-Drawing
+    description: 图纸 / BOM / 工艺（E3-S1/S2/S3/S4）
+  - name: E4-Warehouse
+    description: 扫码仓储（E4-S1/S2/S3/S4）
+  - name: E5-Workorder
+    description: 工单 / 排产 / MRP（E5-S1）
+  - name: E5-Scan
+    description: 扫码三码（E5-S2）
+  - name: E5-Allocation
+    description: 工序分配职责（E5-S4 · V1.3.7 新增）
+  - name: E5-Machine
+    description: 设备 / 机台（E5-S5）
+  - name: E6-Outsub
+    description: 委外 7 状态机 + 返修 + 交期预估（E6 全集 · V1.3.4-V1.3.7）
+  - name: E6-Outsource-State-Machine
+    description: 委外 7 状态机深化（E6-S2 · V1.3.7 Story 1.22 FR-6-2）
+  - name: E6-Rework
+    description: 委外返修闭环（E6-S3 · V1.3.7 Story 1.23 FR-6-3）
+  - name: E6-Reconcile
+    description: 月度对账不含"线下"（E6-S1 · V1.3.6-V1.3.7）
+  - name: E7-Quality
+    description: 品质管控（E7-S1/S2/S3/S4）
+  - name: E8-Purchase
+    description: 采购（E8-S1/S2/S3/S4）
+  - name: E9-Finance
+    description: 应收应付 / 成本 / 付款 / 利润（E9-S1/S2/S3/S4）
+  - name: E9-CostAgg
+    description: 料号 5 段成本聚合（E9-S5 + E11-S5 · V1.3.4 新增）
+  - name: E10-HR
+    description: 人事（E10-S1/S2/S3）
+  - name: E11-Dashboard
+    description: 报表看板（E11-S1/S2/S3 + S4/S5）
+  - name: E12-Receive
+    description: 仓管到货扫码（E12-S2 · V1.3.5）
+  - name: Platform
+    description: 基础能力（用户/角色/文件/MinIO）
+
+# ============================================================
+# 安全
+# ============================================================
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT (HS256) · access 2h + refresh 7d
+        Header: `Authorization: Bearer <token>`
+
+  # ---------- Schemas ----------
+  schemas:
+    # 通用
+    Result:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: ok }
+        data: {}
+        traceId: { type: string, example: abc123 }
+    PageResponse:
+      type: object
+      properties:
+        records: { type: array, items: {} }
+        total: { type: integer, example: 100 }
+        pageNum: { type: integer, example: 1 }
+        pageSize: { type: integer, example: 20 }
+        pages: { type: integer, example: 5 }
+
+    # 错误码枚举
+    ErrorCode:
+      type: string
+      enum:
+        - 0          # 成功
+        - 40001      # 参数缺失
+        - 40002      # 参数格式
+        - 40003      # 参数越界
+        - 40101      # 未登录
+        - 40102      # Token 过期
+        - 40103      # 黑名单
+        - 40301      # 无权限
+        - 40302      # 数据范围越界
+        - 40303      # 金额超限
+        - 40304      # 工序分配越权（V1.3.7）
+        - 40401      # 单据不存在
+        - 40402      # 文件已删除
+        - 40901      # 状态机不匹配
+        - 40902      # 库存不足
+        - 40903      # 保护期内
+        - 40904      # 状态机不匹配（V1.3.4）
+        - 40905      # 对账金额不一致（V1.3.6）
+        - 42901      # QPS 超限
+        - 42902      # 并发用户超限
+        - 50001      # 系统异常
+        - 50002      # 数据库异常
+        - 50003      # Redis 异常
+        - 50201      # MinIO 不可用
+        - 50202      # XXL-JOB 调用失败
+        - 50203      # 163 SMTP 失败（V1.3.7）
+        - 50204      # 邮件额度耗尽（V1.3.7）
+        - 90001      # 企业微信调用失败
+
+    # ---------- 业务对象 ----------
+    User:
+      type: object
+      properties:
+        id: { type: integer, example: 1001 }
+        username: { type: string, example: huangziyun }
+        realName: { type: string, example: 黄梓昀 }
+        phone: { type: string, example: '15105950281' }
+        email: { type: string, example: huangziyun@baotai.com }
+        deptId: { type: integer, example: 1 }
+        status: { type: string, enum: [ACTIVE, DISABLED] }
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, minLength: 8, maxLength: 32 }
+    LoginResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+
+    Customer:
+      type: object
+      properties:
+        id: { type: integer }
+        customerCode: { type: string, example: KH202606090001 }
+        name: { type: string, example: 苏州A精机有限公司 }
+        industry: { type: string, example: 汽车零部件 }
+        creditLimit: { type: number, example: 500000.00 }
+        ownerId: { type: integer, example: 1002 }
+        protectUntil: { type: string, format: date }
+        status: { type: string, enum: [ACTIVE, LOST, PROTECTED] }
+
+    Quote:
+      type: object
+      properties:
+        id: { type: integer }
+        quoteNo: { type: string, example: BJ202606110001 }
+        customerId: { type: integer }
+        customerName: { type: string }
+        ownerUserId: { type: integer }
+        deptId: { type: integer }
+        currency: { type: string, example: CNY }
+        deliveryDate: { type: string, format: date }
+        totalAmount: { type: number, example: 85000.00, description: '由 items 自动计算（只读）' }
+        isFa: { type: boolean }
+        isNew: { type: boolean }
+        status: { type: string, enum: [DRAFT, SUBMITTED, APPROVED, REJECTED, CONVERTED] }
+        currentNode: { type: integer, description: '当前审批节点 1/2/3' }
+        comment: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    QuoteItem:
+      type: object
+      properties:
+        id: { type: integer }
+        quoteId: { type: integer }
+        drawingNo: { type: string, example: DWG-001 }
+        material: { type: string, example: STEEL }
+        spec: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        unitPrice: { type: number, minimum: 0 }
+        amount: { type: number, description: '= quantity * unitPrice' }
+        isFa: { type: boolean }
+        isNew: { type: boolean }
+        sort: { type: integer }
+
+    QuoteCreateRequest:
+      type: object
+      required: [quote, items]
+      properties:
+        quote: { $ref: '#/components/schemas/Quote' }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/QuoteItem' }
+
+    QuoteUpdateRequest:
+      type: object
+      properties:
+        customerName: { type: string }
+        deliveryDate: { type: string, format: date }
+        isFa: { type: boolean }
+        isNew: { type: boolean }
+        comment: { type: string }
+
+    QuoteSubmitRequest:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items: { type: integer }
+          description: '可选：手工指定 OR 会签候选人'
+
+    QuoteApproveRequest:
+      type: object
+      properties:
+        adminPassword:
+          type: string
+          description: 'V1.3.7 红线 2：> 20万 二次密码确认（admin 密码）'
+        approverUserId: { type: integer }
+
+    QuoteRejectRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, description: '驳回原因，写入 crm_quote_history' }
+        approverUserId: { type: integer }
+
+    QuoteConvertRequest:
+      type: object
+      properties:
+        quantityAdjustment:
+          type: integer
+          description: 'V1.3.7 P2 修补 3：报价 100 → 订单 80 数量调整'
+
+    # ============================================================
+    # E3-Order · Story 1.6 · 订单 Schemas
+    # ============================================================
+    Order:
+      type: object
+      description: 'V1.3.7 Story 1.6 订单主表（crm_order）'
+      properties:
+        id: { type: integer }
+        orderNo: { type: string, example: 'XS20260612-0001', description: 'XS+YYYYMMDD+NNNN（继承 1.5 DocNoGenerator）' }
+        quoteId: { type: integer, description: '来源报价ID(1.5 转单时非空)' }
+        customerId: { type: integer }
+        customerName: { type: string }
+        ownerUserId: { type: integer }
+        deptId: { type: integer }
+        currency: { type: string, default: 'CNY' }
+        totalAmount: { type: number, format: double, description: '由 items 自动计算（只读）' }
+        deliveryDate: { type: string, format: date }
+        isFa: { type: boolean }
+        isNew: { type: boolean }
+        isUrgent: { type: boolean, description: 'V1.3.7 加急' }
+        status:
+          type: string
+          enum: [DRAFT, CONFIRMED, PRODUCING, PARTIAL_SHIPPED, SHIPPED, SETTLED, CLOSED, CANCELLED]
+          description: 'V1.3.7 §附录-b 7 状态机'
+        currentNode: { type: integer, description: '当前审批节点 1/2/3' }
+        comment: { type: string }
+        productionOrderNo: { type: string, example: 'GD20260612-0001', description: '转生产时生成（Epic 5）' }
+        outsourceOrderNo: { type: string, example: 'WW20260612-0001', description: '转委外时生成（Epic 6）' }
+        creditLimitCheck: { type: integer, description: '0=未通过, 1=通过, -1=无限制' }
+        isDeleted: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    OrderItem:
+      type: object
+      description: '订单明细（crm_order_item，含 quantityAdjustment hook）'
+      properties:
+        id: { type: integer }
+        orderId: { type: integer }
+        drawingNo: { type: string, example: 'DWG-2026-001' }
+        material: { type: string, example: '45#' }
+        spec: { type: string, example: 'M10x20' }
+        quantity: { type: integer }
+        unitPrice: { type: number }
+        amount: { type: number }
+        quantityAdjustment: { type: integer, description: 'V1.3.7 数量调整（来自 1.5 hook）' }
+        isFa: { type: boolean }
+        isNew: { type: boolean }
+        sort: { type: integer }
+        producedQty: { type: integer, description: '已生产数量' }
+        shippedQty: { type: integer, description: '已发货数量（累计）' }
+
+    OrderCreateRequest:
+      type: object
+      description: '订单创建请求（继承 1.5 quantityAdjustment 字段）'
+      required: [order, items]
+      properties:
+        order: { $ref: '#/components/schemas/Order' }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/OrderItem' }
+
+    OrderUpdateRequest:
+      type: object
+      description: '订单更新请求（仅 DRAFT 状态可改）'
+      properties:
+        order: { $ref: '#/components/schemas/Order' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/OrderItem' }
+
+    OrderConfirmRequest:
+      type: object
+      description: '订单确认请求（DRAFT → CONFIRMED，> 20万 必填二次密码）'
+      properties:
+        secondPassword: { type: string, description: '> 20万 二次密码确认' }
+        comment: { type: string }
+
+    OrderCancelRequest:
+      type: object
+      description: '订单取消请求（含 reason 必填）'
+      required: [reason]
+      properties:
+        reason: { type: string, description: '取消原因（必填）' }
+
+    OrderConvertRequest:
+      type: object
+      description: '1.5→1.6 转订单请求（继承 1.5 quantityAdjustment 字段）'
+      properties:
+        quantityAdjustment: { type: integer, description: 'V1.3.7 P2 修补 3：报价 100 → 订单 80 数量调整' }
+        comment: { type: string }
+
+    OrderProfit:
+      type: object
+      description: '订单利润分析（利润 = 订单金额 - 生产成本 - 委外成本 - 材料成本）'
+      properties:
+        orderId: { type: integer }
+        orderNo: { type: string }
+        orderAmount: { type: number }
+        productionCost: { type: number }
+        outsourceCost: { type: number }
+        materialCost: { type: number }
+        totalCost: { type: number }
+        profit: { type: number }
+        profitRate: { type: string, example: '25.00%' }
+        isLoss: { type: boolean, description: '利润 < 0 触发告警' }
+        alert: { type: string, example: 'NEGATIVE_PROFIT_WARNING' }
+
+    Workorder:
+      type: object
+      properties:
+        id: { type: integer }
+        workorderNo: { type: string, example: GD202606090001 }
+        orderId: { type: integer }
+        productCode: { type: string, example: YL-45-D80 }
+        qty: { type: integer, example: 50 }
+        planStart: { type: string, format: date }
+        planEnd: { type: string, format: date }
+        status: { type: string, enum: [DRAFT, PENDING_SCHEDULE, SCHEDULED, IN_PROGRESS, REPORTED, INSPECTED, STORED, CLOSED, CANCELLED] }
+        machineId: { type: integer }
+
+    WorkorderProcess:
+      type: object
+      properties:
+        id: { type: integer }
+        workorderId: { type: integer }
+        processSeq: { type: integer, example: 1 }
+        processCode: { type: string, example: P01 }
+        qty: { type: integer }
+        isOutsource: { type: boolean, description: 'V1.3.7 新增' }
+        assignedBy: { type: integer, description: 'V1.3.7 生管 ID' }
+        assignedAt: { type: string, format: date-time }
+        status: { type: string, enum: [PENDING, DISPATCHED, IN_PROGRESS, REPORTED, INSPECTED, STORED, CLOSED] }
+
+    # V1.3.7 工序分配职责分离
+    ProcessAllocation:
+      type: object
+      required: [workorderId, processSeq, decision, decidedByUserId]
+      properties:
+        id: { type: integer }
+        workorderId: { type: integer }
+        processSeq: { type: integer }
+        decision: { type: string, enum: [INHOUSE, OUTSOURCE] }
+        decidedByUserId: { type: integer, description: '生管 ID' }
+        decidedAt: { type: string, format: date-time }
+
+    ProcessAllocationVendor:
+      type: object
+      properties:
+        id: { type: integer }
+        allocationId: { type: integer }
+        vendorId: { type: integer, description: '采购选' }
+        unitPrice: { type: number, example: 8.50 }
+        deliveryDate: { type: string, format: date }
+        selectedByUserId: { type: integer, description: '采购 ID' }
+        selectedAt: { type: string, format: date-time }
+        status: { type: string, enum: [PENDING, CONFIRMED, REJECTED] }
+
+    # 委外订单（含 7 状态机）
+    OutsourceOrder:
+      type: object
+      properties:
+        id: { type: integer }
+        outsourceNo: { type: string, example: WW202606090001 }
+        workorderId: { type: integer }
+        vendorId: { type: integer }
+        drawingId: { type: integer, description: '加工图纸 ID' }
+        processCode: { type: string, example: P02 }
+        qty: { type: integer }
+        unitPrice: { type: number }
+        totalAmount: { type: number }
+        status:
+          type: string
+          enum: [PENDING_SHIP, SHIPPING, PENDING_INSPECTION, INSPECTING, QUALIFIED_STORAGE, STORED, REPAIR_REQUESTED, NOTIFIED_REPAIR]
+          description: 'V1.3.4 升级 7 状态机'
+        reworkCount: { type: integer, example: 0, description: 'V1.3.4 返修次数' }
+        originalOutsourceOrderId: { type: integer, description: 'V1.3.4 返修关联原单' }
+        isReworkReinspection: { type: boolean, default: false }
+        deliveryDate: { type: string, format: date }
+        actualDeliveryDate: { type: string, format: date }
+
+    # 仓管到货扫码（V1.3.5）
+    OutsourceArriveRequest:
+      type: object
+      required: [outsourceNo, actualQty, actualWeight]
+      properties:
+        outsourceNo: { type: string, example: WW202606090001 }
+        actualQty: { type: integer, example: 50 }
+        actualWeight: { type: number, example: 12.5, description: 'kg' }
+        photoUrls: { type: array, items: { type: string } }
+        remark: { type: string }
+
+    # 委外 7 状态机历史（V1.3.7 · Story 1.22 · FR-6-2）
+    OutsourceStateHistory:
+      type: object
+      description: '委外状态机迁移历史 · 100% 留痕'
+      properties:
+        id: { type: integer }
+        outsourceId: { type: integer }
+        outsourceNo: { type: string, example: 'WW20260612-0001' }
+        fromState:
+          type: string
+          enum: [DRAFT, SUBMITTED, ACCEPTED, IN_PROGRESS, COMPLETED, REWORK, CLOSED]
+        toState:
+          type: string
+          enum: [DRAFT, SUBMITTED, ACCEPTED, IN_PROGRESS, COMPLETED, REWORK, CLOSED]
+        transitionType:
+          type: string
+          enum: [ADVANCE, ROLLBACK, REWORK]
+        operatorUserId: { type: integer }
+        operatorRole: { type: string, description: '生管/采购/品检/财务/admin（V1.3.7 AD-1）' }
+        reason: { type: string }
+        occurredAt: { type: string, format: date-time }
+
+    # 委外状态机推进请求（V1.3.7 · Story 1.22 · FR-6-2）
+    OutsourceStateAdvanceRequest:
+      type: object
+      required: [outsourceId, targetState]
+      properties:
+        outsourceId: { type: integer, description: '委外单主键 ID' }
+        targetState:
+          type: string
+          enum: [DRAFT, SUBMITTED, ACCEPTED, IN_PROGRESS, COMPLETED, REWORK, CLOSED]
+          description: '目标状态'
+        operatorRole:
+          type: string
+          description: '操作员角色（V1.3.7 AD-1 生管/采购/品检/财务）'
+          example: '采购'
+        reason: { type: string, description: '推进原因' }
+
+    # 委外状态机回退请求（V1.3.7 · Story 1.22 · FR-6-2）
+    OutsourceStateRollbackRequest:
+      type: object
+      required: [outsourceId, reason]
+      properties:
+        outsourceId: { type: integer, description: '委外单主键 ID' }
+        reason: { type: string, description: '回退原因（必填）' }
+        operatorRole: { type: string, example: '品检' }
+
+    # 委外返修单（V1.3.7 · Story 1.23 · FR-6-3）
+    Rework:
+      type: object
+      description: '委外返修单（crm_rework）· 4 状态机：DRAFT/IN_PROGRESS/COMPLETED/CANCELLED'
+      properties:
+        id: { type: integer }
+        reworkNo: { type: string, example: 'RW20260612-0001', description: 'RW{yyyyMMdd}{seq:4}' }
+        outsourceId: { type: integer }
+        outsourceNo: { type: string, example: 'WW20260612-0001' }
+        reason: { type: string, description: '返修原因（必填 · P1 修补 2）' }
+        cost: { type: number, example: 200.00, description: '返修成本（≥ 0 · 计入月度对账 · P1 修补 3）' }
+        reworkCount: { type: integer, example: 1, description: '本次返修次序' }
+        status: { type: string, enum: [DRAFT, IN_PROGRESS, COMPLETED, CANCELLED] }
+        expectedFinishDate: { type: string, format: date }
+        finishedAt: { type: string, format: date-time }
+        createdBy: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # 返修历史（V1.3.7 · Story 1.23）
+    ReworkHistory:
+      type: object
+      properties:
+        id: { type: integer }
+        reworkId: { type: integer }
+        operation: { type: string, enum: [CREATE, FINISH, CANCEL] }
+        beforeJson: { type: string, description: '变更前快照' }
+        afterJson: { type: string, description: '变更后快照' }
+        changedBy: { type: integer }
+        changedAt: { type: string, format: date-time }
+
+    # 返修次数预警（V1.3.7 · Story 1.23）
+    ReworkAlert:
+      type: object
+      properties:
+        id: { type: integer }
+        outsourceId: { type: integer }
+        outsourceNo: { type: string }
+        reworkCount: { type: integer }
+        alertLevel: { type: string, enum: [INFO, WARN, CRITICAL, EXCEED] }
+        alertMessage: { type: string }
+        alertedAt: { type: string, format: date-time }
+
+    # 返修单创建请求（V1.3.7 · Story 1.23 · FR-6-3）
+    ReworkCreateRequest:
+      type: object
+      required: [outsourceId, reason]
+      properties:
+        outsourceId: { type: integer, description: '委外单主键 ID' }
+        reason: { type: string, description: '返修原因（必填）', example: '调质硬度不达标' }
+        cost: { type: number, example: 200.00, description: '返修成本（≥ 0）' }
+
+    # 月度对账（V1.3.6 + V1.3.7 · 不含"线下" · Story 1.21 5 状态机）
+    Reconcile:
+      type: object
+      description: 'V1.3.7 AD-2 红线：不含"线下"动作。状态机：DRAFT(1) → VENDOR_CONFIRMED(2) → BOTH_CONFIRMED(3) → FINANCE_CONFIRMED(4) → CLOSED'
+      properties:
+        id: { type: integer }
+        reconcileNo: { type: string, example: 'RC202605-0001', description: 'RC{yyyyMM}{seq:4}（按月隔离）' }
+        vendorId: { type: integer }
+        vendorName: { type: string }
+        periodYear: { type: integer, example: 2026 }
+        periodMonth: { type: integer, example: 5, description: '1-12' }
+        totalAmount: { type: number, example: 50000.00 }
+        status: { type: string, enum: [DRAFT, VENDOR_CONFIRMED, BOTH_CONFIRMED, FINANCE_CONFIRMED, CLOSED] }
+        currentStep: { type: integer, example: 1, description: '1-4 步' }
+        isLocked: { type: boolean, description: '对账期锁定' }
+        createdBy: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # 对账明细（Story 1.21）
+    ReconcileItem:
+      type: object
+      properties:
+        id: { type: integer }
+        reconcileId: { type: integer }
+        outsourceOrderId: { type: integer }
+        outsourceOrderNo: { type: string, example: 'WW20260612-0001' }
+        itemName: { type: string }
+        quantity: { type: integer }
+        unitPrice: { type: number }
+        amount: { type: number }
+        vendorAmount: { type: number, description: '厂商确认金额（AC-6.1.2）' }
+        finalAmount: { type: number, description: '最终对账金额' }
+        isConsistent: { type: boolean, description: '金额是否一致（40905 校验）' }
+        sort: { type: integer }
+
+    # 对账签字扫描件（Story 1.21 · AES-256-GCM）
+    ReconcileSignature:
+      type: object
+      properties:
+        id: { type: integer }
+        reconcileId: { type: integer }
+        signerUserId: { type: integer }
+        signerName: { type: string }
+        signatureImagePath: { type: string }
+        encryptedData: { type: string, description: 'AES-256-GCM 加密 Base64' }
+        iv: { type: string, description: '12 字节 IV 唯一（Base64）' }
+        authTag: { type: string, description: '128-bit GCM tag（Base64）' }
+        signedAt: { type: string, format: date-time }
+
+    # 对账创建请求（Story 1.21）
+    ReconcileCreateRequest:
+      type: object
+      required: [vendorId, vendorName, periodYear, periodMonth]
+      properties:
+        vendorId: { type: integer }
+        vendorName: { type: string }
+        periodYear: { type: integer, example: 2026 }
+        periodMonth: { type: integer, example: 5 }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ReconcileItem' }
+
+    # 对账明细请求
+    ReconcileItemRequest:
+      type: object
+      required: [outsourceOrderId, itemName, quantity, unitPrice]
+      properties:
+        outsourceOrderId: { type: integer }
+        outsourceOrderNo: { type: string }
+        itemName: { type: string }
+        quantity: { type: integer }
+        unitPrice: { type: number }
+
+    # 厂商对账确认请求（AC-6.1.2 · 40905）
+    ReconcileVendorConfirmRequest:
+      type: object
+      required: [vendorAmounts]
+      properties:
+        vendorAmounts:
+          type: array
+          items:
+            type: object
+            required: [itemId, vendorAmount]
+            properties:
+              itemId: { type: integer }
+              vendorAmount: { type: number, description: '厂商确认金额（与 amount 一致才能通过 · 40905）' }
+
+    # 料号 5 段成本（V1.3.4）
+    CostAggregate:
+      type: object
+      properties:
+        materialCode: { type: string, example: YL-45-D80 }
+        period: { type: string, example: '2026-05' }
+        materialCost: { type: number, description: '材料成本' }
+        laborCost: { type: number, description: '工时成本' }
+        surfaceCost: { type: number, description: '表处成本' }
+        outsourceCost: { type: number, description: '外协成本' }
+        mfgCost: { type: number, description: '管理费分摊' }
+        totalCost: { type: number, description: '总成本' }
+        version: { type: integer }
+        computedAt: { type: string, format: date-time }
+
+    # 厂商资料（V1.3.7 邮箱必填 + 电话选填）
+    Vendor:
+      type: object
+      required: [vendorName, contactEmail]
+      properties:
+        id: { type: integer }
+        vendorCode: { type: string, example: GYS202606090001 }
+        vendorName: { type: string, example: 张家港A厂 }
+        capabilities: { type: array, items: { type: string }, example: [车, 铣, 表处] }
+        creditLevel: { type: string, enum: [A, B, C, D] }
+        contactEmail:
+          type: string
+          format: email
+          description: 'V1.3.7 仍必填（163 邮箱推送）'
+        contactPhone:
+          type: string
+          description: 'V1.3.7 改选填（短信下线后非关键路径）'
+        notifyChannel:
+          type: string
+          enum: [email_163]
+          default: email_163
+          description: 'V1.3.7 收窄为单 163 邮箱'
+        defaultReconEmail: { type: string, format: email, description: 'V1.3.6 对账单邮箱' }
+        avgDeliveryDays: { type: integer, description: 'V1.3.4 近 3 次中位数' }
+
+    # 邮件发送日志（V1.3.7）
+    EmailSendLog:
+      type: object
+      properties:
+        id: { type: integer }
+        toAddress: { type: string, format: email }
+        subject: { type: string }
+        attachmentHash: { type: string, description: '附件 SHA-256' }
+        smtpResponse: { type: string }
+        status: { type: string, enum: [PENDING, SENT, FAILED, RETRY_1H, RETRY_6H, RETRY_24H, DEAD] }
+        retryCount: { type: integer }
+        sentAt: { type: string, format: date-time }
+
+    # 邮件配置（V1.3.7）
+    EmailConfig:
+      type: object
+      properties:
+        smtpHost: { type: string, example: smtp.163.com }
+        smtpPort: { type: integer, example: 465 }
+        useSsl: { type: boolean, default: true }
+        fromAddress: { type: string, example: noreply@yourcompany.com }
+        authCode: { type: string, description: 'KMS 注入（不返回给前端）', writeOnly: true }
+        retryPolicy: { type: array, items: { type: string }, example: ['1h', '6h', '24h'] }
+        dailyQuota: { type: integer, example: 5000 }
+        quotaWarnThreshold: { type: number, example: 0.8 }
+        logRetentionDays: { type: integer, example: 90 }
+        attachmentMaxSizeMb: { type: integer, example: 10 }
+
+    # ====== Story 1.2 审批工作流配置（9 端点 schema） ======
+    WorkflowCreateRequest:
+      type: object
+      required: [workflowCode, nodesJson]
+      properties:
+        workflowCode: { type: string, pattern: '^[A-Z_]{2,50}$', example: CUSTOM_FLOW }
+        nodesJson:
+          type: string
+          description: 节点 JSON 数组（1..20 节点）
+          example: '[{"node_index":1,"node_type":"START"},{"node_index":2,"node_type":"APPROVAL","role_code":"OWNER","threshold":50000},{"node_index":3,"node_type":"END"}]'
+        conditionsJson:
+          type: string
+          description: 条件 JSON（amount_field 必填）
+          example: '{"amount_field":"total_amount"}'
+
+    WorkflowUpdateRequest:
+      type: object
+      properties:
+        nodesJson: { type: string }
+        conditionsJson: { type: string }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+
+    WorkflowVO:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        workflowCode: { type: string, example: QUOTE_FLOW }
+        nodes:
+          type: array
+          items: { $ref: '#/components/schemas/WorkflowNodeVO' }
+        conditionsJson: { type: string }
+        status: { type: string, enum: [ACTIVE, INACTIVE, DELETED] }
+        version: { type: integer, example: 1 }
+
+    WorkflowNodeVO:
+      type: object
+      properties:
+        nodeIndex: { type: integer, example: 2 }
+        nodeType: { type: string, enum: [START, APPROVAL, CC, END] }
+        roleCode: { type: string, example: dept_manager }
+        threshold: { type: number, example: 200000.00 }
+        orSignRequired: { type: boolean, example: false, description: 'V1.3.7 P1 修补 OR 会签' }
+
+    WorkflowTestRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number, example: 80000.00 }
+        applicantRole: { type: string, example: salesperson }
+
+    WorkflowTestResult:
+      type: object
+      properties:
+        matchedNodeIndex: { type: integer, example: 2 }
+        matchedRole: { type: string, example: dept_manager }
+        candidates: { type: array, items: { type: integer }, example: [10010, 10011] }
+        orSignRequired: { type: boolean, example: false }
+        trace: { type: array, items: { type: string } }
+
+    ApprovalCreateRequest:
+      type: object
+      required: [bizType, bizId, amount, applicantUserId]
+      properties:
+        bizType: { type: string, enum: [QUOTE, ORDER, PURCHASE, PAYMENT, OTHER] }
+        bizId: { type: string, example: BJ202606100002, maxLength: 50 }
+        amount: { type: number, example: 60000.00 }
+        applicantUserId: { type: integer, example: 10086 }
+        workflowCode: { type: string, description: 可选，默认按 bizType 选 }
+        comment: { type: string }
+
+    ApprovalVO:
+      type: object
+      properties:
+        id: { type: integer }
+        bizType: { type: string, enum: [QUOTE, ORDER, PURCHASE, PAYMENT, OTHER] }
+        bizId: { type: string }
+        workflowCode: { type: string }
+        currentNodeIndex: { type: integer }
+        currentApproverUserId: { type: integer }
+        candidates: { type: array, items: { type: integer } }
+        orSignRequired: { type: boolean, description: 'V1.3.7 P1 修补' }
+        status: { type: string, enum: [PENDING, APPROVED, REJECTED, SKIPPED, WAITING] }
+        skipReason: { type: string, enum: [ON_LEAVE, ON_TRIP, DISABLED, RESIGNED] }
+        timeoutAt: { type: string, format: date-time }
+        isOverdue: { type: boolean }
+        nodeSkipped: { type: boolean }
+
+    ApproveRequest:
+      type: object
+      required: [approverUserId]
+      properties:
+        approverUserId: { type: integer, example: 10010 }
+        comment: { type: string, maxLength: 500, example: 同意 }
+
+    RejectRequest:
+      type: object
+      required: [approverUserId, reason]
+      properties:
+        approverUserId: { type: integer, example: 10010 }
+        reason: { type: string, minLength: 1, maxLength: 500, example: 价格超出预算 }
+
+    # ===== V1.3.7 + V1.3.8 schemas（Story 10.1 fix：从原文件末尾重复 components 块并入）=====
+    # V1.3.7 · Story 1.7 · E3-Drawing 8 DTO
+    Drawing:
+      type: object
+      description: 图纸主表 · 4 状态机（DRAFT/RELEASED/ARCHIVED/OBSOLETE）
+      properties:
+        id: { type: integer }
+        drawingNo:
+          type: string
+          description: 图号 DWG-YYYYMMDD-NNNN · 唯一索引（P1 修补）
+          example: DWG-20260612-0001
+        version:
+          type: string
+          description: 版本 v1 < v2 < v3 严格递增（P1 修补）
+          example: v1
+        title: { type: string }
+        materialCode:
+          type: string
+          description: 物料编码 WL-XXXX 唯一索引
+          example: WL-1001
+        processRoute:
+          type: string
+          description: 工艺路线 JSON（5 段成本聚合 · V1.3.4 留 1.9 BOM）
+        status:
+          type: string
+          enum: [DRAFT, RELEASED, ARCHIVED, OBSOLETE]
+        pdfPath: { type: string }
+        signatureScanPath:
+          type: string
+          description: 签字扫描件路径（AES-256-GCM 加密存储 · V1.3.6 红线）
+        isEncrypted:
+          type: integer
+          description: 加密标记（P1 修补 · AES-256-GCM）
+          enum: [0, 1]
+        isFa:
+          type: integer
+          description: FA 件 · > 20万 二次密码
+          enum: [0, 1]
+        isNew:
+          type: integer
+          enum: [0, 1]
+        ownerUserId: { type: integer }
+        deptId: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    DrawingVersion:
+      type: object
+      description: 图纸版本历史
+      properties:
+        id: { type: integer }
+        drawingId: { type: integer }
+        version: { type: string, example: v2 }
+        pdfPath: { type: string }
+        signatureScanPath: { type: string }
+        isEncrypted: { type: integer, enum: [0, 1] }
+        changeReason: { type: string }
+        changedBy: { type: integer }
+        changedAt: { type: string, format: date-time }
+
+    DrawingCreateRequest:
+      type: object
+      required: [title, materialCode, processRoute]
+      properties:
+        drawingNo:
+          type: string
+          description: 图号（自动生成）
+          example: DWG-20260612-0001
+        title: { type: string }
+        materialCode:
+          type: string
+          pattern: '^WL-\d{4}$'
+          example: WL-1001
+        processRoute:
+          type: string
+          description: 工艺路线 JSON（至少 1 工序）
+        isFa: { type: integer, enum: [0, 1], default: 0 }
+        isNew: { type: integer, enum: [0, 1], default: 0 }
+        pdfPath: { type: string }
+        signatureScanPath: { type: string }
+        comment: { type: string }
+
+    DrawingUpdateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        materialCode:
+          type: string
+          pattern: '^WL-\d{4}$'
+        processRoute: { type: string }
+        pdfPath: { type: string }
+        signatureScanPath: { type: string }
+        comment: { type: string }
+
+    DrawingVersionRequest:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: string
+          pattern: '^v\d+$'
+          description: 版本号 v\d+ 严格递增
+          example: v2
+        changeReason: { type: string }
+        pdfPath: { type: string }
+        signatureScanPath: { type: string }
+
+    DrawingReleaseRequest:
+      type: object
+      description: 发布请求 · > 20万 走二次密码
+      properties:
+        adminPassword:
+          type: string
+          description: 管理员二次密码（FA 件 > 20万 必填）
+        candidates:
+          type: array
+          description: OR 会签候选人
+          items: { type: integer }
+        comment: { type: string }
+
+    DrawingArchiveRequest:
+      type: object
+      properties:
+        comment: { type: string }
+
+    DrawingSignatureRequest:
+      type: object
+      properties:
+        version: { type: string, example: v1 }
+        signerUserId: { type: integer }
+        signatureImagePath:
+          type: string
+          description: 签字图片（AES-256-GCM 加密后存储）
+        iv: { type: string, description: GCM 初始化向量（IV 唯一） }
+
+    # V1.3.7 · Story 1.7 · 3 P1 修补 Schema 描述
+    DrawingP1Fixes:
+      type: object
+      description: 3 P1 修补说明
+      properties:
+        uniqueDrawingNoIndex:
+          type: string
+          description: 图号 + 版本 唯一复合索引 (drawing_no, version) - 数据库层兜底
+        strictlyIncreasingVersion:
+          type: string
+          description: 版本号严格递增校验 v1 < v2 < v3，禁止跳跃和回退
+        aes256GcmEncryption:
+          type: string
+          description: AES-256-GCM 加密签字扫描件（V1.3.6 红线 · 128-bit GCM tag · IV 唯一）
+
+    # V1.3.7 · Story 1.7 · 4 状态枚举
+    DrawingStatus:
+      type: string
+      description: 图纸状态机（DRAFT → RELEASED → ARCHIVED + OBSOLETE）
+      enum: [DRAFT, RELEASED, ARCHIVED, OBSOLETE]
+
+    # V1.3.7 · Story 1.7 · 5 变更操作
+    DrawingOperation:
+      type: string
+      description: 图纸变更操作枚举
+      enum: [CREATE, UPDATE, ADD_VERSION, RELEASE, ARCHIVE, OBSOLETE]
+
+    # ===== V1.3.9 Sprint 12 Story 12.1 图纸权限矩阵 Schemas =====
+
+    DrawingPermissionDTO:
+      type: object
+      description: 图纸权限位 DTO（permission 端点返回）
+      properties:
+        drawingId: { type: integer, format: int64 }
+        role:
+          type: string
+          description: 用户主角色
+          enum: [ENGINEER, PROD_PLANNER, SALES, PURCHASER, WAREHOUSE, QC, OPERATOR, FINANCE]
+        scope:
+          type: string
+          description: 权限 scope（与金额 ACL 独立命名空间）
+          enum: [ALL, ORDER, PO, INCOMING, INSPECTION, WORKORDER_PROCESS, NONE]
+        permissions:
+          $ref: '#/components/schemas/DrawingPermissionBits'
+        linkedBizIds:
+          type: object
+          description: 关联业务单据 ID 列表（按 biz_type 分桶）
+          properties:
+            ORDER: { type: array, items: { type: integer, format: int64 } }
+            PO: { type: array, items: { type: integer, format: int64 } }
+            INCOMING: { type: array, items: { type: integer, format: int64 } }
+            INSPECTION: { type: array, items: { type: integer, format: int64 } }
+            WORKORDER_PROCESS: { type: array, items: { type: integer, format: int64 } }
+        expiresAt:
+          type: string
+          format: date-time
+          description: 权限查询结果缓存过期时间（5 分钟）
+
+    DrawingPermissionBits:
+      type: object
+      description: 5 操作位（7 角色 × 5 操作矩阵）
+      properties:
+        view: { type: boolean, description: "预览权限" }
+        print: { type: boolean, description: "打印权限" }
+        download: { type: boolean, description: "下载原文件权限（仅 ENGINEER）" }
+        upload: { type: boolean, description: "上传权限（仅 ENGINEER）" }
+        delete: { type: boolean, description: "删除权限（仅 ENGINEER）" }
+
+    # ============================================================
+    # V1.3.9 Sprint 13 Story 13.3 · 真实查询响应 schemas
+    # ============================================================
+    DrawingLinkListResponse:
+      type: object
+      description: 图纸关联业务单据列表响应（13.3 端点 1）
+      properties:
+        drawingId: { type: integer, format: int64, description: "图纸 ID" }
+        bizType:
+          type: string
+          enum: [ORDER, PO, INCOMING, INSPECTION, WORKORDER_PROCESS]
+          description: 业务类型
+        bizIds:
+          type: array
+          items: { type: integer, format: int64 }
+          description: 关联业务单据 ID 列表
+        totalCount: { type: integer, description: "总数" }
+        querySource:
+          type: string
+          enum: [DB_REAL, CACHE]
+          description: 数据来源
+        queriedAt: { type: string, format: date-time, description: "查询时间" }
+
+    AccessibleDrawingListResponse:
+      type: object
+      description: 业务单据可访问图纸列表响应（13.3 端点 2 · Redis 5min 缓存）
+      properties:
+        bizType: { type: string, description: "业务类型" }
+        bizId: { type: integer, format: int64, description: "业务单据 ID" }
+        drawings:
+          type: array
+          items: { $ref: '#/components/schemas/AccessibleDrawing' }
+          description: 可访问图纸列表
+        totalCount: { type: integer, description: "总数" }
+        cacheHit: { type: boolean, description: "Redis 缓存是否命中" }
+        queriedAt: { type: string, format: date-time, description: "查询时间" }
+
+    AccessibleDrawing:
+      type: object
+      description: 可访问图纸条目
+      properties:
+        drawingId: { type: integer, format: int64, description: "图纸 ID" }
+        drawingCode: { type: string, description: "图纸代号" }
+        drawingName: { type: string, description: "图纸名称" }
+        version: { type: string, description: "版本号" }
+        thumbnailUrl: { type: string, description: "缩略图 URL" }
+        permissionLevel:
+          type: string
+          enum: [VIEW, PRINT, EDIT]
+          description: "权限级别（5 操作矩阵裁剪）"
+
+    OperatorProcessDrawingResponse:
+      type: object
+      description: OPERATOR 工序可访问图纸列表响应（13.3 端点 3 · Redis 5min 缓存）
+      properties:
+        processId: { type: integer, format: int64, description: "工序 ID" }
+        processCode: { type: string, description: "工序代号" }
+        processName: { type: string, description: "工序名称" }
+        workOrderId: { type: integer, format: int64, description: "工单 ID" }
+        workOrderCode: { type: string, description: "工单代号" }
+        status:
+          type: string
+          enum: [IN_PROGRESS, PENDING, COMPLETED]
+          description: "工序状态"
+        operatorUserId: { type: integer, format: int64, description: "操作工用户 ID" }
+        drawings:
+          type: array
+          items: { $ref: '#/components/schemas/ProcessDrawing' }
+          description: 可访问图纸列表
+        totalCount: { type: integer, description: "总数" }
+        cacheHit: { type: boolean, description: "Redis 缓存是否命中" }
+        queriedAt: { type: string, format: date-time, description: "查询时间" }
+
+    ProcessDrawing:
+      type: object
+      description: 工序可访问图纸条目
+      properties:
+        drawingId: { type: integer, format: int64, description: "图纸 ID" }
+        drawingCode: { type: string, description: "图纸代号" }
+        drawingName: { type: string, description: "图纸名称" }
+        thumbnailUrl: { type: string, description: "缩略图 URL" }
+        permissionLevel:
+          type: string
+          enum: [VIEW, PRINT, EDIT]
+          description: "权限级别（OPERATOR 默认 VIEW）"
+
+    DrawingAclErrorResponse:
+      type: object
+      description: 图纸 ACL 错误响应（统一 40304）
+      properties:
+        code: { type: integer, example: 40304 }
+        message:
+          type: string
+          example: "该图纸未关联您的订单"
+          description: |
+            角色定制消息：
+            - FINANCE → "FINANCE 角色无图纸权限"
+            - SALES 不关联订单 → "该图纸未关联您的订单"
+            - PURCHASER/WAREHOUSE/QC 类似
+            - OPERATOR 工序不关联 → "当前工序未关联该图纸"
+
+    # ===== V1.3.8 Sprint 7-10 Schemas =====
+    BatchCreateRequest:
+      type: object
+      required: [poId, arrivedAt, items]
+      properties:
+        poId: { type: integer, format: int64 }
+        arrivedAt: { type: string, format: date-time }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/BatchItem' }
+
+    BatchItem:
+      type: object
+      required: [materialId, quantity]
+      properties:
+        materialId: { type: integer, format: int64 }
+        quantity: { type: integer }
+        poItemId: { type: integer, format: int64 }
+
+    BatchCreateResponse:
+      type: object
+      properties:
+        batches:
+          type: array
+          items: { $ref: '#/components/schemas/BatchInfo' }
+        poStatusAfter:
+          type: string
+          enum: [PENDING_SHIP, PARTIAL_ARRIVED, ALL_ARRIVED, CANCELLED]
+        qualityOrders:
+          type: array
+          items: { type: string }
+
+    BatchInfo:
+      type: object
+      properties:
+        batchNo: { type: string }
+        materialId: { type: integer, format: int64 }
+        quantity: { type: integer }
+
+    PoStatusResponse:
+      type: object
+      properties:
+        poId: { type: integer, format: int64 }
+        poStatus: { type: string }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PoStatusItem' }
+
+    PoStatusItem:
+      type: object
+      properties:
+        materialId: { type: integer, format: int64 }
+        ordered: { type: integer }
+        arrived: { type: integer }
+        batchCount: { type: integer }
+        qualityStatus: { type: string }
+
+    MaterialBarcodeRequest:
+      type: object
+      required: [materialId, batchId, materialNo]
+      properties:
+        materialId: { type: integer, format: int64 }
+        batchId: { type: integer, format: int64 }
+        materialNo: { type: string }
+
+    MaterialBarcodeResponse:
+      type: object
+      properties:
+        barcodeNo: { type: string }
+        isNew: { type: boolean }
+        oldBarcode: { type: string }
+
+    MaterialBarcodeParseResponse:
+      type: object
+      properties:
+        materialId: { type: integer, format: int64 }
+        materialNo: { type: string }
+        batchId: { type: integer, format: int64 }
+        batchNo: { type: string }
+        arrivedAt: { type: string, format: date-time }
+        qualityStatus: { type: string, enum: [PENDING, PASSED, REJECTED] }
+
+    # ===== V1.3.9 Sprint 13 Story 13.1 InspectionDTO schema 补齐 =====
+    # 品质检验单完整 DTO（V1.3.7 1.28-1.30 + V1.3.9 Sprint 13.1 补齐）
+    InspectionDTO:
+      type: object
+      description: 品质检验单完整 DTO（V1.3.7 1.28-1.30 + V1.3.9 Sprint 13.1 补齐）
+      properties:
+        id: { type: integer, format: int64 }
+        inspectionNo:
+          { type: string, description: '检验单号 · INSP-yyyyMMdd-NNNN' }
+        materialCode:
+          { type: string, description: '物料码 · WL-... 前缀' }
+        materialName:
+          { type: string, nullable: true, description: '物料名 · 关联 mtl_material.name' }
+        batchNo:
+          { type: string, nullable: true, description: '批次号 · 关联 wms_inbound.batch_no' }
+        inspectionType:
+          type: string
+          enum: [INCOMING, IN_PROCESS, OUTGOING, FA, CMM]
+          description: '检验类型 · V1.3.7 1.28 5 类'
+        qualityStatus:
+          type: string
+          enum: [PASS, FAIL, PENDING, REWORK]
+          description: '质检结果 · 与 Sprint 1.4 MaterialBarcodeParseResponse.qualityStatus 一致'
+        inspectItems:
+          type: array
+          description: '检验项明细'
+          items:
+            $ref: '#/components/schemas/InspectionItemDTO'
+        inspectorUserId: { type: integer, format: int64, description: '检验人 userId' }
+        inspectorName:
+          { type: string, nullable: true, description: '检验人姓名 · 关联 sys_user.full_name' }
+        inspectionDate: { type: string, format: date-time, description: '实际检验日期' }
+        actualInspectionDate:
+          { type: string, format: date-time, nullable: true, description: '实际检验完成时间 · nullable（进行中为空）' }
+        remark: { type: string, maxLength: 500, nullable: true }
+        tenantId: { type: integer, format: int64, description: '多租户隔离' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    InspectionCreateRequest:
+      type: object
+      required: [materialCode, inspectionType, qualityStatus, inspectItems]
+      properties:
+        materialCode: { type: string, description: '物料码 · 必填' }
+        inspectionType:
+          type: string
+          enum: [INCOMING, IN_PROCESS, OUTGOING, FA, CMM]
+        qualityStatus:
+          type: string
+          enum: [PASS, FAIL, PENDING, REWORK]
+        inspectItems:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/InspectionItemDTO'
+        remark: { type: string, maxLength: 500, nullable: true }
+
+    InspectionItemDTO:
+      type: object
+      properties:
+        itemName:
+          { type: string, maxLength: 50, description: '检验项名称（如"外观"/"尺寸"/"硬度"）' }
+        standard:
+          { type: string, maxLength: 200, nullable: true, description: '检验标准' }
+        measuredValue:
+          { type: string, maxLength: 100, nullable: true, description: '实测值' }
+        result:
+          { type: string, enum: [OK, NG, NA], description: '单项结果' }
+        sortOrder: { type: integer, default: 0 }
+
+    InspectionResponse:
+      type: object
+      properties:
+        inspectionId: { type: integer, format: int64 }
+        inspectionNo: { type: string }
+        status: { type: string, enum: [CREATED, REJECTED] }
+        createdAt: { type: string, format: date-time }
+
+    NoOrderPurchaseRequest:
+      type: object
+      required: [purchaseReason, supplierId, items]
+      properties:
+        purchaseReason: { type: string, enum: [URGENT_REPLENISH, CUSTOMER_ADD, STOCK_SWAP, OTHER] }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/NoOrderPurchaseItem' }
+        supplierId: { type: integer, format: int64 }
+        remark: { type: string }
+
+    NoOrderPurchaseItem:
+      type: object
+      required: [materialId, quantity, estimatedPrice]
+      properties:
+        materialId: { type: integer, format: int64 }
+        quantity: { type: integer }
+        estimatedPrice: { type: number, format: double }
+
+    NoOrderPurchaseResponse:
+      type: object
+      properties:
+        poId: { type: integer, format: int64 }
+        poNo: { type: string }
+        sourceType: { type: string, enum: [FROM_ORDER, FROM_MRP, NO_ORDER] }
+        purchaseReason: { type: string }
+        approvalRoute: { type: string }
+        estimatedTotal: { type: number, format: double }
+
+    PurchaseReason:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        color: { type: string, enum: [red, orange, blue, gray] }
+
+    ApprovalRouteRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number, format: double }
+        category: { type: string }
+        supplierStatus: { type: string }
+        urgency: { type: string, enum: [NORMAL, URGENT] }
+
+    ApprovalRouteResponse:
+      type: object
+      properties:
+        route: { type: array, items: { type: string } }
+        matchedThresholds: { type: array, items: { type: string } }
+        estimatedSigners: { type: integer }
+        compatibleLegacyRoute: { type: array, items: { type: string } }
+
+    GmSummaryResponse:
+      type: object
+      properties:
+        period: { type: string }
+        noOrderPoCount: { type: integer }
+        noOrderPoAmount: { type: number, format: double }
+        urgentReplenishCount: { type: integer }
+        amountThresholdPassedRate: { type: number, format: double }
+        procurementManagerWorkload: { type: integer }
+        outsourceCostRatio: { type: number, format: double }
+        trendChart:
+          type: array
+          items: { $ref: '#/components/schemas/GmTrendPoint' }
+
+    GmTrendPoint:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        noOrderCount: { type: integer }
+        amount: { type: number, format: double }
+
+    MaterialDetailResponse:
+      type: object
+      properties:
+        base: { $ref: '#/components/schemas/MaterialBaseInfo' }
+        process: { $ref: '#/components/schemas/ProcessInfo' }
+        drawing: { $ref: '#/components/schemas/DrawingInfo' }
+        price: { $ref: '#/components/schemas/PriceInfo' }
+        cost: { $ref: '#/components/schemas/CostInfo' }
+        labor: { $ref: '#/components/schemas/LaborInfo' }
+        outsource: { $ref: '#/components/schemas/OutsourceInfo' }
+
+    MaterialBaseInfo:
+      type: object
+      properties:
+        materialId: { type: integer, format: int64 }
+        materialNo: { type: string }
+        name: { type: string }
+        spec: { type: string }
+        unit: { type: string }
+        category: { type: string }
+        defaultWarehouse: { type: string }
+
+    ProcessInfo:
+      type: object
+      properties:
+        routes:
+          type: array
+          items: { $ref: '#/components/schemas/ProcessRouteStep' }
+
+    ProcessRouteStep:
+      type: object
+      properties:
+        stepSeq: { type: integer }
+        processNo: { type: string }
+        workcenter: { type: string }
+        stdMinutes: { type: number, format: double }
+        equipment: { type: string }
+
+    DrawingInfo:
+      type: object
+      properties:
+        dwgNo: { type: string }
+        version: { type: string }
+        status: { type: string }
+        pdfUrl: { type: string }
+        isLatest: { type: boolean }
+
+    PriceInfo:
+      type: object
+      properties:
+        currentPrice: { type: number, format: double }
+        avg30d: { type: number, format: double }
+        min30d: { type: number, format: double }
+        max30d: { type: number, format: double }
+        trendPoints:
+          type: array
+          items: { $ref: '#/components/schemas/PriceTrendPoint' }
+
+    PriceTrendPoint:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        price: { type: number, format: double }
+
+    CostInfo:
+      type: object
+      properties:
+        materialCost: { type: number, format: double }
+        scrapRate: { type: number, format: double }
+        effectiveCost: { type: number, format: double }
+
+    LaborInfo:
+      type: object
+      properties:
+        laborMinutes: { type: number, format: double }
+        hourlyRate: { type: number, format: double }
+        laborCost: { type: number, format: double }
+
+    OutsourceInfo:
+      type: object
+      properties:
+        outsourceCost: { type: number, format: double }
+        supplier: { type: string }
+        leadDays: { type: integer }
+
+    ChangeLogEntry:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        entityType: { type: string }
+        entityId: { type: integer, format: int64 }
+        action: { type: string }
+        fieldName: { type: string }
+        oldValue: { type: string }
+        newValue: { type: string }
+        changedBy: { type: integer, format: int64 }
+        changedAt: { type: string, format: date-time }
+
+    WorkflowEventStats:
+      type: object
+      properties:
+        totalCount: { type: integer, format: int64 }
+        byEventType:
+          type: object
+          additionalProperties: { type: integer, format: int64 }
+        byApproverRole:
+          type: object
+          additionalProperties: { type: integer, format: int64 }
+        period:
+          $ref: '#/components/schemas/StatsPeriod'
+
+    StatsPeriod:
+      type: object
+      properties:
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+
+# V1.3.9 Sprint 14 Story 13.7 · baseline-typecheck-fix
+# 20 端点增量 + 7 schema 补齐（补 Sprint 12-13 已 ship 端点的契约描述）
+
+    # ===== V1.3.9 Sprint 14 Story 13.7 schema 补齐（12.2 / 12.3 / 12.4）=====
+    SysPrinter:
+      type: object
+      description: 打印机配置模型（V1.3.9 Sprint 12 Story 12.2 · sys_printer 表）
+      required: [name, type]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string, minLength: 1, maxLength: 50, description: '唯一名称 · 1-50 字符' }
+        type: { type: string, enum: [NORMAL, LABEL], description: '普通（NORMAL · OS 打印队列） / 标签（LABEL · Socket 9100）' }
+        ip: { type: string, format: ipv4, nullable: true, description: 'IPv4 · LABEL 必填 · NORMAL 可空' }
+        port: { type: integer, default: 9100, minimum: 1, maximum: 65535 }
+        protocol: { type: string, enum: [ZPL, TSPL, PDF_BROWSER], description: '协议 · 由设备型号决定' }
+        modelSuggestion: { type: string, enum: [DELI_DL888B, ZEBRA_ZD420, TSC_TTP244PRO, OTHER] }
+        enabled: { type: integer, enum: [0, 1], default: 1 }
+        status: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN], default: UNKNOWN, description: '心跳状态' }
+        failCount: { type: integer, default: 0, description: '连续失败次数 · 达 2 标 OFFLINE' }
+        lastHeartbeatAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        tenantId: { type: integer, format: int64 }
+
+    PrinterHeartbeatResult:
+      type: object
+      description: 心跳测试响应（TCP Socket 2s 探活结果）
+      properties:
+        status: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN] }
+        latencyMs: { type: integer, description: '延迟 ms' }
+        protocolDetected: { type: string, enum: [ZPL, TSPL, UNKNOWN] }
+        error: { type: string, nullable: true, description: '失败时填充' }
+        hint: { type: string, nullable: true, example: "请检查 IP/端口/网线" }
+
+    PrinterAvailableResponse:
+      type: object
+      description: 可用打印机列表响应（含心跳状态）
+      properties:
+        printers:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/SysPrinter' }
+        count: { type: integer }
+
+    LabelTemplate:
+      type: object
+      description: 标签模板元数据（V1.3.9 Sprint 12 Story 12.3 · label_template 表）
+      required: [type, colorStrip]
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        name: { type: string, maxLength: 20, example: "工单码" }
+        prefix: { type: string, maxLength: 5, example: "GD-" }
+        colorStrip: { type: string, pattern: "^#[0-9A-Fa-f]{6}$", example: "#1E40AF", description: '色条 HEX' }
+        reuseFrom: { type: string, nullable: true, description: 'SB=GD · 其他 null', example: "null" }
+        layout:
+          type: object
+          properties:
+            topBarH: { type: number, default: 5 }
+            qrAreaH: { type: number, default: 18 }
+            textAreaH: { type: number, default: 7 }
+            fontSize: { type: number, default: 8 }
+            qrSizePx: { type: integer, default: 300 }
+            qrSizeMm: { type: number, default: 12 }
+            widthMm: { type: number, default: 50 }
+            heightMm: { type: number, default: 30 }
+            colorStripWidthMm: { type: number, default: 8 }
+        dpi: { type: integer, enum: [203, 300], default: 300 }
+        enabled: { type: boolean, default: true }
+        qrExample: { type: string, maxLength: 100, example: "GD-260614-001" }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+
+    LabelTemplateListResponse:
+      type: object
+      description: 标签模板列表响应（12.3 listLabelTemplates 返回）
+      properties:
+        templates:
+          type: array
+          items: { $ref: '#/components/schemas/LabelTemplate' }
+        companyName: { type: string, default: "昆山佰泰胜精密加工", description: '厂名 · 读 sys_dict.COMPANY_NAME' }
+
+    LabelPreviewRequest:
+      type: object
+      description: 标签预览请求（12.3 previewLabel 输入）
+      required: [type, data]
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        data:
+          type: object
+          required: [qrContent]
+          properties:
+            qrContent: { type: string, maxLength: 200, description: '纯文本 · APP 扫码壳按前缀路由' }
+            lines:
+              type: array
+              maxItems: 6
+              items: { type: string, maxLength: 50 }
+            factoryName: { type: string, maxLength: 20, default: "昆山佰泰胜精密加工" }
+        format: { type: string, enum: [PNG, PDF], default: PNG }
+
+    LabelPreviewResponse:
+      type: object
+      description: 标签预览响应（base64 PNG / PDF）
+      properties:
+        type: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        format: { type: string, example: "PNG" }
+        base64: { type: string, description: 'data:image/png;base64,...' }
+        contentType: { type: string, example: "image/png" }
+        sizeBytes: { type: integer, description: 'PNG 字节数 · < 5120 (5KB)' }
+        renderedAt: { type: string, format: date-time }
+
+    ZplPrintRequest:
+      type: object
+      description: ZPL/TSPL 直连打印请求（12.4 模式一）
+      required: [templateCode, qrContent, lines, printerId, count]
+      properties:
+        templateCode: { type: string, enum: [GD, LZ, SB, WW, WL] }
+        qrContent: { type: string, maxLength: 200 }
+        lines:
+          type: array
+          maxItems: 6
+          items: { type: string }
+        printerId: { type: integer, format: int64 }
+        count: { type: integer, minimum: 1, maximum: 100, default: 1 }
+        colorBarHex: { type: string, pattern: "^#?[0-9A-Fa-f]{6}$", default: "#1E40AF" }
+        remark: { type: string, maxLength: 200 }
+
+    ZplPrintResult:
+      type: object
+      description: ZPL/TSPL 直连打印响应
+      properties:
+        printLogId: { type: integer, format: int64 }
+        logNo: { type: string, example: "PR-20260614-001" }
+        bytesSent: { type: integer, example: 256 }
+        latencyMs: { type: integer, example: 350 }
+        protocol: { type: string, enum: [ZPL, TSPL] }
+
+    PdfA4PrintRequest:
+      type: object
+      description: A4 PDF 打印请求（12.4 模式二 · 3×9=27 标签/页）
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            type: object
+            required: [templateCode, qrContent, lines]
+            properties:
+              templateCode: { type: string, enum: [GD, LZ, SB, WW, WL] }
+              qrContent: { type: string, maxLength: 200 }
+              lines:
+                type: array
+                maxItems: 6
+                items: { type: string }
+              colorBarHex: { type: string, default: "#1E40AF" }
+        remark: { type: string, maxLength: 200 }
+
+    PrintLogResponse:
+      type: object
+      description: 打印日志响应（12.4 sys_print_log · V57 Flyway）
+      properties:
+        id: { type: integer, format: int64 }
+        logNo: { type: string, example: "PR-20260614-001" }
+        operatorUserId: { type: integer, format: int64 }
+        operatorName: { type: string }
+        printedAt: { type: string, format: date-time }
+        codeType: { type: string, enum: [GD, LZ, SB, WW, WL, DRAWING] }
+        codeValue: { type: string }
+        copies: { type: integer }
+        printerId: { type: integer, format: int64, nullable: true }
+        printerNameSnapshot: { type: string, nullable: true }
+        printerIpSnapshot: { type: string, nullable: true }
+        printMode: { type: string, enum: [ZPL_DIRECT, PDF_BROWSER] }
+        status: { type: string, enum: [SUCCESS, FAILED, PENDING] }
+        errorMsg: { type: string, nullable: true }
+        referenceLogId: { type: integer, format: int64, nullable: true, description: '补打时指向原始日志 · 防递归' }
+        remark: { type: string, nullable: true }
+        tenantId: { type: integer, format: int64 }
+
+    PageResponsePrintLog:
+      type: object
+      description: 打印日志分页响应
+      properties:
+        records:
+          type: array
+          items: { $ref: '#/components/schemas/PrintLogResponse' }
+        total: { type: integer }
+        pageNum: { type: integer }
+        pageSize: { type: integer }
+        pages: { type: integer }
+
+    ReprintRequest:
+      type: object
+      description: 补打请求（12.4 replayPrintLog 输入）
+      properties:
+        targetMode:
+          type: string
+          enum: [ZPL_DIRECT, PDF_BROWSER, SAME]
+          default: SAME
+          description: '同模式 / 换模式 / SAME（沿用原模式）'
+        printerId: { type: integer, format: int64, nullable: true, description: 'targetMode=ZPL_DIRECT 时必填' }
+        remark: { type: string, maxLength: 200 }
+
+    PrintStatisticsBucket:
+      type: object
+      description: 打印统计聚合桶（12.4 printStatistics 输出）
+      properties:
+        key: { type: string, example: "2026-06" }
+        operatorId: { type: integer, format: int64, nullable: true }
+        totalCount: { type: integer }
+        successCount: { type: integer }
+        failedCount: { type: integer }
+        totalCopies: { type: integer }
+
+    DrawingLinkCreateRequest:
+      type: object
+      description: 图纸关联新增请求（13.3 POST links）
+      required: [bizType, bizId]
+      properties:
+        bizType:
+          type: string
+          enum: [ORDER, PO, INBOUND, INSPECTION, WORKORDER_PROCESS]
+          description: '业务类型 · 5 类'
+        bizId: { type: integer, format: int64, description: '业务单据 ID' }
+        remark: { type: string, maxLength: 200, nullable: true }
+
+  # ---------- Reusable Parameters ----------
+  parameters:
+    PageNum:
+      name: pageNum
+      in: query
+      schema: { type: integer, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, default: 20, maximum: 100 }
+    TraceId:
+      name: X-Trace-Id
+      in: header
+      schema: { type: string }
+      description: 链路追踪 ID（自动注入）
+
+  # ---------- Reusable Responses ----------
+  responses:
+    Unauthorized:
+      description: 未登录
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Result'
+              - type: object
+                properties:
+                  code: { example: 40101 }
+    Forbidden:
+      description: 无权限
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Result'
+              - type: object
+                properties:
+                  code: { example: 40301 }
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Result'
+              - type: object
+                properties:
+                  code: { example: 40401 }
+    ServerError:
+      description: 服务端错误
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Result'
+              - type: object
+                properties:
+                  code: { example: 50001 }
+
+# ============================================================
+# Paths
+# ============================================================
+paths:
+# V1.3.9 Sprint 14 Story 13.7 · baseline-typecheck-fix
+# 20 端点增量（补 Sprint 12-13 已 ship 端点的契约描述）
+# 注：13.1 POST /quality/inspections 与 13.4 GET /workflow/events/stats 已 ship，仅补 schema 描述，无需新增 path
+
+  # ============================================================
+  # V1.3.9 Sprint 14 Story 13.7 · 12.2 sys_printer · 6 端点
+  # ============================================================
+
+  /printers:
+    get:
+      tags: [E12-Printer]
+      summary: 查打印机列表（分页 + 多维过滤）
+      operationId: listPrinters
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: type,    schema: { type: string, enum: [NORMAL, LABEL] } }
+        - { in: query, name: status,  schema: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN] } }
+        - { in: query, name: enabled, schema: { type: integer, enum: [0, 1] } }
+        - { in: query, name: pageNum,    schema: { type: integer, default: 1 } }
+        - { in: query, name: pageSize,   schema: { type: integer, default: 20 } }
+        - { in: query, name: tenantId,   schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 打印机列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PageResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+    post:
+      tags: [E12-Printer]
+      summary: 新增打印机配置
+      operationId: createPrinter
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: operatorUserId, schema: { type: integer, default: 1 } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SysPrinter' }
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SysPrinter' }
+        '409':
+          description: 打印机名称已存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '422':
+          description: 字段校验失败（LABEL 缺 ip / 端口非法）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/{id}:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    put:
+      tags: [E12-Printer]
+      summary: 修改打印机配置
+      operationId: updatePrinter
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: operatorUserId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SysPrinter' }
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SysPrinter' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+    delete:
+      tags: [E12-Printer]
+      summary: 删除打印机配置
+      operationId: deletePrinter
+      security: [{ bearerAuth: [admin] }]
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: 打印机已被使用 · 改为 enabled=0
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/{id}/test:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    post:
+      tags: [E12-Printer]
+      summary: 测试打印机连接（TCP Socket 探活 · 2 秒超时）
+      operationId: testPrinterConnection
+      security: [{ bearerAuth: [admin] }]
+      responses:
+        '200':
+          description: 探活结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrinterHeartbeatResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/available:
+    get:
+      tags: [E12-Printer]
+      summary: 查询可用同类型打印机（前端打印入口用）
+      operationId: getAvailablePrinters
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: type, required: true, schema: { type: string, enum: [NORMAL, LABEL] } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 可用打印机列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrinterAvailableResponse' }
+
+  # ============================================================
+  # V1.3.9 Sprint 14 Story 13.7 · 12.3 label_template · 2 端点
+  # ============================================================
+
+  /label-templates:
+    get:
+      tags: [E12-Label]
+      summary: 查标签模板元数据（type 可选 · 不传返回 5 种）
+      operationId: listLabelTemplates
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: type,    schema: { type: string, enum: [GD, LZ, SB, WW, WL] } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 模板列表（GD/LZ/SB/WW/WL · SB 由代码层 fallback 注入）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LabelTemplateListResponse' }
+        '400':
+          description: type 不支持（40002）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+
+  /label-templates/preview:
+    post:
+      tags: [E12-Label]
+      summary: 生成标签预览 PNG base64（ZXing + 三区布局）
+      operationId: previewLabel
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LabelPreviewRequest' }
+      responses:
+        '200':
+          description: 预览生成成功（base64 PNG）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LabelPreviewResponse' }
+        '400':
+          description: 参数无效（40001 · lines 超 6 / qr_content 空）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '422':
+          description: qr_content 超 200 字符 · factory_name 超 20 字符（42201）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+
+  # ============================================================
+  # V1.3.9 Sprint 14 Story 13.7 · 12.4 sys_print_log · 7 端点
+  # ============================================================
+
+  /print/labels/zpl:
+    post:
+      tags: [E12-Print]
+      summary: 模式一 ZPL/TSPL 直连打印（Socket 9100 · 3s 硬性超时）
+      operationId: printLabelsZpl
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ZplPrintRequest' }
+      responses:
+        '200':
+          description: ZPL 发送成功 · 异步 · logNo 即时返回
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ZplPrintResult' }
+        '409':
+          description: 50201 PRINTER_OFFLINE · 50202 PROTOCOL_UNSUPPORTED
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+        '422':
+          description: 40001/40003 参数校验失败
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/labels/pdf-a4:
+    post:
+      tags: [E12-Print]
+      summary: 模式二 A4 PDF（3×9=27 标签/页 · base64 返回）
+      operationId: printLabelsPdfA4
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PdfA4PrintRequest' }
+      responses:
+        '200':
+          description: PDF 生成成功 · 含 base64 + printLogId
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printLogId: { type: integer, format: int64 }
+                          logNo: { type: string }
+                          pdfBase64: { type: string }
+                          bytes: { type: integer }
+                          contentType: { type: string }
+                          filename: { type: string }
+        '422':
+          description: items 超过 30 → 40003
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/logs:
+    get:
+      tags: [E12-Print]
+      summary: 打印历史查询（分页 + 多维过滤）
+      operationId: listPrintLogs
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: codeType,    schema: { type: string, enum: [GD, LZ, SB, WW, WL, DRAWING] } }
+        - { in: query, name: mode,        schema: { type: string, enum: [ZPL_DIRECT, PDF_BROWSER] } }
+        - { in: query, name: status,      schema: { type: string, enum: [SUCCESS, FAILED, PENDING] } }
+        - { in: query, name: operatorId,  schema: { type: integer, format: int64 } }
+        - { in: query, name: codeValue,   schema: { type: string, description: "模糊搜索" } }
+        - { in: query, name: dateFrom,    schema: { type: string, format: date } }
+        - { in: query, name: dateTo,      schema: { type: string, format: date } }
+        - { in: query, name: page,        schema: { type: integer, default: 1 } }
+        - { in: query, name: size,        schema: { type: integer, default: 20 } }
+        - { in: query, name: tenantId,    schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 历史分页
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PageResponsePrintLog' }
+
+  /print/logs/recent:
+    get:
+      tags: [E12-Print]
+      summary: 最近打印记录（按用户 · limit N · 默认 20）
+      operationId: listRecentPrintLogs
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: limit, schema: { type: integer, default: 20, maximum: 100 } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 最近打印列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/PrintLogResponse' }
+
+  /print/logs/{id}:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    get:
+      tags: [E12-Print]
+      summary: 单条打印日志详情
+      operationId: getPrintLog
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 单条详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrintLogResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /print/logs/{id}/replay:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    post:
+      tags: [E12-Print]
+      summary: 补打（同模式/换模式）· 防 reference 递归
+      operationId: replayPrintLog
+      security: [{ bearerAuth: [admin] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReprintRequest' }
+      responses:
+        '200':
+          description: 补打成功 · 新 sys_print_log reference_log_id=id
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+        '409':
+          description: 40954 PRINT_REPLAY_FORBIDDEN · FAILED 不可补打 / 补打记录不可再补打
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/statistics:
+    get:
+      tags: [E12-Print]
+      summary: 打印统计（groupBy 聚合）
+      operationId: printStatistics
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: groupBy, schema: { type: string, enum: [month, day, operator_id, code_type, mode], default: month } }
+        - { in: query, name: dateFrom, schema: { type: string, format: date } }
+        - { in: query, name: dateTo,   schema: { type: string, format: date } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 聚合结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/PrintStatisticsBucket' }
+
+  # ============================================================
+  # V1.3.9 Sprint 14 Story 13.7 · 13.3 drawing link · 2 新增端点（GET 已 ship）
+  # ============================================================
+
+  /drawings/{id}/links:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    post:
+      tags: [E3-Drawing-Link-Query]
+      summary: 图纸新增关联业务单据（13.3 · admin/owner）
+      operationId: createDrawingLink
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DrawingLinkCreateRequest' }
+      responses:
+        '200':
+          description: 关联创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/DrawingLinkListResponse' }
+        '400':
+          description: INVALID_BIZ_TYPE（40001）
+        '403':
+          description: 40303 DRAWING_LINK_FORBIDDEN（非 admin/owner）
+        '404':
+          description: DRAWING_NOT_FOUND（40401）
+        '409':
+          description: 40903 DRAWING_LINK_DUPLICATE（已关联）
+
+  /drawings/{id}/links/{linkId}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: integer, format: int64 } }
+      - { in: path, name: linkId, required: true, schema: { type: integer, format: int64 } }
+    delete:
+      tags: [E3-Drawing-Link-Query]
+      summary: 删除图纸关联（13.3 · admin/owner）
+      operationId: deleteDrawingLink
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '403':
+          description: 40303 DRAWING_LINK_FORBIDDEN
+        '404':
+          description: 40401 DRAWING_LINK_NOT_FOUND
+
+
+  # ============================================================
+  # E1 - 基础设施与权限
+  # ============================================================
+  /auth/login:
+    post:
+      tags: [E1-Auth]
+      summary: 登录
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LoginResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [E1-Auth]
+      summary: 登出
+      operationId: logout
+      responses:
+        '200': { $ref: '#/components/responses/Unauthorized' }
+
+  /users:
+    get:
+      tags: [E1-Auth]
+      summary: 用户列表
+      operationId: listUsers
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+        - name: deptId
+          in: query
+          schema: { type: integer }
+        - name: status
+          in: query
+          schema: { type: string, enum: [ACTIVE, DISABLED] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PageResponse' }
+    post:
+      tags: [E1-Auth]
+      summary: 创建用户
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/User' }
+      responses:
+        '200': { description: 成功 }
+        '400': { description: 参数错误 }
+
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [E1-Auth]
+      summary: 查询用户
+      operationId: getUser
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/User' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [E1-Auth]
+      summary: 更新用户
+      operationId: updateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/User' }
+      responses:
+        '200': { description: 成功 }
+
+  /roles:
+    get:
+      tags: [E1-Auth]
+      summary: 角色列表
+      operationId: listRoles
+      responses:
+        '200': { description: 成功 }
+    post:
+      tags: [E1-Auth]
+      summary: 创建角色（含金额阈值）
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roleCode: { type: string }
+                roleName: { type: string }
+                dataScope: { type: string, enum: [SELF, DEPT, ALL, CUSTOM] }
+                amountThreshold: { type: number }
+      responses:
+        '200': { description: 成功 }
+
+  /roles/{id}/permissions:
+    post:
+      tags: [E1-Auth]
+      summary: 分配权限
+      operationId: assignPermissions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                menuIds: { type: array, items: { type: integer } }
+                actions: { type: array, items: { type: string } }
+      responses:
+        '200': { description: 成功 }
+
+  /dict/{type}:
+    get:
+      tags: [E1-Dict]
+      summary: 字典查询
+      operationId: getDict
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string, example: process_type }
+      responses:
+        '200': { description: 成功 }
+
+  /system/serial/{bizType}:
+    get:
+      tags: [E1-Dict]
+      summary: 单据号生成
+      operationId: generateSerial
+      parameters:
+        - name: bizType
+          in: path
+          required: true
+          schema: { type: string, enum: [GD, BJ, XS, WW, FA] }
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # E1-Workflow · Story 1.2 审批工作流配置（9 端点）
+  # ============================================================
+  /workflows:
+    post:
+      tags: [E1-Workflow]
+      summary: 创建工作流
+      operationId: createWorkflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorkflowCreateRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40001': { description: 节点阈值不单调 }
+        '40005': { description: 节点数 2-20 之外 }
+        '40905': { description: workflow_code 重复 }
+    get:
+      tags: [E1-Workflow]
+      summary: 工作流列表（分页）
+      operationId: listWorkflows
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          schema: { type: string, enum: [ACTIVE, INACTIVE, DELETED] }
+        - name: keyword
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { description: 成功 }
+    put:
+      tags: [E1-Workflow]
+      summary: 修改工作流（V1.3.7 · 物理替换节点链）
+      operationId: updateWorkflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorkflowUpdateRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40001': { description: 节点阈值不单调 }
+        '40906': { description: 工作流正在被使用 }
+    delete:
+      tags: [E1-Workflow]
+      summary: 删除工作流（内置模板 40904）
+      operationId: deleteWorkflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: 内置工作流不可删除 }
+
+  /workflows/{id}:
+    get:
+      tags: [E1-Workflow]
+      summary: 工作流详情（含 nodes 列表）
+      operationId: getWorkflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40401': { description: 工作流不存在 }
+
+  /workflows/{id}/test:
+    post:
+      tags: [E1-Workflow]
+      summary: 试跑工作流（不落库）
+      operationId: testWorkflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorkflowTestRequest' }
+      responses:
+        '200': { description: 成功，返回 matchedNode/matchedRole/candidates/orSignRequired/trace }
+
+  /approvals/pending:
+    get:
+      tags: [E1-Workflow]
+      summary: 待办列表（作为审批人）
+      operationId: pendingApprovals
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+        - name: approverUserId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /approvals/my-pending:
+    get:
+      tags: [E1-Workflow]
+      summary: 我的待办（作为申请人，看自己提交的单子进度）
+      operationId: myPendingApprovals
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+        - name: applicantUserId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /approvals/{id}/approve:
+    post:
+      tags: [E1-Workflow]
+      summary: 审批通过（V1.3.7 P1 修补 OR 会签）
+      operationId: approve
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApproveRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40303': { description: 审批人不在 candidates 列表 }
+        '40904': { description: 审批单已结束 / 重复 approve }
+
+  /approvals/{id}/reject:
+    post:
+      tags: [E1-Workflow]
+      summary: 审批驳回（reason 必填）
+      operationId: reject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RejectRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40009': { description: 驳回 reason 为空 }
+        '40904': { description: 状态机不匹配 }
+
+  /approvals/{id}/urge:
+    post:
+      tags: [E1-Workflow]
+      summary: 催办（V1.3.7 · 不重置 timeout_at）
+      operationId: urge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: operatorUserId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /approvals/callback/quote-to-order:
+    post:
+      tags: [E1-Workflow]
+      summary: 报价转订单触发自动审批（Service Token 守）
+      operationId: callbackQuoteToOrder
+      parameters:
+        - name: X-Service-Token
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quoteId: { type: string }
+                orderId: { type: string }
+      responses:
+        '200': { description: 成功 }
+        '40101': { description: Service Token 无效 }
+
+  /approvals/callback/order-cancel:
+    post:
+      tags: [E1-Workflow]
+      summary: 订单取消反向同步审批（Service Token 守）
+      operationId: callbackOrderCancel
+      parameters:
+        - name: X-Service-Token
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId: { type: string }
+                bizType: { type: string }
+      responses:
+        '200': { description: 成功 }
+        '40101': { description: Service Token 无效 }
+
+  /app/sync:
+    post:
+      tags: [E1-App]
+      summary: APP 离线数据批量同步
+      operationId: appSync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId: { type: string }
+                records:
+                  type: array
+                  items: { type: object }
+                  maxItems: 500
+      responses:
+        '200': { description: 成功 }
+
+  /app/messages:
+    get:
+      tags: [E1-App]
+      summary: APP 消息中心
+      operationId: appMessages
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200': { description: 成功 }
+
+  # ---------- 邮件配置（V1.3.7 新增） ----------
+  /email/config:
+    get:
+      tags: [E1-Email]
+      summary: 获取邮件配置
+      operationId: getEmailConfig
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/EmailConfig' }
+    put:
+      tags: [E1-Email]
+      summary: 更新邮件配置
+      operationId: updateEmailConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmailConfig' }
+      responses:
+        '200': { description: 成功 }
+
+  /email/test:
+    post:
+      tags: [E1-Email]
+      summary: 测试发送
+      operationId: testEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                toAddress: { type: string, format: email }
+                subject: { type: string }
+                body: { type: string }
+      responses:
+        '200': { description: 成功 }
+        '50203': { description: 163 SMTP 失败 }
+
+  /email/logs:
+    get:
+      tags: [E1-Email]
+      summary: 发送日志查询
+      operationId: emailLogs
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          schema: { type: string, enum: [PENDING, SENT, FAILED, DEAD] }
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # E2 - 客户与销售
+  # ============================================================
+  /customers:
+    get:
+      tags: [E2-CRM]
+      summary: 客户列表
+      operationId: listCustomers
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+        - name: ownerId
+          in: query
+          schema: { type: integer }
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { description: 成功 }
+    post:
+      tags: [E2-CRM]
+      summary: 创建客户
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Customer' }
+      responses:
+        '200': { description: 成功 }
+
+  /customers/{id}/claim:
+    post:
+      tags: [E2-CRM]
+      summary: 客户领用（30 天保护期）
+      operationId: claimCustomer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40903': { description: 保护期内 }
+
+  /quotes:
+    get:
+      tags: [E2-Quote]
+      summary: 报价列表（6 维过滤：status/customerId/owner/dateFrom/dateTo/page/size）
+      operationId: listQuotes
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [DRAFT, SUBMITTED, APPROVED, REJECTED, CONVERTED] }
+        - name: customerId
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: owner
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: dateFrom
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: dateTo
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        '200': { description: 成功 }
+        '40303': { description: 无权限 }
+    post:
+      tags: [E2-Quote]
+      summary: 创建报价（多级审批：< 5万 业务员；5-20万 部门经理；> 20万 总经理 + 财务总监双签）
+      operationId: createQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuoteCreateRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40001': { description: 字段校验失败（QUOTE_ITEMS_EMPTY/QUOTE_DELIVERY_DATE_INVALID） }
+        '40902': { description: 黑名单客户 CUSTOMER_BLACKLIST }
+
+  /quotes/{id}:
+    get:
+      tags: [E2-Quote]
+      summary: 查询报价详情（含历史变更记录）
+      operationId: getQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40401': { description: 报价不存在 }
+    put:
+      tags: [E2-Quote]
+      summary: 修改报价（仅 DRAFT 状态可改）
+      operationId: updateQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuoteUpdateRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40903': { description: QUOTE_NOT_EDITABLE（SUBMITTED/APPROVED 状态不可改） }
+
+  /quotes/{id}/submit:
+    post:
+      tags: [E2-Quote-Flow]
+      summary: 提交审批（DRAFT → SUBMITTED，触发 stream:notify 4 通道推送）
+      operationId: submitQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: QUOTE_STATE_INVALID（状态机越权） }
+
+  /quotes/{id}/approve:
+    post:
+      tags: [E2-Quote-Flow]
+      summary: 审批通过（SUBMITTED → APPROVED，OR 会签 + 跳过请假 + 二次密码 > 20万）
+      operationId: approveQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuoteApproveRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: 状态机越权 }
+
+  /quotes/{id}/reject:
+    post:
+      tags: [E2-Quote-Flow]
+      summary: 驳回（SUBMITTED → REJECTED，含 reason）
+      operationId: rejectQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuoteRejectRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: 状态机越权 }
+
+  /quotes/export/{id}:
+    get:
+      tags: [E2-Quote-Export]
+      summary: 导出 PDF / Excel（1h 缓存 + 审计留痕）
+      operationId: exportQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: format
+          in: query
+          required: false
+          schema: { type: string, enum: [pdf, excel], default: pdf }
+      responses:
+        '200':
+          description: 二进制流
+          content:
+            application/pdf: { schema: { type: string, format: binary } }
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: { schema: { type: string, format: binary } }
+        '40401': { description: 报价不存在 }
+
+  /quotes/{id}/convert-to-order:
+    post:
+      tags: [E2-Quote]
+      summary: 报价转订单（APPROVED → CONVERTED，生成 XS{yyyyMMdd}{seq:4} 订单号）
+      operationId: convertQuoteToOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuoteConvertRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: QUOTE_STATE_INVALID（非 APPROVED 状态） }
+
+  # ============================================================
+  # E3-Order · Story 1.6 · AC-2.3.1/2/3/4 · 订单管理 8 端点
+  # ============================================================
+  /orders:
+    get:
+      tags: [E3-Order]
+      summary: 订单列表（按权限过滤：业务员 owner / 经理 dept / 总经理 all）
+      operationId: listOrders
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          required: false
+          schema: { type: integer, default: 20 }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [DRAFT, CONFIRMED, PRODUCING, PARTIAL_SHIPPED, SHIPPED, SETTLED, CLOSED, CANCELLED] }
+        - name: customerId
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: owner
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: role
+          in: query
+          required: false
+          schema: { type: string, enum: [salesperson, dept_manager, gm], default: gm }
+        - name: deptId
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40302': { description: DATA_SCOPE（越权访问） }
+    post:
+      tags: [E3-Order]
+      summary: 创建订单（XS{yyyyMMdd}{seq:4} 单号 + 信用额度校验 40909 + 黑名单 40902）
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderCreateRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40001': { description: ORDER_CUSTOMER_REQUIRED / ORDER_ITEMS_EMPTY / ORDER_DELIVERY_DATE_INVALID }
+        '40003': { description: ORDER_QUANTITY_INVALID / ORDER_UNIT_PRICE_INVALID / ORDER_QUANTITY_ADJUSTMENT_INVALID }
+        '40902': { description: CUSTOMER_BLACKLIST（黑名单优先） }
+        '40909': { description: CREDIT_LIMIT_EXCEEDED（信用额度超限） }
+
+  /orders/{id}:
+    get:
+      tags: [E3-Order]
+      summary: 查询订单详情（含状态机 + 历史 + 转生产/委外链路）
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40401': { description: ORDER_NOT_FOUND }
+    put:
+      tags: [E3-Order]
+      summary: 修改订单（仅 DRAFT 状态可改）
+      operationId: updateOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderUpdateRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40903': { description: ORDER_NOT_EDITABLE（仅 DRAFT 可改） }
+
+  /orders/{id}/confirm:
+    post:
+      tags: [E3-Order-Flow]
+      summary: 确认订单（DRAFT → CONFIRMED，触发 4 通道推送）
+      operationId: confirmOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderConfirmRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/{id}/approve:
+    post:
+      tags: [E3-Order-Flow]
+      summary: 审批通过（CONFIRMED → PRODUCING，4 阈值路由复用 1.5）
+      operationId: approveOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/{id}/reject:
+    post:
+      tags: [E3-Order-Flow]
+      summary: 驳回（CONFIRMED → DRAFT，含 reason 必填）
+      operationId: rejectOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, description: '驳回原因' }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/{id}/cancel:
+    post:
+      tags: [E3-Order-Flow]
+      summary: 取消订单（→ CANCELLED）
+      operationId: cancelOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderCancelRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/{id}/convert-to-production:
+    post:
+      tags: [E3-Order-Transfer]
+      summary: 转生产（CONFIRMED → PRODUCING，生成 GD{yyyyMMdd}{seq:4} 工单号，Epic 5 hook）
+      operationId: convertOrderToProduction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/{id}/convert-to-outsource:
+    post:
+      tags: [E3-Order-Transfer]
+      summary: 转委外（生成 WW{yyyyMMdd}{seq:4} 单号，Epic 6 hook）
+      operationId: convertOrderToOutsource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/{id}/ship:
+    post:
+      tags: [E3-Order-Transfer]
+      summary: 发货（PRODUCING → SHIPPED/PARTIAL_SHIPPED，累计 shippedQty）
+      operationId: shipOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: { type: integer }
+              description: 'itemId -> quantity 部分发货映射'
+      responses:
+        '200': { description: 成功 }
+        '40003': { description: ORDER_SHIP_QTY_EXCEEDED }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/{id}/settle:
+    post:
+      tags: [E3-Order-Transfer]
+      summary: 结算（SHIPPED → SETTLED，触发回款 + Epic 9 hook）
+      operationId: settleOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/{id}/close:
+    post:
+      tags: [E3-Order-Transfer]
+      summary: 关闭（SETTLED → CLOSED 终态）
+      operationId: closeOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: ORDER_STATE_INVALID }
+
+  /orders/export/{id}:
+    get:
+      tags: [E3-Order-Export]
+      summary: 导出 PDF/Excel（PDF 1h 缓存，OpenPDF 1.3.34 / POI 5.2.5）
+      operationId: exportOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: format
+          in: query
+          required: false
+          schema: { type: string, enum: [pdf, excel], default: pdf }
+      responses:
+        '200':
+          description: 二进制流
+          content:
+            application/pdf: { schema: { type: string, format: binary } }
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: { schema: { type: string, format: binary } }
+        '40401': { description: ORDER_NOT_FOUND }
+
+  /orders/{id}/profit:
+    get:
+      tags: [E3-Order-Export]
+      summary: 订单利润分析（利润 = 订单金额 - 生产成本 - 委外成本 - 材料成本，负利润告警）
+      operationId: orderProfit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40401': { description: ORDER_NOT_FOUND }
+
+  /orders/{id}/profit/export:
+    get:
+      tags: [E3-Order-Export]
+      summary: 订单利润分析 PDF 导出
+      operationId: exportOrderProfit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # E3 - 图纸与物料
+  # ============================================================
+  /drawings:
+    post:
+      tags: [E3-Drawing]
+      summary: 1. 创建图纸（AC-3.1.1）
+      operationId: createDrawing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DrawingCreateRequest' }
+      parameters:
+        - name: operatorUserId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Drawing' }
+    get:
+      tags: [E3-Drawing]
+      summary: 4. 列表查询 6 维过滤（AC-3.1.4）
+      operationId: listDrawings
+      parameters:
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: version
+          in: query
+          schema: { type: string, example: v1 }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: customerId
+          in: query
+          schema: { type: integer }
+        - name: isFa
+          in: query
+          schema: { type: integer, enum: [0, 1] }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, RELEASED, ARCHIVED, OBSOLETE]
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  list:
+                    type: array
+                    items: { $ref: '#/components/schemas/Drawing' }
+                  total: { type: integer }
+                  page: { type: integer }
+                  size: { type: integer }
+
+  /drawings/upload:
+    post:
+      tags: [E3-Drawing]
+      summary: 上传图纸文件（PDF / DWG / STEP · Story 10.1 fix：原 /drawings multipart 迁到子路径以避免与 createDrawing POST 冲突）
+      operationId: uploadDrawing
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                drawingNo: { type: string }
+                version: { type: string, example: v1.0 }
+      responses:
+        '200': { description: 成功 }
+
+  /boms:
+    post:
+      tags: [E3-Drawing]
+      summary: 创建 BOM
+      operationId: createBOM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productCode: { type: string }
+                bomVersion: { type: string }
+                lines:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      parentCode: { type: string }
+                      childCode: { type: string }
+                      qty: { type: number }
+                      lossRate: { type: number }
+                      processNo: { type: string }
+      responses:
+        '200': { description: 成功 }
+
+  /products/{id}/routes:
+    get:
+      tags: [E3-Drawing]
+      summary: 查询产品工艺路线
+      operationId: getProductRoute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: 成功 }
+    post:
+      tags: [E3-Drawing]
+      summary: 创建/覆盖产品工艺路线
+      operationId: createProductRoute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                changeReason: { type: string }
+                processes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      processSeq: { type: integer }
+                      processCode: { type: string }
+                      stdTimeMin: { type: number }
+                      isOutsource: { type: boolean }
+      responses:
+        '200': { description: 成功 }
+
+  /products/{id}/routes/copy-from/{srcProductId}:
+    post:
+      tags: [E3-Drawing]
+      summary: 从历史产品复制工艺路线
+      operationId: copyProductRoute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: srcProductId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # E4 - 扫码仓储
+  # ============================================================
+  /materials/{id}/barcodes:
+    post:
+      tags: [E4-Warehouse]
+      summary: 生成物料码 WL-
+      operationId: generateBarcode
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batchNo: { type: string }
+                qty: { type: number }
+      responses:
+        '200': { description: 成功 }
+
+  /stock/in:
+    post:
+      tags: [E4-Warehouse]
+      summary: 入库（APP 扫 WL-）
+      operationId: stockIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [barcode, type, warehouseId, qty]
+              properties:
+                barcode: { type: string, example: WL-20260609-0001 }
+                type: { type: string, enum: [PURCHASE, PRODUCTION, OUTSOURCE, OTHER] }
+                warehouseId: { type: integer }
+                locationId: { type: integer }
+                qty: { type: number }
+      responses:
+        '200': { description: 成功 }
+
+  /stock/out:
+    post:
+      tags: [E4-Warehouse]
+      summary: 出库（APP 扫 WL-）
+      operationId: stockOut
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [barcode, type, warehouseId, qty]
+              properties:
+                barcode: { type: string }
+                type: { type: string, enum: [ISSUE, SHIP, OUTSOURCE, OTHER] }
+                warehouseId: { type: integer }
+                qty: { type: number }
+      responses:
+        '200': { description: 成功 }
+
+  /stock:
+    get:
+      tags: [E4-Warehouse]
+      summary: 库存查询（实时 = 在库 + 在途 - 冻结）
+      operationId: queryStock
+      parameters:
+        - name: materialCode
+          in: query
+          schema: { type: string }
+        - name: warehouseId
+          in: query
+          schema: { type: integer }
+        - name: batchNo
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # E5 - 生产执行核心
+  # ============================================================
+  /workorders:
+    get:
+      tags: [E5-Workorder]
+      summary: 工单列表
+      operationId: listWorkorders
+      parameters:
+        - $ref: '#/components/parameters/PageNum'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { description: 成功 }
+    post:
+      tags: [E5-Workorder]
+      summary: 创建工单
+      operationId: createWorkorder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Workorder' }
+      responses:
+        '200': { description: 成功 }
+
+  /workorders/current-process:
+    get:
+      tags: [E5-Workorder]
+      summary: 当前用户进行中的工序（E5-S6 首页）
+      operationId: getCurrentProcess
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workorderId: { type: integer, format: int64 }
+                  workorderId: { type: integer, format: int64 }
+                  drawingId: { type: integer, format: int64 }
+                  workorderNo: { type: string }
+                  productName: { type: string }
+                  stepNo: { type: integer }
+                  processName: { type: string }
+                  machineCode: { type: string }
+                  machineName: { type: string }
+                  status: { type: string, enum: [IN_PROGRESS, WAITING] }
+
+  /workorders/{id}/schedule:
+    put:
+      tags: [E5-Workorder]
+      summary: 排产（Gantt 拖拽）
+      operationId: scheduleWorkorder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                machineId: { type: integer }
+                planStart: { type: string, format: date }
+                planEnd: { type: string, format: date }
+      responses:
+        '200': { description: 成功 }
+
+  /workorders/{id}/mrp:
+    post:
+      tags: [E5-Workorder]
+      summary: MRP 计算
+      operationId: mrpCalculate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          shortageList:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                materialCode: { type: string }
+                                requiredQty: { type: number }
+                                onHandQty: { type: number }
+                                shortageQty: { type: number }
+
+  # ---------- 扫码（APP 端） ----------
+  /app/workorders/{barcode}/start:
+    post:
+      tags: [E5-Scan]
+      summary: 扫码开工（APP 扫 GD-）
+      operationId: scanStart
+      parameters:
+        - name: barcode
+          in: path
+          required: true
+          schema: { type: string, example: GD-20260609-0001 }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                machineBarcode: { type: string, description: '可选 SB-' }
+                operatorId: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /app/workorders/{barcode}/report:
+    post:
+      tags: [E5-Scan]
+      summary: 扫码报工（APP 扫 GD-）
+      operationId: scanReport
+      parameters:
+        - name: barcode
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [qtyDone, qtyOk, qtyScrap]
+              properties:
+                qtyDone: { type: integer, example: 50 }
+                qtyOk: { type: integer, example: 48 }
+                qtyScrap: { type: integer, example: 2 }
+      responses:
+        '200': { description: 成功 }
+
+  /app/transfer/{barcode}/next:
+    post:
+      tags: [E5-Scan]
+      summary: 扫码过站（APP 扫 LZ-）
+      operationId: scanTransfer
+      parameters:
+        - name: barcode
+          in: path
+          required: true
+          schema: { type: string, example: LZ-GD001-P01 }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workorderNo: { type: string, example: GD-20260615-0001 }
+                fromStepNo: { type: integer, example: 1 }
+                toStepNo: { type: integer, example: 2 }
+                toProcessCode: { type: string }
+                qty: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  # ---------- V1.3.7 工序分配职责分离 ----------
+  /allocations:
+    post:
+      tags: [E5-Allocation]
+      summary: '【生管】分配工序归属（自制/委外）'
+      description: |
+        **V1.3.7 红线**：此接口只能由生管调用，**不接受 vendorId 字段**。
+        勾"委外"的工序会自动推送给采购的"待委外清单"。
+      operationId: createAllocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workorderId, processSeq, decision]
+              properties:
+                workorderId: { type: integer }
+                processSeq: { type: integer }
+                decision: { type: string, enum: [INHOUSE, OUTSOURCE] }
+                qty: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40304': { description: 工序分配越权（调用方非生管角色）' }
+
+  /allocations/pending:
+    get:
+      tags: [E5-Allocation]
+      summary: '【采购】取待委外工序清单'
+      description: |
+        **V1.3.7 红线**：此接口只能由采购调用，**不允许修改 decision 字段**。
+        采购只能为每道工序选厂商。
+      operationId: pendingAllocations
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/ProcessAllocation'
+                            - type: object
+                              properties:
+                                workorderNo: { type: string }
+                                productCode: { type: string }
+                                processName: { type: string }
+
+  # ---------- 委外下单（V1.3.7 改版） ----------
+  /outsub/orders:
+    post:
+      tags: [E6-Outsub]
+      summary: '【采购】选厂商创建 WW- 单'
+      description: |
+        **V1.3.7 改版**：采购从此接口创建 WW- 单，自动发 163 邮箱通知厂商。
+        **V1.3.7 红线**：此接口**不允许指定 decision / processSeq**，只接受 allocationId + vendorId。
+      operationId: createOutsubOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [allocationId, vendorId, unitPrice, deliveryDate, drawingId]
+              properties:
+                allocationId: { type: integer, description: '来自 /allocations/pending' }
+                vendorId: { type: integer }
+                unitPrice: { type: number }
+                deliveryDate: { type: string, format: date }
+                drawingId: { type: integer, description: '加工图纸 ID（Epic 3 · 下单前确认）' }
+      responses:
+        '200':
+          description: 成功（已自动发 163 邮箱）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/OutsourceOrder' }
+
+  /outsub/orders/{id}/arrive:
+    post:
+      tags: [E12-Receive]
+      summary: '【仓管】扫 WW- 到货（V1.3.5 新增）'
+      description: |
+        APP 端"到货扫码"入口；扫委外订单二维码，触发 SHIPPING → PENDING_INSPECTION。
+        **V1.3.5 改版**：替代原送货员角色，由仓管代替。
+      operationId: arriveOutsub
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OutsourceArriveRequest' }
+      responses:
+        '200': { description: 成功（自动通知生管 + 品质）' }
+
+  /outsub/orders/{id}/state-transition:
+    post:
+      tags: [E6-Outsub]
+      summary: 状态机转换（V1.3.4 7 状态机）
+      operationId: transitionOutsub
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toStatus]
+              properties:
+                toStatus:
+                  type: string
+                  enum: [PENDING_SHIP, SHIPPING, PENDING_INSPECTION, INSPECTING, QUALIFIED_STORAGE, STORED, REPAIR_REQUESTED, NOTIFIED_REPAIR]
+                reason: { type: string, description: '不良品必填' }
+      responses:
+        '200': { description: 成功 }
+        '40904': { description: 状态机不匹配（守卫拒绝）' }
+
+  /outsub/rework:
+    post:
+      tags: [E6-Outsub]
+      summary: 生成返修单（V1.3.4 返修闭环）
+      description: |
+        rework_count 自动累加；≥ 阈值（默认 2）自动推高层 + 采购 + 生管。
+      operationId: createRework
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [originalOutsourceOrderId, vendorId]
+              properties:
+                originalOutsourceOrderId: { type: integer }
+                vendorId: { type: integer }
+                reason: { type: string }
+      responses:
+        '200': { description: 成功 }
+
+  /outsub/eta/{vendorId}/{processCode}:
+    get:
+      tags: [E6-Outsub]
+      summary: 历史交期预估（V1.3.4）
+      description: '返回最近 3 次中位数 + 50%/80%/100% 分位数'
+      operationId: getOutsubEta
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: processCode
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          medianDays: { type: integer }
+                          p50: { type: integer }
+                          p80: { type: integer }
+                          p100: { type: integer }
+
+  # ---------- 委外 7 状态机（V1.3.7 · Story 1.22 · FR-6-2） ----------
+  /outsource-states/advance:
+    post:
+      tags: [E6-Outsource-State-Machine]
+      summary: 委外状态机推进（AC-6.2.1/AC-6.2.2 · 40904 状态守卫）
+      description: |
+        **V1.3.7 Story 1.22** 委外 7 状态机推进：状态守卫 40904 OUTSOURCE_STATE_INVALID
+        生管/采购/品检/财务 分工严格分离（V1.3.7 AD-1）
+        终态 CLOSED 不可再开
+      operationId: advanceOutsourceState
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OutsourceStateAdvanceRequest' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/OutsourceOrder' }
+        '40904': { description: 状态机不匹配（守卫拒绝） }
+        '40301': { description: 操作员角色越权（AD-1） }
+
+  /outsource-states/rollback:
+    post:
+      tags: [E6-Outsource-State-Machine]
+      summary: 委外状态机回退（含 REWORK 返修路径）
+      description: '回退原因必填，任意非终态 → REWORK'
+      operationId: rollbackOutsourceState
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OutsourceStateRollbackRequest' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/OutsourceOrder' }
+        '40001': { description: 回退原因缺失 }
+        '40904': { description: 终态不可再开 }
+
+  /outsource-states/{outsourceId}/history:
+    get:
+      tags: [E6-Outsource-State-Machine]
+      summary: 委外状态机历史（AC-6.2.3 · 100% 留痕）
+      operationId: getOutsourceStateHistory
+      parameters:
+        - name: outsourceId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/OutsourceStateHistory' }
+
+  /outsource-states/{outsourceId}:
+    get:
+      tags: [E6-Outsource-State-Machine]
+      summary: 获取委外单当前状态
+      operationId: getOutsourceCurrentState
+      parameters:
+        - name: outsourceId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/OutsourceOrder' }
+
+  /outsource-states/matrix:
+    get:
+      tags: [E6-Outsource-State-Machine]
+      summary: 7 状态转换矩阵（OpenAPI 元数据）
+      description: '7 状态：DRAFT/SUBMITTED/ACCEPTED/IN_PROGRESS/COMPLETED/REWORK + 终态 CLOSED'
+      operationId: getOutsourceStateMatrix
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          states:
+                            type: array
+                            items: { type: string }
+                          transitions: { type: object }
+                          terminalStates:
+                            type: array
+                            items: { type: string }
+                          operatorRoles: { type: object }
+
+  # ---------- 委外返修闭环（V1.3.7 · Story 1.23 · FR-6-3） ----------
+  /reworks:
+    post:
+      tags: [E6-Rework]
+      summary: 创建返修单（AC-6.3.1 · 返修次数 ≤ 3）
+      description: |
+        **V1.3.7 Story 1.23** 委外返修闭环
+        **3 P1 修补**：
+        - 返修次数 ≤ 3（40905 REWORK_COUNT_EXCEED_MAX_3）
+        - 返修原因必填
+        - 返修成本计入月度对账
+      operationId: createRework
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReworkCreateRequest' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Rework' }
+        '40001': { description: 返修原因缺失 / 成本非负 }
+        '40404': { description: 委外单不存在 }
+        '40905': { description: 返修次数超过 3 次 }
+
+  /reworks/{id}/finish:
+    post:
+      tags: [E6-Rework]
+      summary: 完成返修（AC-6.3.2）
+      operationId: finishRework
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Rework' }
+        '40903': { description: 返修已完成/已取消 }
+
+  /reworks/{outsourceId}/history:
+    get:
+      tags: [E6-Rework]
+      summary: 返修历史（AC-6.3.2 · 完整时间线）
+      operationId: getReworkHistory
+      parameters:
+        - name: outsourceId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ReworkHistory' }
+
+  /reworks/{outsourceId}/alert:
+    get:
+      tags: [E6-Rework]
+      summary: 返修次数预警（4 级别：INFO/WARN/CRITICAL/EXCEED）
+      description: |
+        **4 级别预警阈值**：
+        - 0-1 次 → INFO（首次返修）
+        - 2 次 → WARN（接近上限）
+        - 3 次 → CRITICAL（已达上限）
+        - > 3 次 → EXCEED（超限）
+      operationId: getReworkAlert
+      parameters:
+        - name: outsourceId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          outsourceId: { type: integer }
+                          outsourceNo: { type: string }
+                          reworkCount: { type: integer }
+                          maxAllowed: { type: integer, example: 3 }
+                          level: { type: string, enum: [INFO, WARN, CRITICAL, EXCEED] }
+                          message: { type: string }
+                          history:
+                            type: array
+                            items: { $ref: '#/components/schemas/ReworkAlert' }
+
+  # ---------- 月度对账（V1.3.6 改版 · 不含"线下"） ----------
+  /reconciles:
+    post:
+      tags: [E6-Reconcile]
+      summary: 采购生成对账单 PDF
+      description: '**V1.3.6 改版**：不含"采购带纸去厂商处"等线下动作'
+      operationId: createReconcile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendorId, period]
+              properties:
+                vendorId: { type: integer }
+                period: { type: string, example: '2026-05' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Reconcile' }
+
+  /reconciles/{id}/send-email:
+    post:
+      tags: [E6-Reconcile]
+      summary: 发送对账单邮件（163 邮箱）
+      operationId: sendReconcileEmail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '50203': { description: 163 SMTP 失败 }
+        '50204': { description: 邮件额度耗尽' }
+
+  /reconciles/{id}/upload-signed-scan:
+    post:
+      tags: [E6-Reconcile]
+      summary: 上传厂商签字扫描件（V1.3.6 · AES-256-GCM 加密）
+      operationId: uploadSignedScan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 'PDF / JPG / PNG · ≤ 10MB'
+                confirmDate:
+                  type: string
+                  format: date
+                  description: '不能早于对账月最后一天'
+      responses:
+        '200': { description: 成功（自动 AES-256-GCM 加密）' }
+
+  /reconciles/{id}/confirm:
+    post:
+      tags: [E6-Reconcile]
+      summary: 对账已确认 → 触发付款申请（V1.3.6 三条件）
+      description: |
+        **触发条件**（缺一不可）：
+        1. 对账已确认
+        2. 签字扫描件已上传
+        3. 双方对账金额一致
+      operationId: confirmReconcile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功（生成付款申请）' }
+        '40905': { description: 对账金额不一致' }
+
+  # ---------- Story 1.21 月度对账深化（5 端点 · V1.3.7 AD-2 不含"线下"） ----------
+  /reconciles/list:
+    get:
+      tags: [E6-Reconcile]
+      summary: 对账列表（按 vendor/period/status 过滤）
+      operationId: listReconciles
+      parameters:
+        - name: vendorId
+          in: query
+          schema: { type: integer }
+        - name: periodYear
+          in: query
+          schema: { type: integer }
+        - name: periodMonth
+          in: query
+          schema: { type: integer }
+        - name: status
+          in: query
+          schema: { type: string, enum: [DRAFT, VENDOR_CONFIRMED, BOTH_CONFIRMED, FINANCE_CONFIRMED, CLOSED] }
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          list: { type: array, items: { $ref: '#/components/schemas/Reconcile' } }
+                          page: { type: integer }
+                          size: { type: integer }
+
+  /reconciles/{id}/detail:
+    get:
+      tags: [E6-Reconcile]
+      summary: 对账单详情（主单 + 明细 + 签字）
+      operationId: getReconcileDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          reconcile: { $ref: '#/components/schemas/Reconcile' }
+                          items: { type: array, items: { $ref: '#/components/schemas/ReconcileItem' } }
+                          signatures: { type: array, items: { $ref: '#/components/schemas/ReconcileSignature' } }
+
+  /reconciles/{id}/items:
+    post:
+      tags: [E6-Reconcile]
+      summary: 追加对账明细（AC-6.1.1）
+      operationId: addReconcileItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReconcileItemRequest' }
+      responses:
+        '200': { description: 成功 }
+        '40001': { description: 参数缺失 }
+        '40404': { description: 对账单不存在 }
+
+  /reconciles/{id}/upload-signature:
+    post:
+      tags: [E6-Reconcile]
+      summary: 上传厂商签字扫描件（V1.3.7 AD-2 · 不含"线下" · AES-256-GCM 加密）
+      description: |
+        **V1.3.7 AD-2 红线**：通过电子方式上传，不允许线下传递
+        **加密**：AES-256-GCM · IV 唯一 · 128-bit GCM tag
+        **厂商签字必传**（P1 修补 3）
+      operationId: uploadReconcileSignature
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, signerName]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 'PDF / JPG / PNG · ≤ 10MB'
+                signerName:
+                  type: string
+                  description: '厂商签字人姓名'
+      responses:
+        '200':
+          description: 成功（自动 AES-256-GCM 加密）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ReconcileSignature' }
+
+  /reconciles/{id}/both-confirm:
+    post:
+      tags: [E6-Reconcile]
+      summary: 双方对账确认 → step 3
+      operationId: bothConfirmReconcile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+        '40903': { description: 状态非法（需 VENDOR_CONFIRMED） }
+
+  /reconciles/{id}/finance-confirm:
+    post:
+      tags: [E6-Reconcile]
+      summary: 财务对账确认（AC-6.1.4 · step 4 → CLOSED）
+      operationId: financeConfirmReconcile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 → CLOSED + isLocked=true }
+        '40903': { description: 状态非法（需 BOTH_CONFIRMED） }
+
+  # ============================================================
+  # E7 - 品质管控
+  # ============================================================
+  /inspections:
+    post:
+      tags: [E7-Quality]
+      summary: 创建检验单
+      operationId: createInspection
+      responses:
+        '200': { description: 成功 }
+
+  # V1.3.9 Sprint 13 Story 13.1 InspectionDTO schema 补齐（PM 决策#2 收口）
+  /quality/inspections:
+    post:
+      tags: [E7-Quality]
+      summary: 创建品质检验单（V1.3.9 Sprint 13.1 · 补 InspectionDTO schema）
+      operationId: createInspectionV1389
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionCreateRequest'
+      responses:
+        '201':
+          description: 检验单创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionResponse'
+        '400':
+          description: "字段校验失败（code: 40001 INVALID_FIELD · 字段名 details.field）"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+        '403':
+          description: "无 QC 权限（40301 QC_REQUIRED）"
+        '409':
+          description: "物料码已被检验（40901 INSPECTION_DUPLICATE）"
+
+  /inspections/fa/{id}/sign:
+    post:
+      tags: [E7-Quality]
+      summary: FA 双签（品检 + 工程师）
+      operationId: faSign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                inspectorId: { type: integer }
+                engineerId: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /defects/{id}/rework:
+    post:
+      tags: [E7-Quality]
+      summary: 不良品返工
+      operationId: reworkDefect
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # E8 - 采购
+  # ============================================================
+  /rfqs:
+    post:
+      tags: [E8-Purchase]
+      summary: 询价单
+      operationId: createRFQ
+      responses:
+        '200': { description: 成功 }
+
+  /purchase-orders:
+    post:
+      tags: [E8-Purchase]
+      summary: 采购订单
+      operationId: createPurchaseOrder
+      responses:
+        '200': { description: 成功 }
+
+  /purchase-orders/incoming:
+    get:
+      tags: [E8-Purchase]
+      summary: 待到货列表
+      operationId: incomingList
+      responses:
+        '200': { description: 成功 }
+
+  /vendors:
+    get:
+      tags: [E8-Purchase]
+      summary: 厂商列表
+      operationId: listVendors
+      responses:
+        '200': { description: 成功 }
+    post:
+      tags: [E8-Purchase]
+      summary: 创建厂商（V1.3.7 邮箱必填 + 电话选填）
+      operationId: createVendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Vendor' }
+      responses:
+        '200': { description: 成功 }
+        '400': { description: 邮箱缺失（V1.3.7 仍必填）' }
+
+  # ============================================================
+  # E9 - 财务与成本
+  # ============================================================
+  /finance/receivables:
+    get:
+      tags: [E9-Finance]
+      summary: 应收账款
+      operationId: receivables
+      responses:
+        '200': { description: 成功 }
+
+  /finance/aging:
+    get:
+      tags: [E9-Finance]
+      summary: 账龄分析（30/60/90/90+）
+      operationId: aging
+      responses:
+        '200': { description: 成功 }
+
+  /cost/calculate:
+    post:
+      tags: [E9-Finance]
+      summary: 成本核算
+      operationId: costCalculate
+      responses:
+        '200': { description: 成功 }
+
+  /payments:
+    post:
+      tags: [E9-Finance]
+      summary: 付款申请（V1.3.6 三条件触发）
+      operationId: createPayment
+      responses:
+        '200': { description: 成功 }
+
+  /profit/customers:
+    get:
+      tags: [E9-Finance]
+      summary: 客户利润（V1.3.3 利润率预警：< 10% 黄 / < 5% 红 / < 0 深红）
+      operationId: customerProfit
+      responses:
+        '200': { description: 成功 }
+
+  # ---------- 料号 5 段成本聚合（V1.3.4） ----------
+  /cost-aggregator/{materialCode}:
+    get:
+      tags: [E9-CostAgg]
+      summary: 料号 5 段成本（V1.3.4）
+      description: '返回材料/工时/表处/外协/总成本 5 段；权限隔离（管理层看全量）'
+      operationId: getCostAggregate
+      parameters:
+        - name: materialCode
+          in: path
+          required: true
+          schema: { type: string, example: YL-45-D80 }
+        - name: period
+          in: query
+          schema: { type: string, example: '2026-05' }
+        - name: customerId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CostAggregate' }
+
+  /cost-aggregator/{materialCode}/export:
+    get:
+      tags: [E9-CostAgg]
+      summary: 导出料号成本（Excel / PDF）
+      operationId: exportCostAggregate
+      parameters:
+        - name: materialCode
+          in: path
+          required: true
+          schema: { type: string }
+        - name: format
+          in: query
+          schema: { type: string, enum: [xlsx, pdf], default: xlsx }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  # ============================================================
+  # E10 - 人事
+  # ============================================================
+  /employees:
+    post:
+      tags: [E10-HR]
+      summary: 创建员工
+      operationId: createEmployee
+      responses:
+        '200': { description: 成功 }
+
+  /attendance:
+    post:
+      tags: [E10-HR]
+      summary: 考勤打卡（APP · WiFi/蓝牙定位）
+      operationId: attendance
+      responses:
+        '200': { description: 成功 }
+
+  /salary/calculate:
+    post:
+      tags: [E10-HR]
+      summary: 薪酬核算
+      operationId: salaryCalculate
+      responses:
+        '200': { description: 成功 }
+
+  /recruitment/plans:
+    post:
+      tags: [E10-HR]
+      summary: 招聘计划
+      operationId: createRecruitmentPlan
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # E11 - 报表看板
+  # ============================================================
+  /dashboard/production:
+    get:
+      tags: [E11-Dashboard]
+      summary: 生产工作台
+      operationId: dashboardProduction
+      responses:
+        '200': { description: 成功 }
+
+  /dashboard/outsource:
+    get:
+      tags: [E11-Dashboard]
+      summary: 委外面板（V1.3.4 7 状态机 + 返修高亮）
+      operationId: dashboardOutsource
+      responses:
+        '200': { description: 成功 }
+
+  /dashboard/sales-ranking:
+    get:
+      tags: [E11-Dashboard]
+      summary: 销售龙虎榜
+      operationId: salesRanking
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # E12 - 供应商协同（V1.3.5 仓管到货扫码）
+  # ============================================================
+  /outsource/orders/{id}/receive:
+    post:
+      tags: [E12-Receive]
+      summary: '【仓管】到货扫码（V1.3.5 替代送货员角色）'
+      operationId: receiveOutsource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OutsourceArriveRequest' }
+      responses:
+        '200': { description: 成功 }
+
+  # ============================================================
+  # Platform - 基础能力
+  # ============================================================
+  /platform/files/upload:
+    post:
+      tags: [Platform]
+      summary: 文件上传（含 AES-256-GCM 加密）
+      operationId: uploadFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                bucket: { type: string, enum: [drawings, contracts, reports, signed_scan] }
+      responses:
+        '200': { description: 成功 }
+
+  /platform/files/{id}/download:
+    get:
+      tags: [Platform]
+      summary: 文件下载（签字件需 3 角色 + 审计 · V1.3.6）
+      operationId: downloadFile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '403': { description: 无权限（签字件仅 3 角色可下载）' }
+
+  /platform/files/{id}/preview:
+    get:
+      tags: [Platform]
+      summary: 在线预览（签名 URL 5 分钟过期）
+      operationId: previewFile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /machines:
+    get:
+      tags: [E5-Machine]
+      summary: 设备列表
+      operationId: listMachines
+      responses:
+        '200': { description: 成功 }
+
+  /machines/{id}/load:
+    get:
+      tags: [E5-Machine]
+      summary: 设备机台负荷
+      operationId: machineLoad
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200': { description: 成功 }
+
+  # ============== V1.3.7 · Story 1.7 · E3-Drawing · Epic 3 图纸与物料 ==============
+  # NOTE: /drawings POST createDrawing + GET listDrawings 已合并至 line 1894（避免与 multipart uploadDrawing 冲突）
+  /drawings/{id}:
+    get:
+      tags: [E3-Drawing]
+      summary: 2. 查询详情（AC-3.1.1）
+      operationId: getDrawing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Drawing' }
+    put:
+      tags: [E3-Drawing]
+      summary: 3. 修改图纸（AC-3.1.1 · 仅 DRAFT 状态）
+      operationId: updateDrawing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: operatorUserId
+          in: query
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DrawingUpdateRequest' }
+      responses:
+        '200':
+          description: 成功
+
+  /drawings/{id}/versions:
+    post:
+      tags: [E3-Drawing-Flow]
+      summary: 5. 新增版本（AC-3.1.2 · v1→v2→v3 严格递增 · P1 修补）
+      operationId: addDrawingVersion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: operatorUserId
+          in: query
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DrawingVersionRequest' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DrawingVersion' }
+
+  /drawings/{id}/release:
+    post:
+      tags: [E3-Drawing-Flow]
+      summary: 6. 发布审批（AC-3.1.3 · 4 阈值 + > 20万 二次密码）
+      operationId: releaseDrawing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: operatorUserId
+          in: query
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DrawingReleaseRequest' }
+      responses:
+        '200':
+          description: 成功
+        '401': { description: ADMIN_PASSWORD_REQUIRED · > 20万 FA 件必填 }
+        '409':
+          description: DRAWING_STATE_INVALID / DRAWING_BLACKLIST
+
+  /drawings/{id}/archive:
+    post:
+      tags: [E3-Drawing-Flow]
+      summary: 7. 归档（AC-3.1.3 · RELEASED → ARCHIVED）
+      operationId: archiveDrawing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: operatorUserId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '409': { description: DRAWING_STATE_INVALID }
+
+  /drawings/export/{id}:
+    get:
+      tags: [E3-Drawing-Export]
+      summary: 8. 导出 PDF（AC-3.1.4 · 含签字扫描件解密嵌入 · 1h 缓存 · AES-256-GCM P1 修补）
+      operationId: exportDrawingPdf
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: format
+          in: query
+          schema: { type: string, default: pdf, enum: [pdf, txt] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  # ============================================================
+  # V1.3.9 Sprint 12 · Story 12.1 图纸权限矩阵（3 端点）
+  # ============================================================
+
+  /drawings/{id}/permission:
+    get:
+      tags: [E3-Drawing-ACL]
+      summary: 查询当前用户对图纸的权限位（任意角色可调 · FINANCE 也返 200 + 全 false）
+      operationId: getDrawingPermission
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+          description: crm_drawing.id
+      responses:
+        '200':
+          description: 权限位返回（任意角色 · 包括 FINANCE scope=NONE）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DrawingPermissionDTO'
+        '404':
+          description: 图纸不存在
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      code: { example: 40401 }
+
+  /drawings/{id}/preview:
+    get:
+      tags: [E3-Drawing-ACL]
+      summary: 图纸预览（带 ACL · 自动审计 · @PreAuthorize @drawingAuthz.canView）
+      operationId: previewDrawing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+          description: crm_drawing.id
+        - name: resolution
+          in: query
+          schema: { type: string, enum: [LOW, MEDIUM, HIGH], default: MEDIUM }
+      responses:
+        '200':
+          description: PDF 流（带水印 · 防止截屏外发）
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: ACL 拒绝（错误码统一 40304）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      code: { example: 40304 }
+                      message:
+                        example: "该图纸未关联您的订单"
+                        description: |
+                          错误消息（角色定制）：
+                          - FINANCE → "FINANCE 角色无图纸权限"
+                          - SALES 不关联订单 → "该图纸未关联您的订单"
+                          - PURCHASER/WAREHOUSE/QC 类似
+                          - OPERATOR 工序不关联 → "当前工序未关联该图纸"
+        '404':
+          description: 图纸不存在
+        '410':
+          description: 图纸已归档（OBSOLETE/ARCHIVED · 默认不可预览）
+
+  /drawings/{id}/download:
+    get:
+      tags: [E3-Drawing-ACL]
+      summary: 下载图纸原文件（仅 ENGINEER · @PreAuthorize @drawingAuthz.canDownload）
+      operationId: downloadDrawing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+          description: crm_drawing.id
+      responses:
+        '200':
+          description: 原文件流（PDF/签字扫描件 ZIP · application/octet-stream）
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: 非 ENGINEER 角色拒绝（40304）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      code: { example: 40304 }
+                      message: { example: "该图纸仅 ENGINEER 可下载" }
+        '404':
+          description: 图纸不存在
+
+  # ============================================================
+  # V1.3.9 Sprint 13 Story 13.3 · 真实查询对接 3 端点
+  # ============================================================
+
+  /drawings/{id}/links:
+    get:
+      tags: [E3-Drawing-Link-Query]
+      summary: 图纸 → 关联业务单据 ID 列表（13.3 端点 1 · 按 biz_type 过滤 · 无缓存）
+      operationId: getDrawingLinks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+          description: crm_drawing.id
+        - name: biz_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [ORDER, PO, INCOMING, INSPECTION, WORKORDER_PROCESS]
+          description: 业务类型（5 类枚举）
+      responses:
+        '200':
+          description: 关联业务单据列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/DrawingLinkListResponse' }
+        '400':
+          description: INVALID_BIZ_TYPE（40001）
+        '403':
+          description: DRAWING_FORBIDDEN（40304 · 角色与 biz_type 不匹配）
+        '404':
+          description: DRAWING_NOT_FOUND（40401）
+
+  /drawings/accessible:
+    get:
+      tags: [E3-Drawing-Link-Query]
+      summary: 业务单据 → 可访问图纸列表（13.3 端点 2 · Redis 5min 缓存）
+      operationId: getAccessibleDrawings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: biz_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [ORDER, PO, INCOMING, INSPECTION, WORKORDER_PROCESS]
+          description: 业务类型（5 类枚举）
+        - name: biz_id
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+          description: 业务单据 ID
+      responses:
+        '200':
+          description: 可访问图纸列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/AccessibleDrawingListResponse' }
+        '400':
+          description: INVALID_BIZ_TYPE（40001）
+        '403':
+          description: DRAWING_FORBIDDEN（40304）
+        '404':
+          description: BIZ_DOC_NOT_FOUND（40401）
+
+  /drawings/process/{processId}:
+    get:
+      tags: [E3-Drawing-Link-Query]
+      summary: OPERATOR 工序 → 可访问图纸列表（13.3 端点 3 · Redis 5min 缓存 · 手机端扫码）
+      operationId: getOperatorProcessDrawings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: processId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+          description: 工序 ID（crm_workorder_process.id）
+      responses:
+        '200':
+          description: 工序可访问图纸列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/OperatorProcessDrawingResponse' }
+        '403':
+          description: PROCESS_FORBIDDEN（40304 · 工序非本人操作）
+        '404':
+          description: PROCESS_NOT_FOUND（40402 · 工序不存在或非 IN_PROGRESS）
+
+  # ============================================================
+  # V1.3.8 Sprint 7-10 · 14 端点（Sprint 10 Story 10.1 补齐）
+  # ============================================================
+
+  /incoming/batch-create:
+    post:
+      tags: [V138-Incoming]
+      summary: 按物料粒度批次到货（Story 3.1）
+      operationId: createIncomingBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchCreateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BatchCreateResponse'
+
+  /incoming/po-status/{poId}:
+    get:
+      tags: [V138-Incoming]
+      summary: 按物料粒度 PO 状态查询（Story 3.1）
+      operationId: getPoStatus
+      parameters:
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PoStatusResponse'
+
+  /material-barcode/generate:
+    post:
+      tags: [V138-MaterialBarcode]
+      summary: 复合物料码生成（Story 3.2）
+      operationId: generateMaterialBarcode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialBarcodeRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MaterialBarcodeResponse'
+
+  /material-barcode/parse:
+    get:
+      tags: [V138-MaterialBarcode]
+      summary: 物料码解析 APP 扫码（Story 3.2）
+      operationId: parseMaterialBarcode
+      parameters:
+        - name: barcode
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MaterialBarcodeParseResponse'
+
+  /purchase/no-order:
+    post:
+      tags: [V138-Purchase]
+      summary: 无订单采购创建 PO（Story 4.1）
+      operationId: createNoOrderPurchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoOrderPurchaseRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NoOrderPurchaseResponse'
+
+  /purchase/reasons:
+    get:
+      tags: [V138-Purchase]
+      summary: 采购理由字典查询（Story 4.1）
+      operationId: getPurchaseReasons
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PurchaseReason'
+
+  /approval/route-preview:
+    post:
+      tags: [V138-Approval]
+      summary: 审批路由预览（Story 4.2）
+      operationId: previewApprovalRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRouteRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ApprovalRouteResponse'
+
+  /roles/procurement-manager-perms:
+    get:
+      tags: [V138-Approval]
+      summary: 采购主管权限查询（Story 4.2）
+      operationId: getProcurementManagerPerms
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: string
+
+  /reports/gm-summary:
+    get:
+      tags: [V138-Report]
+      summary: 总经理汇总报表（Story 4.3）
+      operationId: getGmSummary
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [LAST_7D, LAST_30D, LAST_90D, CUSTOM]
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 成功（仅 GM + ADMIN 可见）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GmSummaryResponse'
+
+  /materials/{id}/detail:
+    get:
+      tags: [V138-Material]
+      summary: 料号详情聚合（Story 2.1 · 7 Tab）
+      operationId: getMaterialDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MaterialDetailResponse'
+
+  /materials/{id}/price-history:
+    get:
+      tags: [V138-Material]
+      summary: 价格走势（Story 2.1）
+      operationId: getPriceHistory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PriceTrendPoint'
+
+  /materials/{id}/process-route:
+    get:
+      tags: [V138-Material]
+      summary: 工艺路线（Story 2.1）
+      operationId: getProcessRoute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProcessRouteStep'
+
+  /materials/{id}/change-log:
+    get:
+      tags: [V138-Material]
+      summary: 历史变更（Story 2.1）
+      operationId: getChangeLog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ChangeLogEntry'
+
+  /workflow/events/stats:
+    get:
+      tags: [V138-Workflow]
+      summary: 审批事件统计（Story 10.3）
+      operationId: getWorkflowEventStats
+      parameters:
+        - name: workflow_code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: approver_role
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WorkflowEventStats'

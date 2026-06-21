@@ -1,0 +1,113 @@
+# Story 10.2 · Playwright E2E 14 端点 · GitLab CI 配置
+# 关联：
+#   - backend/docs/stories/sprint10/10.2-playwright-e2e.md
+#   - docs/architecture/story-reviews/10.2-review.md (鲁班 APPROVED)
+#   - docs/qa/reviews/10.2-playwright-e2e.md (商鞅 14 测例设计)
+#
+# 与 9.2 既有的 36 个平铺 spec 兼容 · 不破坏现有 CI 链路
+# 新增 14 个 sprint10/*.spec.ts（4 业务域）· 与既有 spec 共用 chromium project
+#
+# 4 worker 并行 · fullyParallel: true · 全量 ≤ 2min
+
+stages:
+  - lint
+  - typecheck
+  - e2e
+
+variables:
+  E2E_BASE_URL: "http://localhost:8082"
+  npm_config_loglevel: "warn"
+
+# ---------------- Lint ----------------
+lint:
+  stage: lint
+  image: node:20-bullseye-slim
+  script:
+    - npm ci --legacy-peer-deps
+    - npm run lint
+  only:
+    - merge_requests
+    - main
+
+# ---------------- Typecheck (10.1 codegen gate) ----------------
+typecheck:
+  stage: typecheck
+  image: node:20-bullseye-slim
+  script:
+    - npm ci --legacy-peer-deps
+    # 10.1 IMPL 注意事项：CI 缓存清理（避免 stale .cache 阻塞 nullable 检测）
+    - rm -rf node_modules/.cache
+    - npm run typecheck:ci
+  artifacts:
+    when: on_failure
+    paths:
+      - npm-debug.log
+  only:
+    - merge_requests
+    - main
+
+# ---------------- E2E (14 spec · 4 worker parallel) ----------------
+e2e:sprint10:
+  stage: e2e
+  image: mcr.microsoft.com/playwright:v1.49.0-jammy
+  services:
+    - name: erp-backend:latest
+      alias: backend
+  variables:
+    E2E_NO_WEBSERVER: "true"
+    CI: "true"
+  before_script:
+    - npm ci --legacy-peer-deps
+    - npx playwright install --with-deps chromium
+    # 10.1 协同：先跑 codegen（确保 generated/ 与 openapi.yaml 一致）
+    - npm run gen:api
+  script:
+    # 14 测例 · 4 worker 并行 · fullyParallel
+    - npx playwright test e2e/sprint10/ --project=chromium --reporter=junit,html,list --workers=4
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: junit.xml
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+  parallel: 4  # GitLab CI 4 worker 并行
+
+# ---------------- 9.2 回归（保留 4 happy path）----------------
+e2e:regression-9.2:
+  stage: e2e
+  image: mcr.microsoft.com/playwright:v1.49.0-jammy
+  services:
+    - name: erp-backend:latest
+      alias: backend
+  variables:
+    E2E_NO_WEBSERVER: "true"
+    CI: "true"
+  before_script:
+    - npm ci --legacy-peer-deps
+    - npx playwright install --with-deps chromium
+    - npm run gen:api
+  script:
+    # 9.2 既有 4 测例回归：dashboard-production + salesperson-order-crud + salesperson-quote-crud + salesperson-50k-order-approve
+    - npx playwright test
+        e2e/dashboard-production.spec.ts
+        e2e/salesperson-order-crud.spec.ts
+        e2e/salesperson-quote-crud.spec.ts
+        e2e/salesperson-50k-order-approve.spec.ts
+        --project=chromium
+        --reporter=junit,html
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: junit.xml
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main

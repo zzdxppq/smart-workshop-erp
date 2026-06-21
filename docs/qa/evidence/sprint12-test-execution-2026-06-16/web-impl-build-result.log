@@ -1,0 +1,67 @@
+# ============================================================
+# Web-Impl build · Sprint 12 CONDITIONAL GO 委派#2（步骤 4）
+# ============================================================
+# 工作站：QA 商鞅（沙箱外 Windows 10 / Git Bash）
+# 项目：smart-workshop-erp / V1.3.8 Sprint 12
+# 范围：12.1/12.2/12.3/12.4 codegen + 全部 .vue / .ts 静态构建
+# 期望：vue-tsc -b 0 错误 + vite build 0 错误 · dist 标题 V1.3.8
+# 截止：2026-06-16 18:00
+# 责任：QA 商鞅
+# 关联：sprint10-typecheck-plan.md §4.5 build 失败路径
+# 前置：步骤 1-3（gen / typecheck / typecheck:ci）全 0
+# ============================================================
+
+# [A] 清理历史构建产物
+cd E:/claude/smart-workshop-erp/web-impl
+rm -rf dist
+rm -rf node_modules/.vite
+
+# [B] 执行 build
+npm run build 2>&1 | tee build.log
+echo "exit code: $?"                       # 期望：0
+
+# [C] 关键断言
+grep -E "vite v[0-9]+\.[0-9]+\.[0-9]+ building" build.log
+grep -E "✓ built in [0-9]+(\.[0-9]+)?(s|ms)" build.log
+# 期望：✓ built in 30-60s
+
+grep -E "vue-tsc -b" build.log
+grep -E "error TS[0-9]+" build.log | wc -l # 期望：0
+# 期望：vue-tsc 0 错误 + vite 0 错误
+
+# [D] dist 标题验证（V1.3.8）
+grep -rE "<title>.*</title>" dist/index.html
+# 期望：<title>Smart Workshop ERP V1.3.8</title>  或 V1.3.8 含 sprint 12 字样
+
+# [E] dist 大小统计
+du -sh dist/
+ls -la dist/assets/ | head -20
+# 期望：dist 总大小 < 5MB · js/css 资源有 content-hash 文件名
+
+# [F] 拷贝证据归档
+cp build.log   ../docs/qa/evidence/sprint12-test-execution-2026-06-16/web-impl-build-result.log
+du -sh dist/   >  ../docs/qa/evidence/sprint12-test-execution-2026-06-16/web-impl-dist-size.log
+
+# ============================================================
+# V5 失败路径（build 失败 · 详见 typecheck-result.log §V5）
+# ============================================================
+# 症状：vue-tsc -b 通过 · vite build 失败
+# 根因：
+#   (1) vite 配置问题（Windows PATH / openapi bin 短名）
+#   (2) 资源引用错误（OutsourceStateMachine.vue 字段引用缺失）
+#   (3) 第三方库版本冲突（peer dep · eslint 9 vs @vue/eslint-config-typescript 13）
+# 修复责任：10.1 dev agent Opus 4.8 + DevOps 张良
+# SLA：12-24h 内完成
+# ============================================================
+
+# [G] 验收清单
+# [ ] vue-tsc -b · 0 错误
+# [ ] vite build · 退出 0
+# [ ] dist/index.html title 含 V1.3.8
+# [ ] dist 资源带 content-hash
+# [ ] dist 总大小 < 5MB
+# [ ] 归档 build.log
+
+# [H] 跑完签字
+# QA 商鞅：________________  时间：2026-06-16 __:__
+# 复核 SM 萧何：________________  时间：2026-06-16 __:__

@@ -1,0 +1,470 @@
+# V1.3.9 Sprint 14 Story 13.7 · baseline-typecheck-fix
+# 20 端点增量（补 Sprint 12-13 已 ship 端点的契约描述）
+# 注：13.1 POST /quality/inspections 与 13.4 GET /workflow/events/stats 已 ship，仅补 schema 描述，无需新增 path
+
+  # ============================================================
+  # V1.3.9 Sprint 14 Story 13.7 · 12.2 sys_printer · 6 端点
+  # ============================================================
+
+  /printers:
+    get:
+      tags: [E12-Printer]
+      summary: 查打印机列表（分页 + 多维过滤）
+      operationId: listPrinters
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: type,    schema: { type: string, enum: [NORMAL, LABEL] } }
+        - { in: query, name: status,  schema: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN] } }
+        - { in: query, name: enabled, schema: { type: integer, enum: [0, 1] } }
+        - { in: query, name: pageNum,    schema: { type: integer, default: 1 } }
+        - { in: query, name: pageSize,   schema: { type: integer, default: 20 } }
+        - { in: query, name: tenantId,   schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 打印机列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PageResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+    post:
+      tags: [E12-Printer]
+      summary: 新增打印机配置
+      operationId: createPrinter
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: operatorUserId, schema: { type: integer, default: 1 } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SysPrinter' }
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SysPrinter' }
+        '409':
+          description: 打印机名称已存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '422':
+          description: 字段校验失败（LABEL 缺 ip / 端口非法）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/{id}:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    put:
+      tags: [E12-Printer]
+      summary: 修改打印机配置
+      operationId: updatePrinter
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: operatorUserId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SysPrinter' }
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SysPrinter' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+    delete:
+      tags: [E12-Printer]
+      summary: 删除打印机配置
+      operationId: deletePrinter
+      security: [{ bearerAuth: [admin] }]
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: 打印机已被使用 · 改为 enabled=0
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/{id}/test:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    post:
+      tags: [E12-Printer]
+      summary: 测试打印机连接（TCP Socket 探活 · 2 秒超时）
+      operationId: testPrinterConnection
+      security: [{ bearerAuth: [admin] }]
+      responses:
+        '200':
+          description: 探活结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrinterHeartbeatResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/available:
+    get:
+      tags: [E12-Printer]
+      summary: 查询可用同类型打印机（前端打印入口用）
+      operationId: getAvailablePrinters
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: type, required: true, schema: { type: string, enum: [NORMAL, LABEL] } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 可用打印机列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrinterAvailableResponse' }
+
+  # ============================================================
+  # V1.3.9 Sprint 14 Story 13.7 · 12.3 label_template · 2 端点
+  # ============================================================
+
+  /label-templates:
+    get:
+      tags: [E12-Label]
+      summary: 查标签模板元数据（type 可选 · 不传返回 5 种）
+      operationId: listLabelTemplates
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: type,    schema: { type: string, enum: [GD, LZ, SB, WW, WL] } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 模板列表（GD/LZ/SB/WW/WL · SB 由代码层 fallback 注入）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LabelTemplateListResponse' }
+        '400':
+          description: type 不支持（40002）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+
+  /label-templates/preview:
+    post:
+      tags: [E12-Label]
+      summary: 生成标签预览 PNG base64（ZXing + 三区布局）
+      operationId: previewLabel
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LabelPreviewRequest' }
+      responses:
+        '200':
+          description: 预览生成成功（base64 PNG）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LabelPreviewResponse' }
+        '400':
+          description: 参数无效（40001 · lines 超 6 / qr_content 空）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '422':
+          description: qr_content 超 200 字符 · factory_name 超 20 字符（42201）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+
+  # ============================================================
+  # V1.3.9 Sprint 14 Story 13.7 · 12.4 sys_print_log · 7 端点
+  # ============================================================
+
+  /print/labels/zpl:
+    post:
+      tags: [E12-Print]
+      summary: 模式一 ZPL/TSPL 直连打印（Socket 9100 · 3s 硬性超时）
+      operationId: printLabelsZpl
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ZplPrintRequest' }
+      responses:
+        '200':
+          description: ZPL 发送成功 · 异步 · logNo 即时返回
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ZplPrintResult' }
+        '409':
+          description: 50201 PRINTER_OFFLINE · 50202 PROTOCOL_UNSUPPORTED
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+        '422':
+          description: 40001/40003 参数校验失败
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/labels/pdf-a4:
+    post:
+      tags: [E12-Print]
+      summary: 模式二 A4 PDF（3×9=27 标签/页 · base64 返回）
+      operationId: printLabelsPdfA4
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PdfA4PrintRequest' }
+      responses:
+        '200':
+          description: PDF 生成成功 · 含 base64 + printLogId
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printLogId: { type: integer, format: int64 }
+                          logNo: { type: string }
+                          pdfBase64: { type: string }
+                          bytes: { type: integer }
+                          contentType: { type: string }
+                          filename: { type: string }
+        '422':
+          description: items 超过 30 → 40003
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/logs:
+    get:
+      tags: [E12-Print]
+      summary: 打印历史查询（分页 + 多维过滤）
+      operationId: listPrintLogs
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: codeType,    schema: { type: string, enum: [GD, LZ, SB, WW, WL, DRAWING] } }
+        - { in: query, name: mode,        schema: { type: string, enum: [ZPL_DIRECT, PDF_BROWSER] } }
+        - { in: query, name: status,      schema: { type: string, enum: [SUCCESS, FAILED, PENDING] } }
+        - { in: query, name: operatorId,  schema: { type: integer, format: int64 } }
+        - { in: query, name: codeValue,   schema: { type: string, description: "模糊搜索" } }
+        - { in: query, name: dateFrom,    schema: { type: string, format: date } }
+        - { in: query, name: dateTo,      schema: { type: string, format: date } }
+        - { in: query, name: page,        schema: { type: integer, default: 1 } }
+        - { in: query, name: size,        schema: { type: integer, default: 20 } }
+        - { in: query, name: tenantId,    schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 历史分页
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PageResponsePrintLog' }
+
+  /print/logs/recent:
+    get:
+      tags: [E12-Print]
+      summary: 最近打印记录（按用户 · limit N · 默认 20）
+      operationId: listRecentPrintLogs
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: limit, schema: { type: integer, default: 20, maximum: 100 } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 最近打印列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/PrintLogResponse' }
+
+  /print/logs/{id}:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    get:
+      tags: [E12-Print]
+      summary: 单条打印日志详情
+      operationId: getPrintLog
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 单条详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrintLogResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /print/logs/{id}/replay:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    post:
+      tags: [E12-Print]
+      summary: 补打（同模式/换模式）· 防 reference 递归
+      operationId: replayPrintLog
+      security: [{ bearerAuth: [admin] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReprintRequest' }
+      responses:
+        '200':
+          description: 补打成功 · 新 sys_print_log reference_log_id=id
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+        '409':
+          description: 40954 PRINT_REPLAY_FORBIDDEN · FAILED 不可补打 / 补打记录不可再补打
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Result' } }
+
+  /print/statistics:
+    get:
+      tags: [E12-Print]
+      summary: 打印统计（groupBy 聚合）
+      operationId: printStatistics
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: groupBy, schema: { type: string, enum: [month, day, operator_id, code_type, mode], default: month } }
+        - { in: query, name: dateFrom, schema: { type: string, format: date } }
+        - { in: query, name: dateTo,   schema: { type: string, format: date } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 聚合结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/PrintStatisticsBucket' }
+
+  # ============================================================
+  # V1.3.9 Sprint 14 Story 13.7 · 13.3 drawing link · 2 新增端点（GET 已 ship）
+  # ============================================================
+
+  /drawings/{id}/links:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    post:
+      tags: [E3-Drawing-Link-Query]
+      summary: 图纸新增关联业务单据（13.3 · admin/owner）
+      operationId: createDrawingLink
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DrawingLinkCreateRequest' }
+      responses:
+        '200':
+          description: 关联创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/DrawingLinkListResponse' }
+        '400':
+          description: INVALID_BIZ_TYPE（40001）
+        '403':
+          description: 40303 DRAWING_LINK_FORBIDDEN（非 admin/owner）
+        '404':
+          description: DRAWING_NOT_FOUND（40401）
+        '409':
+          description: 40903 DRAWING_LINK_DUPLICATE（已关联）
+
+  /drawings/{id}/links/{linkId}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: integer, format: int64 } }
+      - { in: path, name: linkId, required: true, schema: { type: integer, format: int64 } }
+    delete:
+      tags: [E3-Drawing-Link-Query]
+      summary: 删除图纸关联（13.3 · admin/owner）
+      operationId: deleteDrawingLink
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '403':
+          description: 40303 DRAWING_LINK_FORBIDDEN
+        '404':
+          description: 40401 DRAWING_LINK_NOT_FOUND

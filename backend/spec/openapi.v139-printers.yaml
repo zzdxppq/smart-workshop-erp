@@ -1,0 +1,152 @@
+# V1.3.9 Sprint 12 Story 12.2 · 6 端点 paths
+# 追加到 openapi.yaml 的 paths 块之前
+
+  /printers:
+    get:
+      tags: [E12-Printer]
+      summary: 查打印机列表（分页 + 多维过滤）
+      operationId: listPrinters
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: type,    schema: { type: string, enum: [NORMAL, LABEL] } }
+        - { in: query, name: status,  schema: { type: string, enum: [ONLINE, OFFLINE, UNKNOWN] } }
+        - { in: query, name: enabled, schema: { type: integer, enum: [0, 1] } }
+        - { in: query, name: pageNum,    schema: { type: integer, default: 1 } }
+        - { in: query, name: pageSize,   schema: { type: integer, default: 20 } }
+        - { in: query, name: tenantId,   schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 打印机列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PageResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+    post:
+      tags: [E12-Printer]
+      summary: 新增打印机配置
+      operationId: createPrinter
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: operatorUserId, schema: { type: integer, default: 1 } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SysPrinter' }
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SysPrinter' }
+        '409':
+          description: 打印机名称已存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '422':
+          description: 字段校验失败
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/{id}:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    put:
+      tags: [E12-Printer]
+      summary: 修改打印机配置
+      operationId: updatePrinter
+      security: [{ bearerAuth: [admin] }]
+      parameters:
+        - { in: query, name: operatorUserId, schema: { type: integer, default: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SysPrinter' }
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SysPrinter' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+    delete:
+      tags: [E12-Printer]
+      summary: 删除打印机配置
+      operationId: deletePrinter
+      security: [{ bearerAuth: [admin] }]
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: 打印机已被使用
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/{id}/test:
+    parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+    post:
+      tags: [E12-Printer]
+      summary: 测试打印机连接（TCP Socket 探活 · 2 秒超时）
+      operationId: testPrinterConnection
+      security: [{ bearerAuth: [admin] }]
+      responses:
+        '200':
+          description: 探活结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrinterHeartbeatResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /printers/available:
+    get:
+      tags: [E12-Printer]
+      summary: 查询可用同类型打印机（前端打印入口用）
+      operationId: getAvailablePrinters
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: type, required: true, schema: { type: string, enum: [NORMAL, LABEL] } }
+        - { in: query, name: tenantId, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: 可用打印机列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PrinterAvailableResponse' }

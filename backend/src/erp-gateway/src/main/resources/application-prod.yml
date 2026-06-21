@@ -1,0 +1,12 @@
+# gateway 专用 prod 配置（纯路由，无 DB）
+spring:
+  cloud:
+    nacos:
+      discovery:
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+
+app:
+  web:
+    base-url: ${WEB_BASE_URL:https://bts.51xiaoping.com}
+    api-base-url: ${API_BASE_URL:https://bts.51xiaoping.com}

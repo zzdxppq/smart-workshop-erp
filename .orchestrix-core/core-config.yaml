@@ -1,0 +1,784 @@
+title: Orchestrix Core System
+description: >
+  CNC 加工厂 ERP 系统 V1.3.7 · orchestrix 多 Agent 协作配置
+  当前仓作为 multi-repo product 仓；backend/web/android 三个 implementation 仓
+  未来从本仓拆出。PO 切片 PRD、SM 创建 Story、dev/qa/architect 各司其职。
+
+markdownExploder: true
+
+project:
+  name: 昆山佰泰胜专属 ERP 系统
+  mode: multi-repo
+  testCommand: ''
+  multi_repo:
+    role: product
+    repository_id: smart-workshop-erp-product
+    product_repo_path: ''                # 当前仓即 product 仓，留空
+    auto_filter_stories: true
+    assigned_stories:
+      - id: "1.1"
+        title: "用户与角色权限"
+        status: "Accepted"
+        sharded: "2026-06-09"
+        accepted: "2026-06-09"
+      - id: "1.2"
+        title: "审批工作流配置"
+        status: "Accepted"
+        sharded: "2026-06-10"
+        accepted: "2026-06-10"
+      - id: "1.3"
+        title: "系统参数 / 数据字典 / HR Feign / 性能与安全"
+        status: "Accepted"
+        sharded: "2026-06-10"
+        accepted: "2026-06-10"
+        source_story: "backend/docs/stories/1.3-系统参数与HR集成.md"
+        qa_review: "docs/qa/reviews/1.3-系统参数与HR集成.md"
+      - id: "1.4"
+        title: "APP 端基础（登录 / 消息 / 扫码壳）"
+        status: "Accepted"
+        sharded: "2026-06-10"
+        accepted: "2026-06-10"
+        source_story: "backend/docs/stories/1.4-APP端基础.md"
+        repository_type: "android"
+        qa_review: "docs/qa/reviews/1.4-APP端基础.md"
+        pending_deploy:
+          - "android-impl 仓 UI 实施（需 Android Studio）"
+          - "8 角色 E2E + 集成测试（需 connectedAndroidTest 设备）"
+          - "OWASP MASVS + SonarQube Mobile"
+      - id: "1.5"
+        title: "报价与多级审批 (FR-2-2)"
+        status: "Accepted"
+        sharded: "2026-06-11"
+        accepted: "2026-06-12"
+        source_story: "backend/docs/stories/1.5-报价与多级审批.md"
+        story_review: "docs/architecture/story-reviews/1.5-review.md"
+        impl_review: "docs/architecture/story-reviews/1.5-impl-review.md"
+        deploy_report: "docs/architecture/story-reviews/1.5-deploy-report.md"
+        qa_review: "docs/qa/reviews/1.5-报价与多级审批.md"
+        test_evidence: "docs/qa/evidence/1.5-test-execute.md"
+        repository_type: "backend"
+      # ==================== V1.3.8 Sprint 7 ====================
+      # PM 范蠡 2026-06-13 反馈 3 条全部采纳 · 详见 docs/prd-feedback-v1.3.8.md
+      # 6 Story · 17 端点 · ~144 测例回归 · 4 个 Flyway 迁移 V49-V52
+      - id: "2.1"
+        title: "料号详情页聚合视图 (PM 反馈 1)"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S7"
+        priority: "P1"
+        complexity: "M"
+        source_story: "backend/docs/stories/2.1-料号详情页聚合视图.md"
+        story_review: "docs/architecture/story-reviews/2.1-impl-review.md"
+        impl_report: "docs/dev/logs/2.1-impl-report.md"
+        test_evidence: "docs/qa/evidence/sprint7-final-integration-test-report.md"
+        repository_type: "backend"
+        endpoints: 4
+        test_cases: 24
+        pm_feedback_ref: "docs/prd-feedback-v1.3.8.md#反馈-1料号详情页7-tab"
+        parallel_group: "C"
+      - id: "3.1"
+        title: "分批到货处理机制 (PM 反馈 2 · 重构)"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S7"
+        priority: "P0"
+        complexity: "M"
+        source_story: "backend/docs/stories/3.1-分批到货处理机制.md"
+        story_review: "docs/architecture/story-reviews/3.1-impl-review.md"
+        impl_report: "docs/dev/logs/3.1-impl-report.md"
+        test_evidence: "docs/qa/evidence/sprint7-final-integration-test-report.md"
+        repository_type: "backend"
+        migration: "V49__batch.sql"
+        endpoints: 2
+        test_cases_new: 26
+        test_cases_regression: 84
+        pm_feedback_ref: "docs/prd-feedback-v1.3.8.md#反馈-2入库后物料码--分批到货"
+        gray_scale: "code_ready_immediate_dual_write"
+        parallel_group: "A"
+      - id: "3.2"
+        title: "物料码批次生成 (PM 反馈 2 关联)"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S7"
+        priority: "P0"
+        complexity: "S"
+        source_story: "backend/docs/stories/3.2-物料码批次生成.md"
+        story_review: "docs/architecture/story-reviews/3.2-impl-review.md"
+        impl_report: "docs/dev/logs/3.2-impl-report.md"
+        test_evidence: "docs/qa/evidence/sprint7-final-integration-test-report.md"
+        repository_type: "backend"
+        migration: "V50__material_barcode_batch.sql"
+        endpoints: 2
+        test_cases: 12
+        pm_feedback_ref: "docs/prd-feedback-v1.3.8.md#反馈-2入库后物料码--分批到货"
+        depends_on: ["3.1"]
+        parallel_group: "A"
+      - id: "4.1"
+        title: "无订单采购模式 (PM 反馈 3)"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S7"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/4.1-无订单采购模式.md"
+        story_review: "docs/architecture/story-reviews/4.1-impl-review.md"
+        impl_report: "docs/dev/logs/4.1-impl-report.md"
+        test_evidence: "docs/qa/evidence/sprint7-final-integration-test-report.md"
+        repository_type: "backend"
+        migration: "V51__purchase_reason.sql"
+        endpoints: 3
+        test_cases: 18
+        pm_feedback_ref: "docs/prd-feedback-v1.3.8.md#反馈-3无订单采购"
+        parallel_group: "B"
+      - id: "4.2"
+        title: "采购主管审批路由 (PM 反馈 3 关联)"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S7"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/4.2-采购主管审批路由.md"
+        story_review: "docs/architecture/story-reviews/4.2-impl-review.md"
+        impl_report: "docs/dev/logs/4.2-impl-report.md"
+        precheck_log: "docs/dev/logs/4.2-precheck.log"
+        test_evidence: "docs/qa/evidence/sprint7-final-integration-test-report.md"
+        repository_type: "backend"
+        migration: "V52__procurement_manager_role.sql"
+        endpoints: 2
+        test_cases_new: 18
+        test_cases_regression: 30
+        pm_feedback_ref: "docs/prd-feedback-v1.3.8.md#反馈-3无订单采购"
+        precheck_required: "grep V1.3.7 4-阈值现状"
+        parallel_group: "B"
+      - id: "4.3"
+        title: "总经理汇总报表 (PM 反馈 3 关联)"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S7"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/4.3-总经理汇总报表.md"
+        story_review: "docs/architecture/story-reviews/4.3-impl-review.md"
+        impl_report: "docs/dev/logs/4.3-impl-report.md"
+        test_evidence: "docs/qa/evidence/sprint7-final-integration-test-report.md"
+        repository_type: "backend"
+        endpoints: 1
+        test_cases: 6
+        pm_feedback_ref: "docs/prd-feedback-v1.3.8.md#反馈-3无订单采购"
+        parallel_group: "C"
+      # ==================== V1.3.8 Sprint 8 ====================
+      # 优化阶段 · 6 Story · 修 V1.3.7 既有 bug + 前端实装 + 跨模块集成
+      - id: "8.1"
+        title: "V1.3.7 14 个既有 bug 修复（2 BigDecimal + 12 HashMap/List）"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S8"
+        priority: "P0"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint8/8.1-v137-bugfixes.md"
+        impl_report: "docs/dev/logs/sprint8-8.1-v137-bugfixes-report.md"
+        test_evidence: "docs/dev/logs/sprint8-8.1-v137-bugfixes-report.md"
+        repository_type: "backend"
+        test_cases: 16
+        bug_fix: "ProcessServiceTest 2 + ConversionServiceTest 12 + 2 验证"
+      - id: "8.2"
+        title: "Story 1.51 测例补全（QualityPickupService）"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S8"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint8/8.2-1.51-test-supplement.md"
+        impl_report: "docs/dev/logs/sprint8-8.2-1.51-test-supplement-report.md"
+        test_evidence: "docs/dev/logs/sprint8-8.2-1.51-test-supplement-report.md"
+        repository_type: "backend"
+        test_cases: 18
+      - id: "8.3"
+        title: "sys_workflow_event 表实装（审批事件 + PM 工作量精确统计）"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S8"
+        priority: "P1"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint8/8.3-workflow-event.md"
+        impl_report: "docs/dev/logs/sprint8-8.3-workflow-event-report.md"
+        test_evidence: "docs/dev/logs/sprint8-8.3-workflow-event-report.md"
+        repository_type: "backend"
+        migration: "V53__workflow_event.sql"
+        endpoints: 1
+        test_cases: 12
+      - id: "8.4"
+        title: "web-impl 完整实装（layout/JWT/codegen/Playwright E2E）"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S8"
+        priority: "P1"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint8/8.4-web-impl-complete.md"
+        impl_report: "docs/dev/logs/sprint8-8.4-web-impl-complete-report.md"
+        test_evidence: "docs/dev/logs/sprint8-8.4-web-impl-complete-report.md"
+        repository_type: "web-impl"
+        test_cases: 14
+      - id: "8.5"
+        title: "android-impl 完整实装（layout/viewBinding/connectedAndroidTest）"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S8"
+        priority: "P1"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint8/8.5-android-impl-complete.md"
+        impl_report: "docs/dev/logs/sprint8-8.5-android-impl-complete-report.md"
+        test_evidence: "docs/dev/logs/sprint8-8.5-android-impl-complete-report.md"
+        repository_type: "android-impl"
+        test_cases: 11
+      - id: "8.6"
+        title: "委外成本占比跨模块集成（erp-platform 1.45 Feign 调用）"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S8"
+        priority: "P2"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint8/8.6-outsource-cost-integration.md"
+        impl_report: "docs/dev/logs/sprint8-8.6-outsource-cost-integration-report.md"
+        test_evidence: "docs/dev/logs/sprint8-8.6-outsource-cost-integration-report.md"
+        repository_type: "backend"
+        endpoints: 1
+        test_cases: 6
+      # ==================== V1.3.8 Sprint 9 ====================
+      # 优化阶段 2 · 2 Story
+      - id: "9.1"
+        title: "sys_workflow_event 触发接入（4.1/4.2/1.32 三个调用方）"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S9"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint9/9.1-workflow-event-trigger.md"
+        impl_report: "docs/dev/logs/sprint9-9.1-workflow-event-trigger-report.md"
+        test_evidence: "docs/dev/logs/sprint9-9.1-workflow-event-trigger-report.md"
+        repository_type: "backend"
+        test_cases: 12
+      - id: "9.2"
+        title: "web-impl 补齐（JWT 优化 + OpenAPI codegen + Playwright E2E）"
+        status: "Accepted"
+        sharded: "2026-06-13"
+        accepted: "2026-06-13"
+        sprint: "V1.3.8-S9"
+        priority: "P1"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint9/9.2-web-impl-complete.md"
+        impl_report: "docs/dev/logs/sprint9-9.2-web-impl-jwt-v2-report.md"
+        test_evidence: "docs/dev/logs/sprint9-9.2-web-impl-jwt-v2-report.md"
+        repository_type: "web-impl"
+        test_cases: 24
+      # ==================== V1.3.8 Sprint 10 ====================
+      # 优化阶段 3 · 5 Story
+      - id: "10.1"
+        title: "OpenAPI TypeScript codegen 集成"
+        status: "Reviewed"
+        sharded: "2026-06-13"
+        reviewed: "2026-06-13"
+        sprint: "V1.3.8-S10"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint10/10.1-openapi-codegen.md"
+        story_review: "docs/architecture/story-reviews/10.1-review.md"
+        qa_review: "docs/qa/reviews/10.1-openapi-codegen.md"
+        repository_type: "web-impl"
+        test_cases: 8
+        next_action: "hand_to_dev"
+      - id: "10.2"
+        title: "Playwright E2E 14 端点"
+        status: "Reviewed"
+        sharded: "2026-06-13"
+        reviewed: "2026-06-13"
+        sprint: "V1.3.8-S10"
+        priority: "P1"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint10/10.2-playwright-e2e.md"
+        story_review: "docs/architecture/story-reviews/10.2-review.md"
+        qa_review: "docs/qa/reviews/10.2-playwright-e2e.md"
+        repository_type: "web-impl"
+        test_cases: 14
+        next_action: "hand_to_dev"
+      - id: "10.3"
+        title: "sys_workflow_event 跨端点统计报表"
+        status: "Reviewed"
+        sharded: "2026-06-13"
+        reviewed: "2026-06-13"
+        sprint: "V1.3.8-S10"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint10/10.3-workflow-event-stats.md"
+        story_review: "docs/architecture/story-reviews/10.3-review.md"
+        qa_review: "docs/qa/reviews/10.3-workflow-event-stats.md"
+        repository_type: "backend"
+        endpoints: 1
+        test_cases: 8
+        next_action: "hand_to_dev"
+      - id: "10.4"
+        title: "android gradle wrapper 添加"
+        status: "Reviewed"
+        sharded: "2026-06-13"
+        reviewed: "2026-06-13"
+        sprint: "V1.3.8-S10"
+        priority: "P2"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint10/10.4-android-gradle-wrapper.md"
+        story_review: "docs/architecture/story-reviews/10.4-review.md"
+        qa_review: "docs/qa/reviews/10.4-android-gradle-wrapper.md"
+        repository_type: "android-impl"
+        test_cases: 0
+        next_action: "hand_to_dev"
+      - id: "10.5"
+        title: "5 个 .vue 中 any 类型替换为 OpenAPI 类型"
+        status: "Reviewed"
+        sharded: "2026-06-13"
+        reviewed: "2026-06-13"
+        sprint: "V1.3.8-S10"
+        priority: "P2"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint10/10.5-vue-any-replace.md"
+        story_review: "docs/architecture/story-reviews/10.5-review.md"
+        qa_review: "docs/qa/reviews/10.5-vue-any-replace.md"
+        repository_type: "web-impl"
+        test_cases: 0
+        next_action: "hand_to_dev"
+      # ==================== V1.3.9 Sprint 12 ====================
+      # 客户 2026-06-14 反馈 4 条全部采纳 · 详见 docs/prd-feedback-v1.3.9.md
+      # 4 Story · ~18 端点 · ~110 测例 · 4 个 Flyway 迁移 V54-V57
+      - id: "12.1"
+        title: "图纸查看与打印权限矩阵（PM 反馈 1）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S12"
+        priority: "P0"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint12/12.1-drawing-permission-matrix.md"
+        story_review: "docs/architecture/story-reviews/12.1-review.md"
+        qa_review: "docs/qa/reviews/12.1-drawing-permission-matrix.md"
+        impl_report: "docs/dev/logs/12.1-drawing-permission-dev-log.md"
+        test_evidence: "docs/qa/evidence/sprint12-integration-test-report.md"
+        pm_feedback_ref: "docs/prd-feedback-v1.3.9.md#反馈-1图纸查看与打印权限矩阵"
+        repository_type: "backend+web-impl+android-impl"
+        migration: "V54__drawing_acl.sql"
+        endpoints: 3
+        test_cases: 24
+        parallel_group: "A"
+        next_action: "hand_to_集成E"
+      - id: "12.2"
+        title: "打印机管理（PM 反馈 2）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S12"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint12/12.2-printer-management.md"
+        story_review: "docs/architecture/story-reviews/12.2-review.md"
+        qa_review: "docs/qa/reviews/12.2-printer-management.md"
+        impl_report: "docs/dev/logs/12.2-printer-management-dev-log.md"
+        test_evidence: "docs/qa/evidence/sprint12-integration-test-report.md"
+        pm_feedback_ref: "docs/prd-feedback-v1.3.9.md#反馈-2打印机管理"
+        repository_type: "backend+web-impl"
+        migration: "V55__sys_printer.sql"
+        endpoints: 6
+        test_cases: 16
+        parallel_group: "B"
+        next_action: "hand_to_集成E"
+      - id: "12.3"
+        title: "标签模板 4 种 GD-/LZ-/SB-/WW-（PM 反馈 3）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S12"
+        priority: "P0"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint12/12.3-label-template.md"
+        story_review: "docs/architecture/story-reviews/12.3-review.md"
+        qa_review: "docs/qa/reviews/12.3-label-template.md"
+        impl_report: "docs/dev/logs/12.3-label-template-dev-log.md"
+        test_evidence: "docs/qa/evidence/sprint12-integration-test-report.md"
+        pm_feedback_ref: "docs/prd-feedback-v1.3.9.md#反馈-3标签模板4种"
+        repository_type: "backend+web-impl+android-impl"
+        migration: "V56__label_template.sql"
+        endpoints: 2
+        test_cases: 14
+        parallel_group: "C"
+        next_action: "hand_to_集成E"
+      - id: "12.4"
+        title: "双模式打印 ZPL/TSPL + A4 PDF（PM 反馈 4）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S12"
+        priority: "P0"
+        complexity: "L"
+        source_story: "backend/docs/stories/sprint12/12.4-dual-mode-print.md"
+        story_review: "docs/architecture/story-reviews/12.4-review.md"
+        qa_review: "docs/qa/reviews/12.4-dual-mode-print.md"
+        impl_report: "docs/dev/logs/12.4-dual-mode-print-dev-log.md"
+        test_evidence: "docs/qa/evidence/sprint12-integration-test-report.md"
+        risk_profile: true
+        pm_feedback_ref: "docs/prd-feedback-v1.3.9.md#反馈-4双模式打印"
+        repository_type: "backend+web-impl+android-impl"
+        migration: "V57__sys_print_log.sql"
+        endpoints: 7
+        test_cases: 32
+        parallel_group: "A"
+        next_action: "hand_to_集成E"
+      # ==================== V1.3.9 Sprint 13 ====================
+      # 优化阶段 5 · 收口 + 强化 · 详见 docs/sprint-13-summary.md
+      # 5-6 Story · ~5 端点 · ~40 测例 · 1-2 个 Flyway 迁移
+      # 启动条件：V1.3.8 FAT 准入后（2026-06-23+）· 客户服务器就位
+      - id: "13.1"
+        title: "InspectionDTO schema 补齐 + InspectionCreate.vue Option A 切换（Sprint 10 PM 决策 #2 收口）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S13"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint13/13.1-inspection-dto-v1389.md"
+        story_review: "docs/architecture/story-reviews/13.1-review.md"
+        qa_review: "docs/qa/reviews/13.1-inspection-dto-v1389.md"
+        test_evidence: "docs/qa/evidence/sprint13-integration-test-report.md"
+        pm_feedback_ref: "docs/qa/evidence/sprint10-pm-decision-2-inspection-dto.md"
+        repository_type: "backend+web-impl"
+        endpoints: 1
+        test_cases: 0
+        parallel_group: "A"
+        next_action: "hand_to_集成E"
+      - id: "13.2"
+        title: "思源黑体嵌入 jar 资源（服务端单一权威源 · 12.3 PM 决策 D2 收口）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S13"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint13/13.2-font-noto-embed.md"
+        story_review: "docs/architecture/story-reviews/13.2-review.md"
+        qa_review: "docs/qa/reviews/13.2-font-noto-embed.md"
+        test_evidence: "docs/qa/evidence/sprint13-integration-test-report.md"
+        pm_feedback_ref: "backend/docs/dev/logs/12.3-label-template-dev-log.md#d2"
+        repository_type: "backend"
+        endpoints: 0
+        test_cases: 0
+        parallel_group: "B"
+        next_action: "hand_to_集成E"
+      - id: "13.3"
+        title: "12.1 crm_drawing_link JOIN 真实查询对接 + OPERATOR 工序对接（Sprint 12 集成 E 委派项）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S13"
+        priority: "P1"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint13/13.3-drawing-link-real-query.md"
+        story_review: "docs/architecture/story-reviews/13.3-review.md"
+        qa_review: "docs/qa/reviews/13.3-drawing-link-real-query.md"
+        impl_report: "docs/dev/logs/13.3-drawing-link-real-query-dev-log.md"
+        test_evidence: "docs/qa/evidence/sprint13-integration-test-report.md"
+        pm_feedback_ref: "backend/docs/dev/logs/12.1-drawing-permission-dev-log.md#82"
+        repository_type: "backend"
+        migration: "V58__drawing_link_real_query.sql"
+        endpoints: 3
+        test_cases: 24
+        parallel_group: "B"
+        next_action: "hand_to_集成E"
+      - id: "13.4"
+        title: "sys_workflow_event 接入 GmSummary 仪表盘（Sprint 10.3 数据消费 · Sprint 10 backlog #6 收口）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S13"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint13/13.4-sys-workflow-event-dashboard.md"
+        story_review: "docs/architecture/story-reviews/13.4-review.md"
+        qa_review: "docs/qa/reviews/13.4-sys-workflow-event-dashboard.md"
+        test_evidence: "docs/qa/evidence/sprint13-integration-test-report.md"
+        pm_feedback_ref: "docs/sprint-10-summary.md#已知遗留"
+        repository_type: "web-impl"
+        endpoints: 1
+        test_cases: 8
+        parallel_group: "C"
+        next_action: "hand_to_集成E"
+      - id: "13.5"
+        title: "7 状态机 enum drift 对齐（openapi.yaml 改 V1.3.7 定义 · Sprint 10 PM 决策 #3 收口）"
+        status: "Reviewed"
+        sharded: "2026-06-14"
+        reviewed: "2026-06-14"
+        sprint: "V1.3.9-S13"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint13/13.5-status-machine-enum-align.md"
+        story_review: "docs/architecture/story-reviews/13.5-review.md"
+        qa_review: "docs/qa/reviews/13.5-status-machine-enum-align.md"
+        test_evidence: "docs/qa/evidence/sprint13-integration-test-report.md"
+        pm_feedback_ref: "docs/qa/evidence/sprint10-pm-decision-3-state-machine.md"
+        repository_type: "backend+web-impl"
+        endpoints: 0
+        test_cases: 0
+        parallel_group: "A"
+        next_action: "hand_to_集成E"
+      - id: "13.6"
+        title: "7 角色 connectedAndroidTest E2E 补齐（Story 1.4 pending_deploy 收口 · P2 → P0 · Sprint 14 启动）"
+        status: "Sharded"
+        sharded: "2026-06-14"
+        sprint: "V1.3.9-S14"
+        priority: "P0"
+        complexity: "M"
+        source_story: "backend/docs/stories/sprint14/14.1-7role-android-e2e.md"
+        story_review: "docs/architecture/story-reviews/13.6-review.md"
+        qa_review: "docs/qa/reviews/13.6-7role-e2e-coverage.md"
+        pm_feedback_ref: "core-config.yaml#1.4-pending_deploy"
+        repository_type: "android-impl"
+        endpoints: 0
+        test_cases: 22
+        parallel_group: "C"
+        next_action: "hand_to_architect → hand_to_dev（顺序约束：13.7 baseline 先行）"
+      # ==================== V1.3.9 Sprint 14 ====================
+      # 收口阶段 · V1.3.9 客户上线前置 · 4 Story · ~0 端点 · ~22 E2E 测例 · 0 Flyway
+      # 启动条件：V1.3.8 FAT 准入后 + 客户服务器就位 2026-06-23 · 启动窗口 2026-06-25 ~ 2026-07-05
+      # 详见 docs/sprint-14-summary.md
+      - id: "13.7"
+        title: "baseline-typecheck-fix 5 错误收口（vite-env.d.ts + Printers.vue + GmSummary.vue · typecheck:ci gate）"
+        status: "Sharded"
+        sharded: "2026-06-14"
+        sprint: "V1.3.9-S14"
+        priority: "P0"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint14/14.2-baseline-typecheck-fix.md"
+        story_review: "docs/architecture/story-reviews/13.7-review.md"
+        qa_review: "docs/qa/reviews/13.7-baseline-typecheck-fix.md"
+        pm_feedback_ref: "docs/orchestrix-pm-audit-2026-06-14.md#71-修补建议5"
+        repository_type: "web-impl"
+        endpoints: 0
+        test_cases: 0
+        parallel_group: "A"
+        next_action: "hand_to_architect → hand_to_dev（Sprint 14 IMPL 起点 · 必须最先 ship）"
+      - id: "13.8"
+        title: "ESC/POS 票据打印机 V1.3.10 评估启动（PM 决策 1 采纳 A · 12.2 + 12.4 + 12.2 扩 ESC/POS 协议）"
+        status: "Sharded"
+        sharded: "2026-06-14"
+        sprint: "V1.3.9-S14"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint14/14.3-escpos-evaluation.md"
+        story_review: "docs/architecture/story-reviews/13.8-review.md"
+        qa_review: "docs/qa/reviews/13.8-escpos-evaluation.md"
+        pm_feedback_ref: "docs/orchestrix-pm-audit-2026-06-14.md#91-pm-决策需求"
+        repository_type: "backend+web-impl"
+        endpoints: 0
+        test_cases: 0
+        parallel_group: "B"
+        next_action: "hand_to_architect → hand_to_dev（评估文档 + 决策签字）"
+      - id: "13.9"
+        title: "PRD §5 13 Epic table 补齐（PM 巡检建议 #8 · 文档项）"
+        status: "Sharded"
+        sharded: "2026-06-14"
+        sprint: "V1.3.9-S14"
+        priority: "P1"
+        complexity: "S"
+        source_story: "backend/docs/stories/sprint14/14.4-prd-section5-epic-table.md"
+        story_review: "docs/architecture/story-reviews/13.9-review.md"
+        qa_review: "docs/qa/reviews/13.9-prd-section5-epic-table.md"
+        pm_feedback_ref: "docs/orchestrix-pm-audit-2026-06-14.md#71-修补建议8"
+        repository_type: "product"
+        endpoints: 0
+        test_cases: 0
+        parallel_group: "D"
+        next_action: "hand_to_architect → hand_to_dev（文档修订）"
+
+prd:
+  prdFile: docs/prd.md
+  prdSharded: true                       # PO *shard 后置 true
+  prdShardedLocation: docs/prd
+
+architecture:
+  architectureFile: docs/architect-handoff.md
+  architectureSharded: true               # PO *shard 后置 true
+  architectureShardedLocation: docs/architecture
+  storyReviewsLocation: docs/architecture/story-reviews
+
+customTechnicalDocuments:
+  - path: docs/contract-appendix-a-prd.md
+    role: prd_excerpt
+  - path: docs/contract-appendix-b-deliverables.md
+    role: deliverables
+  - path: docs/contract-appendix-c-hardware.md
+    role: hardware
+  - path: docs/contract-appendix-d-security.md
+    role: security
+  - path: backend/spec/openapi.yaml
+    role: api_contract
+  - path: backend/db/init.sql
+    role: database_schema
+  - path: docs/architecture/er.drawio
+    role: er_diagram
+
+devLoadAlwaysFiles:
+  - docs/architecture/*coding-standards.md
+  - docs/architecture/*tech-stack.md
+  - docs/architecture/*source-tree.md
+
+devDebugLog: .ai/debug-log.md
+# V1.3.7: multi-repo 规范,Story 跟 backend 仓走(android-impl 仓有专属 app/)
+devStoryLocation: backend/docs/stories
+
+verticalSliceStrategy: true
+
+dev:
+  devLogLocation: docs/dev/logs
+  devLogEnabled: true
+
+architect:
+  storyReviewsLocation: docs/architecture/story-reviews
+
+qa:
+  qaLocation: docs/qa
+  qaReviewsLocation: docs/qa/reviews
+  evidenceLocation: docs/qa/evidence
+  testDesignThresholds:
+    simple:
+      maxComplexity: 0
+      minQualityScore: 8.5
+      securitySensitive: false
+      tasks: []
+    standard:
+      maxComplexity: 2
+      minQualityScore: 7
+      securitySensitive: false
+      tasks:
+        - test-design
+    comprehensive:
+      minComplexity: 3
+      securitySensitive: true
+      tasks:
+        - test-design
+        - risk-profile
+
+slashPrefix: Orchestrix
+version: 15.17.0
+
+i18n:
+  default_language: zh
+  supported_languages:
+    - en
+    - zh
+  fallback_to_default: true
+  file_pattern: '{name}.{lang}.{ext}'
+
+# V1.3.7 业务定制
+v137_custom:
+  - prd_version: V1.3.7
+  - contract_id: XP-ZPF202606082405
+  - client: 昆山佰泰胜精密机械有限公司
+  - vendor: 河南晓评信息科技有限公司
+  - duration_weeks: 5
+  - payment_terms: 首付款 90% ¥61,200 + 尾款 10% ¥6,800
+  - data_storage: 本地永久存储
+  - notification_channel: 单 163 邮箱 SMTP
+  - outsub_status_machine: 7 主状态 + NOTIFIED_REPAIR 衍生态
+  - signatories:
+      party_a: 黄梓昀（151-0595-0281）
+      party_b_legal_rep: 武蕴
+      party_b_contact: 潘强（158-3710-7264）
+
+# ==================== V1.4 backlog ====================
+# 启动条件：V1.3.9 客户上线 1 个月后（约 2026-08-15）· 详见 docs/v1.4-backlog-summary.md
+# 6 候选按 P0/P1/P2 排序 · 总计 13-20 天
+- id: "v1.4-1"
+  title: "12.2 心跳 → SNMP ping 备选（firewall drop 检测）"
+  status: "Backlog"
+  sprint: "V1.4-S15"
+  priority: "P0"
+  complexity: "S"
+  source_story: "backend/docs/stories/v1.4-backlog/v1.4-1-snmp-ping.md"
+  pm_feedback_ref: "docs/qa/evidence/sprint12-integration-test-report.md#R2-firewall"
+  repository_type: "backend"
+  endpoints: 0
+  test_cases: 0
+  parallel_group: "P0-client-env"
+  next_action: "V1.3.9 客户上线 1 个月后启动"
+- id: "v1.4-2"
+  title: "V1.4 mDNS 自动发现打印机 IP（DHCP 重启容错）"
+  status: "Backlog"
+  sprint: "V1.4-S15"
+  priority: "P0"
+  complexity: "S"
+  source_story: "backend/docs/stories/v1.4-backlog/v1.4-2-mdns-printer-discovery.md"
+  pm_feedback_ref: "docs/qa/evidence/sprint12-integration-test-report.md#R2-ip-drift"
+  repository_type: "backend+web-impl"
+  endpoints: 0
+  test_cases: 0
+  parallel_group: "P0-client-env"
+  next_action: "V1.3.9 客户上线 1 个月后启动"
+- id: "v1.4-3"
+  title: "客户端统一 5 仓 codegen 链路（product 仓 openapi.yaml 单一权威源）"
+  status: "Backlog"
+  sprint: "V1.4-S15"
+  priority: "P0"
+  complexity: "M"
+  source_story: "backend/docs/stories/v1.4-backlog/v1.4-3-client-codegen-unify.md"
+  pm_feedback_ref: "docs/dev/logs/13.1-inspection-dto-v1389-dev-log.md#baseline-5-errors"
+  repository_type: "product+backend+web-impl+android-impl"
+  endpoints: 0
+  test_cases: 0
+  parallel_group: "P0-architecture"
+  next_action: "V1.3.9 客户上线 1 个月后启动"
+- id: "v1.4-4"
+  title: "web-impl tsconfig strict 化（消除 strict:false 隐患）"
+  status: "Backlog"
+  sprint: "V1.4-S15"
+  priority: "P1"
+  complexity: "M"
+  source_story: "backend/docs/stories/v1.4-backlog/v1.4-4-tsconfig-strict.md"
+  pm_feedback_ref: "docs/qa/evidence/sprint10-integration-test-report.md#R3-strict"
+  repository_type: "web-impl"
+  endpoints: 0
+  test_cases: 0
+  parallel_group: "P1-quality"
+  next_action: "V1.3.9 客户上线 1 个月后启动（13.7 收口后）"
+- id: "v1.4-5"
+  title: "sys_dict 国际化 + 多租户 + 版本化"
+  status: "Backlog"
+  sprint: "V1.4-S15"
+  priority: "P1"
+  complexity: "M"
+  source_story: "backend/docs/stories/v1.4-backlog/v1.4-5-sysdict-i18n-tenant.md"
+  pm_feedback_ref: "core-config.yaml#1.28-tenant_id"
+  repository_type: "backend+web-impl"
+  endpoints: 0
+  test_cases: 0
+  parallel_group: "P1-architecture"
+  next_action: "V1.3.9 客户上线 1 个月后启动"
+- id: "v1.4-6"
+  title: "12.4 模式一失败自动降级模式二 sys_dict 配置项（PM 决策 S12-2 采纳 C）"
+  status: "Backlog"
+  sprint: "V1.4-S15"
+  priority: "P2"
+  complexity: "S"
+  source_story: "backend/docs/stories/v1.4-backlog/v1.4-6-print-auto-downgrade-config.md"
+  pm_feedback_ref: "docs/qa/evidence/pm-decision-sprint12-4-auto-downgrade.md"
+  repository_type: "backend+web-impl"
+  endpoints: 0
+  test_cases: 0
+  parallel_group: "P2-feedback"
+  next_action: "V1.3.9 灰度反馈触发启动"
