@@ -3887,7 +3887,7 @@ CREATE TABLE IF NOT EXISTS `crm_material_cost_aggregation` (
 -- V94 · mock 清理：业务演示 seed 已移至 init_data.sql
 -- include: V38__hr_employee.sql
 -- V1.3.7 · Story 1.41 · 员工档案与考勤
--- 2 表：crm_hr_employee + crm_hr_attendance
+USE `cnc_business`;
 
 CREATE TABLE IF NOT EXISTS crm_hr_employee (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -3950,6 +3950,92 @@ CREATE TABLE IF NOT EXISTS crm_material_barcode_batch (
 
 -- 注：architect review §3.3 建议到货时同步将老 WL-XXXX 标记 is_active=0
 --     此逻辑由应用层 MaterialBarcodeService 实现，不在迁移脚本中
+-- include: V49__batch.sql
+-- ============================================================
+-- V1.3.8 Sprint 7 · V49__batch.sql
+-- 分批到货处理机制 + crm_purchase_order 新表
+-- ============================================================
+
+-- 1. V1.3.8 新增 crm_purchase_order 物理表（须在 V51/V73 ALTER 之前）
+CREATE TABLE IF NOT EXISTS crm_purchase_order (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    po_no VARCHAR(32) NOT NULL COMMENT 'XS-{yyyyMMdd}-{seq:4}（DocNoGenerator.nextOrderNo）',
+    rfq_id BIGINT DEFAULT NULL COMMENT 'V1.3.7 RFQ 关联（FROM_ORDER 来源）',
+    supplier_id BIGINT NOT NULL,
+    supplier_name VARCHAR(128) DEFAULT NULL,
+    total_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING_SHIP' COMMENT 'PENDING_SHIP/PARTIAL_ARRIVED/ALL_ARRIVED/CANCELLED',
+    source_type VARCHAR(20) NOT NULL DEFAULT 'FROM_ORDER' COMMENT 'FROM_ORDER/FROM_MRP/NO_ORDER',
+    purchase_reason VARCHAR(30) DEFAULT NULL COMMENT 'URGENT_REPLENISH/CUSTOMER_ADD/STOCK_SWAP/OTHER',
+    approval_route VARCHAR(50) DEFAULT NULL COMMENT 'PROCUREMENT_MANAGER/GM/GM+PROCUREMENT_MANAGER/SELF',
+    approval_status VARCHAR(20) DEFAULT 'PENDING' COMMENT 'PENDING/APPROVED/REJECTED',
+    remark VARCHAR(500) DEFAULT NULL,
+    created_by BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uniq_po_no (po_no),
+    KEY idx_rfq (rfq_id),
+    KEY idx_supplier (supplier_id),
+    KEY idx_status (status),
+    KEY idx_source_type (source_type),
+    KEY idx_purchase_reason (purchase_reason),
+    KEY idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='V1.3.8 采购订单主表';
+
+CREATE TABLE IF NOT EXISTS crm_purchase_order_item (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    po_id BIGINT NOT NULL COMMENT 'crm_purchase_order.id',
+    purchase_order_id BIGINT NOT NULL COMMENT '与 po_id 同值 · DrawingLink JOIN',
+    material_id BIGINT DEFAULT NULL,
+    material_code VARCHAR(64) NOT NULL,
+    material_name VARCHAR(128) DEFAULT NULL,
+    quantity INT NOT NULL DEFAULT 0,
+    unit_price DECIMAL(15,4) NOT NULL DEFAULT 0.0000,
+    amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    delivery_date DATE DEFAULT NULL,
+    sort_no INT NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_po_id (po_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购订单明细';
+
+DROP TABLE IF EXISTS crm_batch_shadow;
+DROP TABLE IF EXISTS crm_batch;
+
+CREATE TABLE crm_batch (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    batch_no VARCHAR(30) NOT NULL COMMENT 'BATCH-YYYYMMDD-流水',
+    material_id BIGINT NOT NULL,
+    po_id BIGINT NOT NULL,
+    po_item_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    arrived_at DATETIME NOT NULL,
+    quality_status ENUM('PENDING','PASSED','REJECTED') NOT NULL DEFAULT 'PENDING',
+    created_by BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uniq_batch_no (batch_no),
+    KEY idx_material (material_id),
+    KEY idx_po (po_id),
+    KEY idx_arrived (arrived_at),
+    KEY idx_quality (quality_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='V1.3.8 物料批次表';
+
+CREATE TABLE crm_batch_shadow LIKE crm_batch;
+
+UPDATE crm_purchase_order SET status = 'PENDING_SHIP'     WHERE status = 'PENDING';
+UPDATE crm_purchase_order SET status = 'PARTIAL_ARRIVED'  WHERE status = 'ALERT';
+UPDATE crm_purchase_order SET status = 'ALL_ARRIVED'      WHERE status = 'ARRIVED';
+
+ALTER TABLE crm_purchase_order
+    MODIFY COLUMN status ENUM(
+        'PENDING_SHIP',
+        'PARTIAL_ARRIVED',
+        'ALL_ARRIVED',
+        'CANCELLED'
+    ) NOT NULL DEFAULT 'PENDING_SHIP';
+
 -- include: V51__purchase_reason.sql
 -- ============================================================
 -- V1.3.8 Story 4.1 · V51__purchase_reason.sql
@@ -3967,11 +4053,13 @@ INSERT IGNORE INTO sys_dict (dict_type, dict_code, dict_label, sort, status) VAL
 USE `cnc_business`;
 
 -- V49 已含 source_type / purchase_reason · 此处仅幂等补列（旧库升级路径）
+SET @tbl_exists = (SELECT COUNT(*) FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_purchase_order');
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_purchase_order' AND COLUMN_NAME = 'source_type');
-SET @sql = IF(@col_exists = 0,
-  'ALTER TABLE crm_purchase_order ADD COLUMN source_type VARCHAR(20) NOT NULL DEFAULT ''FROM_ORDER'' COMMENT ''FROM_ORDER/FROM_MRP/NO_ORDER'', ADD COLUMN purchase_reason VARCHAR(30) NULL COMMENT ''采购理由'', ADD KEY idx_source_type (source_type), ADD KEY idx_purchase_reason (purchase_reason)',
-  'SELECT 1');
+SET @sql = IF(@tbl_exists = 0 OR @col_exists > 0,
+  'SELECT ''skip crm_purchase_order.source_type'' AS note',
+  'ALTER TABLE crm_purchase_order ADD COLUMN source_type VARCHAR(20) NOT NULL DEFAULT ''FROM_ORDER'' COMMENT ''FROM_ORDER/FROM_MRP/NO_ORDER'', ADD COLUMN purchase_reason VARCHAR(30) NULL COMMENT ''采购理由'', ADD KEY idx_source_type (source_type), ADD KEY idx_purchase_reason (purchase_reason)');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- include: V52__procurement_manager_role.sql
 -- ============================================================
@@ -4677,16 +4765,18 @@ CREATE TABLE IF NOT EXISTS `crm_purchase_request` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购申请单（MRP 缺料触发）';
 
 -- ---------- 2. PO 关联 PR / 工单 ----------
+SET @tbl_po = (SELECT COUNT(*) FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = 'cnc_business' AND TABLE_NAME = 'crm_purchase_order');
 SET @col_pr_id = (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = 'cnc_business' AND TABLE_NAME = 'crm_purchase_order' AND COLUMN_NAME = 'pr_id');
-SET @sql_pr_id = IF(@col_pr_id = 0,
+SET @sql_pr_id = IF(@tbl_po = 0 OR @col_pr_id > 0,
+  'SELECT ''skip crm_purchase_order.pr_id'' AS note',
   'ALTER TABLE crm_purchase_order
      ADD COLUMN pr_id BIGINT NULL COMMENT ''来源采购申请 ID'' AFTER rfq_id,
      ADD COLUMN pr_no VARCHAR(32) NULL COMMENT ''来源单号 PR-XXX'' AFTER pr_id,
      ADD COLUMN workorder_no VARCHAR(64) NULL COMMENT ''关联工单号'' AFTER pr_no,
      ADD COLUMN mrp_run_id BIGINT NULL COMMENT ''MRP 运行 ID'' AFTER workorder_no,
-     ADD KEY idx_po_pr (pr_id)',
-  'SELECT 1');
+     ADD KEY idx_po_pr (pr_id)');
 PREPARE stmt FROM @sql_pr_id; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ---------- 3. RFQ 来源绑定 + 转单状态 ----------
@@ -4970,6 +5060,8 @@ WHERE r.role_code = 'PROCUREMENT_MANAGER'
 
 -- include: V39__hr_payroll.sql
 -- V1.3.7 · Story 1.42 · 薪酬自动核算
+USE `cnc_business`;
+
 CREATE TABLE IF NOT EXISTS crm_hr_payroll (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     payroll_no VARCHAR(64) NOT NULL,
@@ -5001,6 +5093,8 @@ CREATE TABLE IF NOT EXISTS crm_hr_payroll (
 
 -- include: V40__hr_performance_recruitment.sql
 -- V1.3.7 · Story 1.43 · 绩效与招聘
+USE `cnc_business`;
+
 CREATE TABLE IF NOT EXISTS crm_hr_performance (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     employee_id BIGINT NOT NULL,
@@ -5265,116 +5359,6 @@ CREATE TABLE IF NOT EXISTS crm_quality_pickup_item (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='品质领料明细';
 
 -- V94 · mock 清理：业务演示 seed 已移至 init_data.sql
-
-
--- include: V49__batch.sql
--- ============================================================
--- V1.3.8 Sprint 7 · V49__batch.sql
--- 分批到货处理机制 + crm_purchase_order 新表
---
--- 关联 Story：
---   3.1 分批到货处理机制（crm_batch + crm_batch_shadow + PO 状态机）
---   4.1 无订单采购模式（crm_purchase_order 物理表）
---   4.2 采购主管审批路由（sys_workflow_node 扩展，与本迁移无冲突）
---
--- 重要约束：
---   1. V1.3.7 没有独立 crm_purchase_order 表（RFQ 流程只在 crm_rfq.purchase_order_no
---      维护字符串字段），V1.3.8 由本迁移首次创建
---   2. 老 PO 状态数据迁移（architect review §2.1 硬性约束）：无老数据可迁，
---      但保留脚本以便二次部署兼容
---   3. sys_workflow_node 表由 src/main/resources/db/migration/V2__workflow_split.sql
---      创建（Spring Boot Flyway 路径），不在本迁移处理
---
--- author: dev agent Opus 4.8 · 2026-06-13
--- ============================================================
-
--- 1. V1.3.8 新增 crm_purchase_order 物理表（V1.3.7 RFQ 流程只有字符串编号）
---    字段覆盖：3.1 PO 状态机 + 4.1 source_type + purchase_reason + 4.2 审批路由触发
-CREATE TABLE IF NOT EXISTS crm_purchase_order (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    po_no VARCHAR(32) NOT NULL COMMENT 'XS-{yyyyMMdd}-{seq:4}（DocNoGenerator.nextOrderNo）',
-    rfq_id BIGINT DEFAULT NULL COMMENT 'V1.3.7 RFQ 关联（FROM_ORDER 来源）',
-    supplier_id BIGINT NOT NULL,
-    supplier_name VARCHAR(128) DEFAULT NULL,
-    total_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING_SHIP' COMMENT 'PENDING_SHIP/PARTIAL_ARRIVED/ALL_ARRIVED/CANCELLED',
-    source_type VARCHAR(20) NOT NULL DEFAULT 'FROM_ORDER' COMMENT 'FROM_ORDER/FROM_MRP/NO_ORDER',
-    purchase_reason VARCHAR(30) DEFAULT NULL COMMENT 'URGENT_REPLENISH/CUSTOMER_ADD/STOCK_SWAP/OTHER',
-    approval_route VARCHAR(50) DEFAULT NULL COMMENT 'PROCUREMENT_MANAGER/GM/GM+PROCUREMENT_MANAGER/SELF',
-    approval_status VARCHAR(20) DEFAULT 'PENDING' COMMENT 'PENDING/APPROVED/REJECTED',
-    remark VARCHAR(500) DEFAULT NULL,
-    created_by BIGINT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uniq_po_no (po_no),
-    KEY idx_rfq (rfq_id),
-    KEY idx_supplier (supplier_id),
-    KEY idx_status (status),
-    KEY idx_source_type (source_type),
-    KEY idx_purchase_reason (purchase_reason),
-    KEY idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='V1.3.8 采购订单主表';
-
--- 1b. V1.3.8 采购订单明细（Story 3.1/1.24 · V58 索引 / DrawingLink JOIN）
-CREATE TABLE IF NOT EXISTS crm_purchase_order_item (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    po_id BIGINT NOT NULL COMMENT 'crm_purchase_order.id',
-    purchase_order_id BIGINT NOT NULL COMMENT '与 po_id 同值 · DrawingLink JOIN',
-    material_id BIGINT DEFAULT NULL,
-    material_code VARCHAR(64) NOT NULL,
-    material_name VARCHAR(128) DEFAULT NULL,
-    quantity INT NOT NULL DEFAULT 0,
-    unit_price DECIMAL(15,4) NOT NULL DEFAULT 0.0000,
-    amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    delivery_date DATE DEFAULT NULL,
-    sort_no INT NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    KEY idx_po_id (po_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购订单明细';
-
--- 2. V1.3.8 重建 crm_batch（取代 V12 仓储批次结构 · Story 3.1 物料+PO 粒度）
-DROP TABLE IF EXISTS crm_batch_shadow;
-DROP TABLE IF EXISTS crm_batch;
-
-CREATE TABLE crm_batch (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    batch_no VARCHAR(30) NOT NULL COMMENT 'BATCH-YYYYMMDD-流水',
-    material_id BIGINT NOT NULL,
-    po_id BIGINT NOT NULL,
-    po_item_id BIGINT NOT NULL,
-    quantity INT NOT NULL,
-    arrived_at DATETIME NOT NULL,
-    quality_status ENUM('PENDING','PASSED','REJECTED') NOT NULL DEFAULT 'PENDING',
-    created_by BIGINT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uniq_batch_no (batch_no),
-    KEY idx_material (material_id),
-    KEY idx_po (po_id),
-    KEY idx_arrived (arrived_at),
-    KEY idx_quality (quality_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='V1.3.8 物料批次表';
-
--- 3. 影子表（与 crm_batch 结构一致，供双写对比 cron 使用 · LIKE 已含 idx_material/idx_po）
-CREATE TABLE crm_batch_shadow LIKE crm_batch;
-
--- 4. PO 状态机扩展（architect review §2.1，硬性约束）
---    V1.3.8 首次部署时 crm_purchase_order 为空表，UPDATE 影响 0 行（无害）
---    二次部署时若有老数据按 PENDING/ALERT/ARRIVED 写入，按以下映射升级
-UPDATE crm_purchase_order SET status = 'PENDING_SHIP'     WHERE status = 'PENDING';
-UPDATE crm_purchase_order SET status = 'PARTIAL_ARRIVED'  WHERE status = 'ALERT';
-UPDATE crm_purchase_order SET status = 'ALL_ARRIVED'      WHERE status = 'ARRIVED';
-
--- 5. PO status 枚举扩展（DDL 默认值兼容）
-ALTER TABLE crm_purchase_order
-    MODIFY COLUMN status ENUM(
-        'PENDING_SHIP',
-        'PARTIAL_ARRIVED',
-        'ALL_ARRIVED',
-        'CANCELLED'
-    ) NOT NULL DEFAULT 'PENDING_SHIP';
 
 
 -- include: V61__crm_purchase_order_item.sql
@@ -5657,17 +5641,31 @@ CREATE TABLE IF NOT EXISTS crm_hr_salary_package (
     KEY idx_pkg_position (position)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工资账套';
 
-ALTER TABLE crm_hr_employee
-    ADD COLUMN salary_package_id BIGINT NULL COMMENT '工资账套ID' AFTER base_salary,
-    ADD COLUMN performance_scheme_id BIGINT NULL COMMENT '考核方案ID' AFTER salary_package_id,
-    ADD COLUMN reviewer_user_id BIGINT NULL COMMENT '考核人用户ID' AFTER performance_scheme_id;
+SET @tbl_emp = (SELECT COUNT(*) FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_employee');
+SET @col_emp_pkg = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_employee' AND COLUMN_NAME = 'salary_package_id');
+SET @sql_emp = IF(@tbl_emp = 0 OR @col_emp_pkg > 0,
+  'SELECT ''skip crm_hr_employee.payroll_scheme_cols'' AS note',
+  'ALTER TABLE crm_hr_employee
+     ADD COLUMN salary_package_id BIGINT NULL COMMENT ''工资账套ID'' AFTER base_salary,
+     ADD COLUMN performance_scheme_id BIGINT NULL COMMENT ''考核方案ID'' AFTER salary_package_id,
+     ADD COLUMN reviewer_user_id BIGINT NULL COMMENT ''考核人用户ID'' AFTER performance_scheme_id');
+PREPARE stmt FROM @sql_emp; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-ALTER TABLE crm_hr_payroll
-    ADD COLUMN position_salary DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '岗位工资' AFTER base_salary,
-    ADD COLUMN piece_pay DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '计件工资' AFTER position_salary,
-    ADD COLUMN performance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '绩效奖金' AFTER piece_pay,
-    ADD COLUMN full_attendance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '全勤奖' AFTER bonus,
-    ADD COLUMN social_insurance DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '社保扣款' AFTER deduction;
+SET @tbl_pay = (SELECT COUNT(*) FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_payroll');
+SET @col_pay_pos = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_payroll' AND COLUMN_NAME = 'position_salary');
+SET @sql_pay = IF(@tbl_pay = 0 OR @col_pay_pos > 0,
+  'SELECT ''skip crm_hr_payroll.scheme_cols'' AS note',
+  'ALTER TABLE crm_hr_payroll
+     ADD COLUMN position_salary DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''岗位工资'' AFTER base_salary,
+     ADD COLUMN piece_pay DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''计件工资'' AFTER position_salary,
+     ADD COLUMN performance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''绩效奖金'' AFTER piece_pay,
+     ADD COLUMN full_attendance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''全勤奖'' AFTER bonus,
+     ADD COLUMN social_insurance DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''社保扣款'' AFTER deduction');
+PREPARE stmt FROM @sql_pay; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- V94 · mock 清理：考核方案/工资账套演示 seed 已移至 init_data.sql
 
@@ -7771,8 +7769,10 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `me
 (403,  10, 'mat.barcode',      '物料条码',  '/material/barcode-list',  'MENU', 5);
 
 -- 客户演示（V2.1 · CUSTOMER_VISITOR 独立模块，无工作台）
+INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`, `icon`) VALUES
+(15, NULL, 'mod.visitor', '生产进度', '/visitor', 'MODULE', 35, 'View');
+
 INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`) VALUES
-(15, NULL, 'mod.visitor',      '生产进度',     '/visitor',        'MODULE', 35, 'View'),
 (1201, 15, 'visitor.progress', '生产进度查询', '/visitor/progress', 'MENU', 1);
 
 -- ======================================================================
@@ -7877,6 +7877,8 @@ SELECT 14, `id`, 'view' FROM `sys_menu` WHERE `status` = 'ACTIVE' AND (
 
 -- include: V99__sales_menu_hr_employee_no.sql
 -- V99 · 销售二级菜单命名调整；报价范本从默认菜单隐藏
+USE `cnc_platform`;
+
 UPDATE `sys_menu` SET `menu_name` = '新建报价单' WHERE `menu_code` = 'sales.quotes';
 UPDATE `sys_menu` SET `menu_name` = '新建销售订单' WHERE `menu_code` = 'sales.orders';
 UPDATE `sys_menu` SET `status` = 'INACTIVE' WHERE `menu_code` = 'sales.quote-templates';
@@ -7901,8 +7903,115 @@ WHERE sc.order_id IS NOT NULL
 
 -- include: V101__finance_order_receipt_menu.sql
 -- V101 · 订单收款已合并至「应收账款」，撤销冗余菜单（若曾执行旧版 V101）
+USE `cnc_platform`;
+
 DELETE FROM `sys_role_permission` WHERE `menu_id` = 709;
 DELETE FROM `sys_menu` WHERE `menu_code` = 'fin.order-receipts';
+
+
+-- include: V102__ensure_crm_purchase_order_before_alter.sql
+-- V102 · 补建 crm_purchase_order（若 V51/V73 先于 V49 执行导致表缺失）
+-- 幂等：已有表则跳过；随后补 V73 的 pr_id 列（若缺失）
+
+USE `cnc_business`;
+
+CREATE TABLE IF NOT EXISTS crm_purchase_order (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    po_no VARCHAR(32) NOT NULL COMMENT 'XS-{yyyyMMdd}-{seq:4}',
+    rfq_id BIGINT DEFAULT NULL,
+    supplier_id BIGINT NOT NULL,
+    supplier_name VARCHAR(128) DEFAULT NULL,
+    total_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING_SHIP',
+    source_type VARCHAR(20) NOT NULL DEFAULT 'FROM_ORDER',
+    purchase_reason VARCHAR(30) DEFAULT NULL,
+    approval_route VARCHAR(50) DEFAULT NULL,
+    approval_status VARCHAR(20) DEFAULT 'PENDING',
+    remark VARCHAR(500) DEFAULT NULL,
+    created_by BIGINT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uniq_po_no (po_no),
+    KEY idx_rfq (rfq_id),
+    KEY idx_supplier (supplier_id),
+    KEY idx_status (status),
+    KEY idx_source_type (source_type),
+    KEY idx_purchase_reason (purchase_reason),
+    KEY idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='V1.3.8 采购订单主表';
+
+CREATE TABLE IF NOT EXISTS crm_purchase_order_item (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    po_id BIGINT NOT NULL,
+    purchase_order_id BIGINT NOT NULL,
+    material_id BIGINT DEFAULT NULL,
+    material_code VARCHAR(64) NOT NULL,
+    material_name VARCHAR(128) DEFAULT NULL,
+    quantity INT NOT NULL DEFAULT 0,
+    unit_price DECIMAL(15,4) NOT NULL DEFAULT 0.0000,
+    amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    delivery_date DATE DEFAULT NULL,
+    sort_no INT NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_po_id (po_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购订单明细';
+
+SET @col_pr_id = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = 'cnc_business' AND TABLE_NAME = 'crm_purchase_order' AND COLUMN_NAME = 'pr_id');
+SET @sql_pr_id = IF(@col_pr_id > 0,
+  'SELECT ''skip crm_purchase_order.pr_id'' AS note',
+  'ALTER TABLE crm_purchase_order
+     ADD COLUMN pr_id BIGINT NULL COMMENT ''来源采购申请 ID'' AFTER rfq_id,
+     ADD COLUMN pr_no VARCHAR(32) NULL COMMENT ''来源单号 PR-XXX'' AFTER pr_id,
+     ADD COLUMN workorder_no VARCHAR(64) NULL COMMENT ''关联工单号'' AFTER pr_no,
+     ADD COLUMN mrp_run_id BIGINT NULL COMMENT ''MRP 运行 ID'' AFTER workorder_no,
+     ADD KEY idx_po_pr (pr_id)');
+PREPARE stmt FROM @sql_pr_id; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+
+-- include: V103__ensure_crm_hr_payroll.sql
+-- V103 · 确保 crm_hr_payroll 在 cnc_business（修复 V39 未 USE 导致表建错库）
+USE `cnc_business`;
+
+CREATE TABLE IF NOT EXISTS crm_hr_payroll (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    payroll_no VARCHAR(64) NOT NULL,
+    period_year INT NOT NULL,
+    period_month INT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    employee_no VARCHAR(64) NOT NULL,
+    employee_name VARCHAR(64) NULL,
+    base_salary DECIMAL(12,2) NOT NULL DEFAULT 0,
+    overtime_hours DECIMAL(8,2) NOT NULL DEFAULT 0,
+    overtime_pay DECIMAL(12,2) NOT NULL DEFAULT 0,
+    bonus DECIMAL(12,2) NOT NULL DEFAULT 0,
+    deduction DECIMAL(12,2) NOT NULL DEFAULT 0,
+    tax DECIMAL(12,2) NOT NULL DEFAULT 0,
+    net_salary DECIMAL(12,2) NOT NULL DEFAULT 0,
+    status VARCHAR(16) NOT NULL DEFAULT 'DRAFT',
+    approved_by BIGINT NULL,
+    approved_at DATETIME NULL,
+    created_by BIGINT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_payroll_no (payroll_no),
+    UNIQUE KEY uk_emp_period (employee_id, period_year, period_month),
+    KEY idx_payroll_period (period_year, period_month)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='薪酬单';
+
+SET @col_pay_pos = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_payroll' AND COLUMN_NAME = 'position_salary');
+SET @sql_pay = IF(@col_pay_pos > 0,
+  'SELECT ''skip crm_hr_payroll.scheme_cols'' AS note',
+  'ALTER TABLE crm_hr_payroll
+     ADD COLUMN position_salary DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''岗位工资'' AFTER base_salary,
+     ADD COLUMN piece_pay DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''计件工资'' AFTER position_salary,
+     ADD COLUMN performance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''绩效奖金'' AFTER piece_pay,
+     ADD COLUMN full_attendance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''全勤奖'' AFTER bonus,
+     ADD COLUMN social_insurance DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''社保扣款'' AFTER deduction');
+PREPARE stmt FROM @sql_pay; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET FOREIGN_KEY_CHECKS = 1;
 

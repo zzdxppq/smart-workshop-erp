@@ -1,4 +1,6 @@
 -- V1.3.7 · Story 1.43 · 绩效与招聘
+USE `cnc_business`;
+
 CREATE TABLE IF NOT EXISTS crm_hr_performance (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     employee_id BIGINT NOT NULL,

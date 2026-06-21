@@ -14,9 +14,11 @@ INSERT IGNORE INTO sys_dict (dict_type, dict_code, dict_label, sort, status) VAL
 USE `cnc_business`;
 
 -- V49 已含 source_type / purchase_reason · 此处仅幂等补列（旧库升级路径）
+SET @tbl_exists = (SELECT COUNT(*) FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_purchase_order');
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_purchase_order' AND COLUMN_NAME = 'source_type');
-SET @sql = IF(@col_exists = 0,
-  'ALTER TABLE crm_purchase_order ADD COLUMN source_type VARCHAR(20) NOT NULL DEFAULT ''FROM_ORDER'' COMMENT ''FROM_ORDER/FROM_MRP/NO_ORDER'', ADD COLUMN purchase_reason VARCHAR(30) NULL COMMENT ''采购理由'', ADD KEY idx_source_type (source_type), ADD KEY idx_purchase_reason (purchase_reason)',
-  'SELECT 1');
+SET @sql = IF(@tbl_exists = 0 OR @col_exists > 0,
+  'SELECT ''skip crm_purchase_order.source_type'' AS note',
+  'ALTER TABLE crm_purchase_order ADD COLUMN source_type VARCHAR(20) NOT NULL DEFAULT ''FROM_ORDER'' COMMENT ''FROM_ORDER/FROM_MRP/NO_ORDER'', ADD COLUMN purchase_reason VARCHAR(30) NULL COMMENT ''采购理由'', ADD KEY idx_source_type (source_type), ADD KEY idx_purchase_reason (purchase_reason)');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

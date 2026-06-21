@@ -37,16 +37,30 @@ CREATE TABLE IF NOT EXISTS crm_hr_salary_package (
     KEY idx_pkg_position (position)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工资账套';
 
-ALTER TABLE crm_hr_employee
-    ADD COLUMN salary_package_id BIGINT NULL COMMENT '工资账套ID' AFTER base_salary,
-    ADD COLUMN performance_scheme_id BIGINT NULL COMMENT '考核方案ID' AFTER salary_package_id,
-    ADD COLUMN reviewer_user_id BIGINT NULL COMMENT '考核人用户ID' AFTER performance_scheme_id;
+SET @tbl_emp = (SELECT COUNT(*) FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_employee');
+SET @col_emp_pkg = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_employee' AND COLUMN_NAME = 'salary_package_id');
+SET @sql_emp = IF(@tbl_emp = 0 OR @col_emp_pkg > 0,
+  'SELECT ''skip crm_hr_employee.payroll_scheme_cols'' AS note',
+  'ALTER TABLE crm_hr_employee
+     ADD COLUMN salary_package_id BIGINT NULL COMMENT ''工资账套ID'' AFTER base_salary,
+     ADD COLUMN performance_scheme_id BIGINT NULL COMMENT ''考核方案ID'' AFTER salary_package_id,
+     ADD COLUMN reviewer_user_id BIGINT NULL COMMENT ''考核人用户ID'' AFTER performance_scheme_id');
+PREPARE stmt FROM @sql_emp; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-ALTER TABLE crm_hr_payroll
-    ADD COLUMN position_salary DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '岗位工资' AFTER base_salary,
-    ADD COLUMN piece_pay DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '计件工资' AFTER position_salary,
-    ADD COLUMN performance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '绩效奖金' AFTER piece_pay,
-    ADD COLUMN full_attendance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '全勤奖' AFTER bonus,
-    ADD COLUMN social_insurance DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '社保扣款' AFTER deduction;
+SET @tbl_pay = (SELECT COUNT(*) FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_payroll');
+SET @col_pay_pos = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_payroll' AND COLUMN_NAME = 'position_salary');
+SET @sql_pay = IF(@tbl_pay = 0 OR @col_pay_pos > 0,
+  'SELECT ''skip crm_hr_payroll.scheme_cols'' AS note',
+  'ALTER TABLE crm_hr_payroll
+     ADD COLUMN position_salary DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''岗位工资'' AFTER base_salary,
+     ADD COLUMN piece_pay DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''计件工资'' AFTER position_salary,
+     ADD COLUMN performance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''绩效奖金'' AFTER piece_pay,
+     ADD COLUMN full_attendance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''全勤奖'' AFTER bonus,
+     ADD COLUMN social_insurance DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''社保扣款'' AFTER deduction');
+PREPARE stmt FROM @sql_pay; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- V94 · mock 清理：考核方案/工资账套演示 seed 已移至 init_data.sql

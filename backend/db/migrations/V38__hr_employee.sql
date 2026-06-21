@@ -1,5 +1,5 @@
 -- V1.3.7 · Story 1.41 · 员工档案与考勤
--- 2 表：crm_hr_employee + crm_hr_attendance
+USE `cnc_business`;
 
 CREATE TABLE IF NOT EXISTS crm_hr_employee (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

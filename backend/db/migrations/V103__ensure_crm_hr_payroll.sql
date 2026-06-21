@@ -1,4 +1,4 @@
--- V1.3.7 · Story 1.42 · 薪酬自动核算
+-- V103 · 确保 crm_hr_payroll 在 cnc_business（修复 V39 未 USE 导致表建错库）
 USE `cnc_business`;
 
 CREATE TABLE IF NOT EXISTS crm_hr_payroll (
@@ -27,4 +27,14 @@ CREATE TABLE IF NOT EXISTS crm_hr_payroll (
     KEY idx_payroll_period (period_year, period_month)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='薪酬单';
 
--- V94 · mock 清理：业务演示 seed 已移至 init_data.sql
+SET @col_pay_pos = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'crm_hr_payroll' AND COLUMN_NAME = 'position_salary');
+SET @sql_pay = IF(@col_pay_pos > 0,
+  'SELECT ''skip crm_hr_payroll.scheme_cols'' AS note',
+  'ALTER TABLE crm_hr_payroll
+     ADD COLUMN position_salary DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''岗位工资'' AFTER base_salary,
+     ADD COLUMN piece_pay DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''计件工资'' AFTER position_salary,
+     ADD COLUMN performance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''绩效奖金'' AFTER piece_pay,
+     ADD COLUMN full_attendance_bonus DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''全勤奖'' AFTER bonus,
+     ADD COLUMN social_insurance DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT ''社保扣款'' AFTER deduction');
+PREPARE stmt FROM @sql_pay; EXECUTE stmt; DEALLOCATE PREPARE stmt;

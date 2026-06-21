@@ -30,16 +30,18 @@ CREATE TABLE IF NOT EXISTS `crm_purchase_request` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购申请单（MRP 缺料触发）';
 
 -- ---------- 2. PO 关联 PR / 工单 ----------
+SET @tbl_po = (SELECT COUNT(*) FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = 'cnc_business' AND TABLE_NAME = 'crm_purchase_order');
 SET @col_pr_id = (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = 'cnc_business' AND TABLE_NAME = 'crm_purchase_order' AND COLUMN_NAME = 'pr_id');
-SET @sql_pr_id = IF(@col_pr_id = 0,
+SET @sql_pr_id = IF(@tbl_po = 0 OR @col_pr_id > 0,
+  'SELECT ''skip crm_purchase_order.pr_id'' AS note',
   'ALTER TABLE crm_purchase_order
      ADD COLUMN pr_id BIGINT NULL COMMENT ''来源采购申请 ID'' AFTER rfq_id,
      ADD COLUMN pr_no VARCHAR(32) NULL COMMENT ''来源单号 PR-XXX'' AFTER pr_id,
      ADD COLUMN workorder_no VARCHAR(64) NULL COMMENT ''关联工单号'' AFTER pr_no,
      ADD COLUMN mrp_run_id BIGINT NULL COMMENT ''MRP 运行 ID'' AFTER workorder_no,
-     ADD KEY idx_po_pr (pr_id)',
-  'SELECT 1');
+     ADD KEY idx_po_pr (pr_id)');
 PREPARE stmt FROM @sql_pr_id; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ---------- 3. RFQ 来源绑定 + 转单状态 ----------

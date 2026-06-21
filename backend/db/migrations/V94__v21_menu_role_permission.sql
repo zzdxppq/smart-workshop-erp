@@ -157,8 +157,10 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `me
 (403,  10, 'mat.barcode',      '物料条码',  '/material/barcode-list',  'MENU', 5);
 
 -- 客户演示（V2.1 · CUSTOMER_VISITOR 独立模块，无工作台）
+INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`, `icon`) VALUES
+(15, NULL, 'mod.visitor', '生产进度', '/visitor', 'MODULE', 35, 'View');
+
 INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_code`, `menu_name`, `path`, `menu_type`, `sort`) VALUES
-(15, NULL, 'mod.visitor',      '生产进度',     '/visitor',        'MODULE', 35, 'View'),
 (1201, 15, 'visitor.progress', '生产进度查询', '/visitor/progress', 'MENU', 1);
 
 -- ======================================================================

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Merge init.baseline.sql DDL + seed/migrations + V2.1 menu block into init.sql."""
+import sys
 from pathlib import Path
 
 DB = Path(__file__).resolve().parent.parent
@@ -54,7 +55,35 @@ post_v21 = {
     "V99__sales_menu_hr_employee_no.sql",
     "V100__contract_no_align_order.sql",
     "V101__finance_order_receipt_menu.sql",
+    "V102__ensure_crm_purchase_order_before_alter.sql",
+    "V103__ensure_crm_hr_payroll.sql",
 }
+
+PLATFORM_TABLES = (
+    "sys_menu",
+    "sys_role_permission",
+    "sys_role",
+    "sys_user",
+    "sys_user_role",
+    "sys_dict",
+    "sys_dict_type",
+)
+
+
+def ensure_platform_use(sql: str) -> str:
+    """post_v21 块若操作 platform 表且未显式 USE，自动补上 cnc_platform。"""
+    lower = sql.lower()
+    if "use `" in lower:
+        return sql
+    if not any(t in lower for t in PLATFORM_TABLES):
+        return sql
+    body = sql.strip()
+    if body.startswith("--"):
+        first_nl = body.find("\n")
+        header = body[: first_nl + 1] if first_nl >= 0 else ""
+        rest = body[first_nl + 1 :] if first_nl >= 0 else body
+        return f"{header}\nUSE `cnc_platform`;\n\n{rest.lstrip()}"
+    return f"USE `cnc_platform`;\n\n{body}"
 
 
 def migration_version(name: str) -> int:
@@ -72,9 +101,10 @@ for p in sorted(migrations_dir.glob("V*.sql"), key=lambda x: migration_version(x
         continue
     if f"-- include: {p.name}" in baseline:
         continue
-    block = f"\n-- include: {p.name}\n{p.read_text(encoding='utf-8').strip()}"
+    body = p.read_text(encoding="utf-8").strip()
+    block = f"\n-- include: {p.name}\n{body}"
     if p.name in post_v21:
-        post_v21_parts.append(block)
+        post_v21_parts.append(f"\n-- include: {p.name}\n{ensure_platform_use(body)}")
     else:
         extra_parts.append(block)
 
@@ -113,3 +143,11 @@ parts = [header.strip(), ddl, seed, *extra_parts, footer_extra.strip(), v21_bloc
 out = "\n\n".join(p for p in parts if p) + "\n"
 init_path.write_text(out, encoding="utf-8")
 print(f"Wrote {init_path} ({len(out.splitlines())} lines, {len(out.encode())/1024:.1f} KB)")
+
+validate_script = DB / "tools" / "validate-init-sql.py"
+if validate_script.exists():
+    import subprocess
+    result = subprocess.run([sys.executable, str(validate_script)], capture_output=True, text=True)
+    print(result.stdout.strip() or result.stderr.strip())
+    if result.returncode != 0:
+        raise SystemExit(result.returncode)
