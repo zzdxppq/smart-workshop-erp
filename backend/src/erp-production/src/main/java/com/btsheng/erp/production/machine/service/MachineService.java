@@ -18,8 +18,10 @@ import com.btsheng.erp.production.workorder.entity.CrmProductionSchedule;
 import com.btsheng.erp.production.workorder.mapper.CrmProductionScheduleMapper;
 import com.btsheng.erp.production.workorder.mapper.CrmWorkorderMapper;
 import com.btsheng.erp.production.scan.mapper.CrmProductionReportMapper;
+import com.btsheng.erp.core.dict.entity.Dict;
 import com.btsheng.erp.core.model.Result;
 import com.btsheng.erp.core.web.AuditLog;
+import com.btsheng.erp.production.integration.DictFeignClient;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +51,7 @@ public class MachineService {
     private final CrmProductionReportMapper reportMapper;
     private final CrmWorkorderMapper workorderMapper;
     private final ErpDocNoGenerator docNoGenerator;
+    private final DictFeignClient dictFeignClient;
 
     @Autowired
     public MachineService(ProdMachineMapper machineMapper,
@@ -58,7 +61,8 @@ public class MachineService {
                           ProdMachineStatusLogMapper statusLogMapper,
                           CrmProductionReportMapper reportMapper,
                           CrmWorkorderMapper workorderMapper,
-                          ErpDocNoGenerator docNoGenerator) {
+                          ErpDocNoGenerator docNoGenerator,
+                          DictFeignClient dictFeignClient) {
         this.machineMapper = machineMapper;
         this.loadMapper = loadMapper;
         this.scheduleMapper = scheduleMapper;
@@ -67,6 +71,7 @@ public class MachineService {
         this.reportMapper = reportMapper;
         this.workorderMapper = workorderMapper;
         this.docNoGenerator = docNoGenerator;
+        this.dictFeignClient = dictFeignClient;
     }
 
     @Transactional
@@ -128,18 +133,19 @@ public class MachineService {
     }
 
     /**
-     * V1.3.9 P0 · 返回设备类型下拉列表（去重，排序）
+     * V1.3.9 P0 · 返回设备类型下拉列表（从数据字典 MACHINE_TYPE 读取，统一维护）
      * 用于工艺库新建工艺时设备类型下拉
      */
     public Result<List<String>> listTypes() {
-        List<ProdMachine> all = machineMapper.selectActive();
-        Map<String, String> unique = new java.util.LinkedHashMap<>();
-        for (ProdMachine m : all) {
-            if (m.getMachineType() != null && !m.getMachineType().isBlank()) {
-                unique.putIfAbsent(m.getMachineType(), m.getMachineType());
-            }
+        Result<List<Dict>> dictResult = dictFeignClient.listByType("MACHINE_TYPE");
+        if (dictResult == null || !dictResult.isSuccess() || dictResult.getData() == null) {
+            return Result.ok(List.of());
         }
-        return Result.ok(new java.util.ArrayList<>(unique.values()));
+        List<String> types = dictResult.getData().stream()
+                .filter(d -> d.getDictLabel() != null && !d.getDictLabel().isBlank())
+                .map(Dict::getDictLabel)
+                .toList();
+        return Result.ok(types);
     }
 
     public Result<Map<String, Object>> getMachineDetail(Long id) {

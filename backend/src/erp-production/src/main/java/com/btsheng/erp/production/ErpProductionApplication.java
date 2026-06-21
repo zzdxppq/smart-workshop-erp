@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @since 2026-06-10
  */
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.btsheng.erp.production.integration.client")
+@EnableFeignClients(basePackages = {"com.btsheng.erp.production.integration.client", "com.btsheng.erp.production.integration"})
 @EnableCaching
 @EnableScheduling
 @MapperScan("com.btsheng.erp.production.**.mapper")

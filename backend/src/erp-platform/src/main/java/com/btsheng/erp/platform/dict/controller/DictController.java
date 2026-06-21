@@ -1,6 +1,7 @@
 package com.btsheng.erp.platform.dict.controller;
 
 import com.btsheng.erp.core.dict.entity.Dict;
+import com.btsheng.erp.core.dict.entity.DictType;
 import com.btsheng.erp.platform.dict.service.DictService;
 import com.btsheng.erp.core.model.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +22,12 @@ public class DictController {
     @Autowired
     public DictController(DictService dictService) {
         this.dictService = dictService;
+    }
+
+    @Operation(summary = "查询字典分类列表（V1.3.9 新增）")
+    @GetMapping("/types")
+    public Result<List<DictType>> listTypes() {
+        return dictService.listTypes();
     }
 
     @Operation(summary = "按类型查询字典列表（可选分页）")
