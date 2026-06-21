@@ -37,6 +37,8 @@ app:
     contract_id: XP-ZPF202606082405
   business:
     url: ${BUSINESS_SERVICE_URL:http://127.0.0.1:9082}
+  platform:
+    url: ${PLATFORM_SERVICE_URL:http://127.0.0.1:9081}
   internal:
     token: ${ERP_INTERNAL_TOKEN:${APP_INTERNAL_TOKEN:}}
   crypto:

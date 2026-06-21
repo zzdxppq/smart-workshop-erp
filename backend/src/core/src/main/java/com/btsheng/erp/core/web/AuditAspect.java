@@ -10,6 +10,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -37,6 +41,9 @@ public class AuditAspect {
 
     @Autowired(required = false)
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired(required = false)
+    private DataSource dataSource;
 
     @Around("@annotation(auditLog)")
     public Object around(ProceedingJoinPoint pjp, AuditLog auditLog) throws Throwable {
@@ -110,19 +117,30 @@ public class AuditAspect {
     }
 
     private void persist(AuditEntry entry) {
-        // V1.3.9 P0：写入 sys_audit_log 表（JdbcTemplate 由 spring-boot-starter-jdbc 提供）
-        if (jdbcTemplate != null) {
+        // V1.3.9 P0：使用独立连接写入 sys_audit_log，避免事务只读连接
+        if (dataSource != null) {
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(
+                     "INSERT INTO sys_audit_log (user_id, module, action, before_json, after_json, ip, ts) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                ps.setObject(1, entry.userId);
+                ps.setString(2, entry.module);
+                ps.setString(3, entry.action);
+                ps.setString(4, entry.before);
+                ps.setString(5, entry.after);
+                ps.setString(6, getClientIp());
+                ps.setObject(7, LocalDateTime.now());
+                ps.executeUpdate();
+            } catch (Exception ex) {
+                log.error("[AUDIT] failed to write sys_audit_log, fallback to log", ex);
+            }
+        } else if (jdbcTemplate != null) {
             try {
                 jdbcTemplate.update(
                     "INSERT INTO sys_audit_log (user_id, module, action, before_json, after_json, ip, ts) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    entry.userId,
-                    entry.module,
-                    entry.action,
-                    entry.before,
-                    entry.after,
-                    getClientIp(),
-                    LocalDateTime.now()
+                    entry.userId, entry.module, entry.action,
+                    entry.before, entry.after, getClientIp(), LocalDateTime.now()
                 );
             } catch (Exception ex) {
                 log.error("[AUDIT] failed to write sys_audit_log, fallback to log", ex);
